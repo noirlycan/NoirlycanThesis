@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Iterator
 from datetime import datetime, timezone
 
-from .models import FileEvent, ProcessEvent, TelemetryEvent, EventSource
+from .models import FileEvent, NetworkConnectionEvent, ProcessEvent, TelemetryEvent, EventSource
 
 SYSMON_CHANNEL = "Microsoft-Windows-Sysmon/Operational"
 SYSMON_INSTALL_HINT = (
@@ -63,7 +63,9 @@ def _xml_data(xml: str) -> tuple[int | None, datetime, dict[str, str]]:
     return event_id, timestamp, data
 
 
-def parse_sysmon_xml(xml: str) -> TelemetryEvent | FileEvent | ProcessEvent | None:
+def parse_sysmon_xml(
+    xml: str,
+) -> TelemetryEvent | FileEvent | ProcessEvent | NetworkConnectionEvent | None:
     event_id, timestamp, data = _xml_data(xml)
     if event_id == 1:
         return ProcessEvent(
@@ -80,6 +82,18 @@ def parse_sysmon_xml(xml: str) -> TelemetryEvent | FileEvent | ProcessEvent | No
             path=data.get("TargetFilename", ""),
             creator_pid=_safe_int(data.get("ProcessId")),
             creator_image=data.get("Image") or None,
+        )
+    if event_id == 3:
+        initiated = data.get("Initiated")
+        return NetworkConnectionEvent(
+            timestamp=timestamp,
+            pid=_safe_int(data.get("ProcessId")) or 0,
+            image=data.get("Image") or None,
+            protocol=data.get("Protocol") or None,
+            destination_ip=data.get("DestinationIp") or None,
+            destination_hostname=data.get("DestinationHostname") or None,
+            destination_port=_safe_int(data.get("DestinationPort")),
+            initiated=None if initiated is None else initiated.lower() == "true",
         )
     if event_id in {7, 8, 10, 15, 22, 23, 26}:
         return TelemetryEvent(
@@ -114,12 +128,14 @@ class SysmonPoller:
         self.query = query
         self._last_record_id: int | None = None
 
-    def follow(self, interval_seconds: float = 1.0) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent]:
+    def follow(
+        self, interval_seconds: float = 1.0
+    ) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent | NetworkConnectionEvent]:
         while True:
             yield from self.poll_once()
             time.sleep(interval_seconds)
 
-    def poll_once(self) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent]:
+    def poll_once(self) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent | NetworkConnectionEvent]:
         win32evtlog = _load_win32evtlog()
         flags = win32evtlog.EvtQueryChannelPath | win32evtlog.EvtQueryReverseDirection
         try:

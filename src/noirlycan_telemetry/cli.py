@@ -19,7 +19,8 @@ from .frida_manager import (
     runtime_event_to_process,
 )
 from .log_store import new_session_log_path
-from .models import FileEvent, Finding, ProcessEvent, TelemetryEvent
+from .models import FileEvent, Finding, NetworkConnectionEvent, ProcessEvent, TelemetryEvent
+from .network import is_external_beacon_candidate
 from .sysmon import SYSMON_INSTALL_HINT, SysmonPoller, SysmonUnavailable
 from .triage import is_interesting_path, triage_file
 
@@ -221,6 +222,8 @@ def _process_sysmon_batch(
             correlator.add_process(event)
             if auto_attach and monitor is not None and _should_auto_attach(event):
                 _safe_attach(monitor, event.pid)
+        elif isinstance(event, NetworkConnectionEvent):
+            _handle_network_event(event, correlator, writer)
         elif isinstance(event, TelemetryEvent):
             pass
 
@@ -297,6 +300,28 @@ def _should_auto_attach(event: ProcessEvent) -> bool:
     return True
 
 
+def _handle_network_event(
+    event: NetworkConnectionEvent,
+    correlator: Correlator,
+    writer: "JsonlWriter",
+) -> None:
+    watched = correlator.add_network_connection(event)
+    if watched is None:
+        return
+    writer.write("network", watched)
+    if is_external_beacon_candidate(watched.destination_ip, watched.destination_hostname):
+        print(
+            f"[NETWORK:BEACON?] PID {watched.pid} "
+            f"({watched.image or 'unknown'}) -> {watched.endpoint} "
+            f"via {watched.protocol or 'unknown'}"
+        )
+    else:
+        print(
+            f"[NETWORK] PID {watched.pid} "
+            f"({watched.image or 'unknown'}) -> {watched.endpoint}"
+        )
+
+
 def print_finding(finding: Finding) -> None:
     print(
         f"[{finding.severity.value.upper()}:{finding.score}] "
@@ -305,6 +330,11 @@ def print_finding(finding: Finding) -> None:
     print("  APIs:", ", ".join(sorted({primitive.api for primitive in finding.primitives})))
     if finding.related_file:
         print(f"  Related file: {finding.related_file.path}")
+    if finding.score >= 70 and finding.target_pid is not None:
+        print(
+            f"  Network watch enabled for PID {finding.target_pid} "
+            f"(5 min, outbound Sysmon EID 3)"
+        )
 
 
 class JsonlWriter:

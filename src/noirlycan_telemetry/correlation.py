@@ -8,10 +8,15 @@ from .models import (
     FileEvent,
     Finding,
     MemoryPrimitive,
+    NetworkConnectionEvent,
     PrimitiveKind,
     ProcessEvent,
     Severity,
 )
+
+
+NETWORK_WATCH_MIN_SCORE = 70
+NETWORK_WATCH_SECONDS = 300
 
 
 class Correlator:
@@ -27,7 +32,9 @@ class Correlator:
         self.files_by_path: dict[str, FileEvent] = {}
         self.processes_by_pid: dict[int, ProcessEvent] = {}
         self.primitives: deque[MemoryPrimitive] = deque()
-        self._reported_keys: set[tuple[int, int | None, str]] = set()
+        self._reported_chain_scores: dict[tuple[int, int | None], int] = {}
+        self._network_watch_until: dict[int, datetime] = {}
+        self.network_connections: dict[int, list[NetworkConnectionEvent]] = defaultdict(list)
 
     def add_file(self, event: FileEvent) -> None:
         if event.path:
@@ -55,6 +62,13 @@ class Correlator:
         self._expire(event.timestamp)
         return self._find_injection_chains(event)
 
+    def add_network_connection(self, event: NetworkConnectionEvent) -> NetworkConnectionEvent | None:
+        self._expire(event.timestamp)
+        if event.pid not in self._active_network_watch_pids(event.timestamp):
+            return None
+        self.network_connections[event.pid].append(event)
+        return event
+
     def _find_injection_chains(self, latest: MemoryPrimitive) -> list[Finding]:
         grouped: dict[tuple[int, int | None], list[MemoryPrimitive]] = defaultdict(list)
         for primitive in self.primitives:
@@ -77,10 +91,15 @@ class Correlator:
             if score < self.minimum_score:
                 continue
             title = "Probable process injection chain"
-            key = (actor_pid, target_pid, _primitive_signature(primitives))
-            if key in self._reported_keys:
+            chain_key = (actor_pid, target_pid)
+            previous_score = self._reported_chain_scores.get(chain_key, 0)
+            if score <= previous_score:
                 continue
-            self._reported_keys.add(key)
+            self._reported_chain_scores[chain_key] = score
+            if score >= NETWORK_WATCH_MIN_SCORE and target_pid is not None:
+                self._network_watch_until[target_pid] = latest.timestamp + timedelta(
+                    seconds=NETWORK_WATCH_SECONDS
+                )
             findings.append(
                 Finding(
                     timestamp=latest.timestamp,
@@ -97,6 +116,12 @@ class Correlator:
                 )
             )
         return findings
+
+    def _active_network_watch_pids(self, now: datetime) -> set[int]:
+        expired = [pid for pid, until in self._network_watch_until.items() if until < now]
+        for pid in expired:
+            del self._network_watch_until[pid]
+        return set(self._network_watch_until)
 
     def _related_file_for_process(self, process: ProcessEvent | None) -> FileEvent | None:
         if process is None:
@@ -161,6 +186,13 @@ class Correlator:
         self.files_by_path = {
             path: event for path, event in self.files_by_path.items() if event.timestamp >= cutoff
         }
+        self._active_network_watch_pids(now)
+        for pid, connections in list(self.network_connections.items()):
+            self.network_connections[pid] = [
+                connection for connection in connections if connection.timestamp >= cutoff
+            ]
+            if not self.network_connections[pid]:
+                del self.network_connections[pid]
 
 
 def _has_temporal_consistency(primitives: list[MemoryPrimitive]) -> bool:
@@ -219,14 +251,6 @@ def _severity(score: int) -> Severity:
     if score >= 50:
         return Severity.MEDIUM
     return Severity.LOW
-
-
-def _primitive_signature(primitives: list[MemoryPrimitive]) -> str:
-    parts = []
-    for primitive in sorted(primitives, key=lambda item: (item.kind, item.api)):
-        address = "0" if primitive.address is None else f"{primitive.address:x}"
-        parts.append(f"{primitive.kind}:{primitive.api}:{address}")
-    return "|".join(parts)
 
 
 def _describe(

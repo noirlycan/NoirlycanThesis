@@ -154,13 +154,25 @@ After collecting one or more sessions in `logs/`, launch the statistics UI:
 noirlycan-telemetry dashboard
 ```
 
-Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The dashboard shows:
+Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The interactive dashboard includes:
 
-- finding severity and primitive breakdowns,
-- API and actor frequency,
-- event timeline,
-- recent injection findings,
-- a list of all JSONL sessions in `logs/`.
+- tabs for **Overview**, **Findings**, **Network**, **Primitives**, **Event stream**, and **Sessions**,
+- filters by severity, target PID, event type, and free-text search,
+- click a finding to open a detail modal (evidence, API chain, primitives, related network),
+- click a session row or network row to drill into that PID,
+- auto-refresh toggle and JSONL export for the active session,
+- charts for severity, primitives, timeline, top APIs, and top actors.
+
+After a finding reaches **HIGH** or **CRITICAL**, the correlator watches the
+injected target PID for 5 minutes. Outbound connections are captured from
+Sysmon Event ID 3 and surfaced as `[NETWORK:BEACON?]` when the destination is
+outside private/local ranges.
+
+Reload Sysmon config after pulling updates:
+
+```powershell
+C:\Windows\System32\sysmon.exe -c .\configs\sysmon-noirlycan.xml
+```
 
 ### 7. Static triage a file
 

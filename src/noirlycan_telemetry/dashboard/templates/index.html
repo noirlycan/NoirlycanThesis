@@ -21,7 +21,7 @@
           <p class="eyebrow">Windows injection telemetry</p>
           <h1>Noirlycan Dashboard</h1>
           <p class="subtitle">
-            Live statistics from Sysmon + Frida JSONL sessions stored in
+            Interactive view of Sysmon + Frida JSONL sessions in
             <code id="logs-dir">logs/</code>
           </p>
         </div>
@@ -31,97 +31,262 @@
             <select id="log-select"></select>
           </label>
           <button id="refresh-btn" type="button">Refresh</button>
+          <button id="export-btn" type="button" class="secondary">Export JSONL</button>
         </div>
       </header>
 
-      <section class="cards" id="metric-cards"></section>
+      <section class="toolbar panel">
+        <div class="toolbar-group">
+          <label class="field">
+            <span>Search</span>
+            <input id="filter-query" type="search" placeholder="API, PID, image, endpoint..." />
+          </label>
+          <label class="field">
+            <span>Severity</span>
+            <select id="filter-severity">
+              <option value="">All</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Target PID</span>
+            <input id="filter-pid" type="number" min="0" placeholder="Any" />
+          </label>
+          <label class="field">
+            <span>Event type</span>
+            <select id="filter-type">
+              <option value="">All</option>
+              <option value="finding">finding</option>
+              <option value="primitive">primitive</option>
+              <option value="network">network</option>
+              <option value="sysmon">sysmon</option>
+              <option value="frida_raw">frida_raw</option>
+            </select>
+          </label>
+        </div>
+        <div class="toolbar-group toolbar-actions">
+          <label class="toggle">
+            <input id="auto-refresh" type="checkbox" checked />
+            <span>Auto-refresh (5s)</span>
+          </label>
+          <button id="apply-filters-btn" type="button">Apply filters</button>
+          <button id="clear-filters-btn" type="button" class="secondary">Clear</button>
+        </div>
+      </section>
 
-      <section class="grid-two">
+      <nav class="tabs" id="view-tabs">
+        <button type="button" class="tab active" data-tab="overview">Overview</button>
+        <button type="button" class="tab" data-tab="findings">Findings</button>
+        <button type="button" class="tab" data-tab="network">Network</button>
+        <button type="button" class="tab" data-tab="primitives">Primitives</button>
+        <button type="button" class="tab" data-tab="events">Event stream</button>
+        <button type="button" class="tab" data-tab="sessions">Sessions</button>
+      </nav>
+
+      <section class="tab-panel active" data-panel="overview">
+        <section class="cards" id="metric-cards"></section>
+
+        <section class="grid-two">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Finding severity</h2>
+              <span class="chip">correlation output</span>
+            </div>
+            <canvas id="severity-chart"></canvas>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Injection primitives</h2>
+              <span class="chip">allocate / write / execute</span>
+            </div>
+            <canvas id="primitive-chart"></canvas>
+          </article>
+        </section>
+
+        <section class="panel timeline-panel">
+          <div class="panel-head">
+            <h2>Event timeline</h2>
+            <span class="chip">minute buckets</span>
+          </div>
+          <canvas id="timeline-chart"></canvas>
+        </section>
+
+        <section class="grid-two">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Top APIs</h2>
+              <span class="chip">Frida hooks</span>
+            </div>
+            <div id="api-list" class="rank-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Top actors</h2>
+              <span class="chip">source images</span>
+            </div>
+            <div id="actor-list" class="rank-list"></div>
+          </article>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-panel="findings">
         <article class="panel">
           <div class="panel-head">
-            <h2>Finding severity</h2>
-            <span class="chip">correlation output</span>
+            <h2>Findings</h2>
+            <span class="chip" id="active-log-label">no log selected</span>
           </div>
-          <canvas id="severity-chart"></canvas>
+          <p class="hint">Click a row to inspect evidence, primitives, and related network activity.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Severity</th>
+                  <th>Score</th>
+                  <th>Target PID</th>
+                  <th>APIs</th>
+                  <th>Network</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody id="findings-body"></tbody>
+            </table>
+          </div>
         </article>
+      </section>
+
+      <section class="tab-panel" data-panel="network">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Network activity</h2>
+            <span class="chip">post-HIGH beacon watch</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>PID</th>
+                  <th>Image</th>
+                  <th>Endpoint</th>
+                  <th>Protocol</th>
+                  <th>Beacon?</th>
+                </tr>
+              </thead>
+              <tbody id="network-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="primitives">
         <article class="panel">
           <div class="panel-head">
             <h2>Injection primitives</h2>
-            <span class="chip">allocate / write / execute</span>
+            <span class="chip">Frida allocate / write / execute</span>
           </div>
-          <canvas id="primitive-chart"></canvas>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Kind</th>
+                  <th>API</th>
+                  <th>Actor</th>
+                  <th>Target PID</th>
+                  <th>Address</th>
+                  <th>Size</th>
+                </tr>
+              </thead>
+              <tbody id="primitives-body"></tbody>
+            </table>
+          </div>
         </article>
       </section>
 
-      <section class="panel timeline-panel">
-        <div class="panel-head">
-          <h2>Event timeline</h2>
-          <span class="chip">minute buckets</span>
-        </div>
-        <canvas id="timeline-chart"></canvas>
-      </section>
-
-      <section class="grid-two">
+      <section class="tab-panel" data-panel="events">
         <article class="panel">
           <div class="panel-head">
-            <h2>Top APIs</h2>
-            <span class="chip">Frida hooks</span>
+            <h2>Event stream</h2>
+            <span class="chip" id="event-count-label">0 events</span>
           </div>
-          <div id="api-list" class="rank-list"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Timestamp</th>
+                  <th>Summary</th>
+                </tr>
+              </thead>
+              <tbody id="events-body"></tbody>
+            </table>
+          </div>
         </article>
+      </section>
+
+      <section class="tab-panel" data-panel="sessions">
         <article class="panel">
           <div class="panel-head">
-            <h2>Top actors</h2>
-            <span class="chip">source images</span>
+            <h2>Log sessions</h2>
+            <span class="chip" id="file-count">0 files</span>
           </div>
-          <div id="actor-list" class="rank-list"></div>
+          <p class="hint">Click a session row to load it into the dashboard.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Modified</th>
+                  <th>Events</th>
+                  <th>Findings</th>
+                  <th>Critical</th>
+                  <th>Size</th>
+                </tr>
+              </thead>
+              <tbody id="files-body"></tbody>
+            </table>
+          </div>
         </article>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Recent findings</h2>
-          <span class="chip" id="active-log-label">no log selected</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Severity</th>
-                <th>Score</th>
-                <th>Target PID</th>
-                <th>APIs</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody id="findings-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Log sessions</h2>
-          <span class="chip" id="file-count">0 files</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>File</th>
-                <th>Modified</th>
-                <th>Events</th>
-                <th>Findings</th>
-                <th>Critical</th>
-                <th>Size</th>
-              </tr>
-            </thead>
-            <tbody id="files-body"></tbody>
-          </table>
-        </div>
       </section>
     </div>
+
+    <dialog id="finding-modal" class="modal">
+      <form method="dialog" class="modal-card">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">Finding detail</p>
+            <h2 id="modal-title">Injection chain</h2>
+          </div>
+          <button type="submit" class="icon-btn" aria-label="Close">×</button>
+        </div>
+        <div class="modal-grid">
+          <div class="modal-block">
+            <h3>Summary</h3>
+            <dl id="modal-summary" class="detail-list"></dl>
+          </div>
+          <div class="modal-block">
+            <h3>API chain</h3>
+            <div id="modal-apis" class="tag-list"></div>
+          </div>
+          <div class="modal-block full">
+            <h3>Evidence</h3>
+            <pre id="modal-evidence" class="code-block"></pre>
+          </div>
+          <div class="modal-block full">
+            <h3>Primitives</h3>
+            <div id="modal-primitives" class="table-wrap"></div>
+          </div>
+          <div class="modal-block full">
+            <h3>Related network</h3>
+            <div id="modal-network" class="table-wrap"></div>
+          </div>
+        </div>
+      </form>
+    </dialog>
 
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
   </body>

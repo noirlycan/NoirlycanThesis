@@ -85,6 +85,25 @@ class MemoryPrimitive:
 
 
 @dataclass(frozen=True)
+class NetworkConnectionEvent:
+    timestamp: datetime
+    pid: int
+    image: str | None
+    protocol: str | None
+    destination_ip: str | None
+    destination_hostname: str | None
+    destination_port: int | None
+    initiated: bool | None = None
+
+    @property
+    def endpoint(self) -> str:
+        host = self.destination_hostname or self.destination_ip or "unknown"
+        if self.destination_port is not None:
+            return f"{host}:{self.destination_port}"
+        return host
+
+
+@dataclass(frozen=True)
 class Finding:
     timestamp: datetime
     severity: Severity

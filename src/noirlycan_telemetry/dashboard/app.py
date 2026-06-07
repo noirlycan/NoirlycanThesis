@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 
-from ..log_store import aggregate_logs, resolve_logs_dir
+from ..log_store import aggregate_logs, resolve_log_path, resolve_logs_dir, session_detail
 
 
 def create_app(logs_dir: Path | str | None = None) -> Flask:
@@ -29,6 +29,33 @@ def create_app(logs_dir: Path | str | None = None) -> Flask:
     @app.get("/api/health")
     def health():
         return jsonify({"status": "ok", "logs_dir": str(app.config["LOGS_DIR"])})
+
+    @app.get("/api/session/<path:name>")
+    def session(name: str):
+        severity = request.args.get("severity") or None
+        target_pid = request.args.get("pid", type=int)
+        query = request.args.get("q") or None
+        event_type = request.args.get("type") or None
+        limit = request.args.get("limit", default=200, type=int)
+        payload = session_detail(
+            name,
+            app.config["LOGS_DIR"],
+            severity=severity,
+            target_pid=target_pid,
+            query=query,
+            event_type=event_type,
+            limit=limit,
+        )
+        if payload is None:
+            return jsonify({"error": "session not found"}), 404
+        return jsonify(payload)
+
+    @app.get("/api/export/<path:name>")
+    def export_session(name: str):
+        path = resolve_log_path(app.config["LOGS_DIR"], name)
+        if path is None:
+            return jsonify({"error": "session not found"}), 404
+        return send_file(path, as_attachment=True, download_name=path.name)
 
     return app
 

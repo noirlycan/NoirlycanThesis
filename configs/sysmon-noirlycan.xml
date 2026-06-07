@@ -42,6 +42,14 @@
       </RuleGroup>
     </ProcessAccess>
 
+    <!-- Outbound network from processes under network watch after HIGH findings. -->
+    <NetworkConnect onmatch="include">
+      <RuleGroup name="Outbound connections" groupRelation="or">
+        <DestinationIp condition="is not">127.0.0.1</DestinationIp>
+        <DestinationIp condition="is not">::1</DestinationIp>
+      </RuleGroup>
+    </NetworkConnect>
+
     <CreateRemoteThread onmatch="exclude" />
     <FileCreateStreamHash onmatch="exclude" />
   </EventFiltering>
