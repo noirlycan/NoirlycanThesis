@@ -1,0 +1,48 @@
+<Sysmon schemaversion="4.90">
+  <HashAlgorithms>SHA256</HashAlgorithms>
+  <CheckRevocation>False</CheckRevocation>
+
+  <EventFiltering>
+    <!-- Log process creation broadly so parent/child lineage is available. -->
+    <ProcessCreate onmatch="exclude" />
+
+    <!-- Log executable/script drops in common staging locations. -->
+    <FileCreate onmatch="include">
+      <RuleGroup name="Executable/script drops" groupRelation="or">
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.scr</TargetFilename>
+        <TargetFilename condition="end with">.com</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.js</TargetFilename>
+        <TargetFilename condition="end with">.jse</TargetFilename>
+        <TargetFilename condition="end with">.vbs</TargetFilename>
+        <TargetFilename condition="end with">.vbe</TargetFilename>
+        <TargetFilename condition="end with">.hta</TargetFilename>
+        <TargetFilename condition="end with">.bat</TargetFilename>
+        <TargetFilename condition="end with">.cmd</TargetFilename>
+      </RuleGroup>
+    </FileCreate>
+
+    <!-- Useful context for user-mode hooking and dynamic API resolution. -->
+    <ImageLoad onmatch="include">
+      <RuleGroup name="Injection-relevant DLL loads" groupRelation="or">
+        <ImageLoaded condition="end with">\ntdll.dll</ImageLoaded>
+        <ImageLoaded condition="end with">\kernel32.dll</ImageLoaded>
+      </RuleGroup>
+    </ImageLoad>
+
+    <!-- Sysmon cannot see all NT APIs, but these events help with correlation. -->
+    <ProcessAccess onmatch="include">
+      <RuleGroup name="Suspicious process access" groupRelation="or">
+        <GrantedAccess condition="is">0x1fffff</GrantedAccess>
+        <GrantedAccess condition="is">0x143a</GrantedAccess>
+        <GrantedAccess condition="is">0x1038</GrantedAccess>
+        <GrantedAccess condition="is">0x1028</GrantedAccess>
+      </RuleGroup>
+    </ProcessAccess>
+
+    <CreateRemoteThread onmatch="exclude" />
+    <FileCreateStreamHash onmatch="exclude" />
+  </EventFiltering>
+</Sysmon>

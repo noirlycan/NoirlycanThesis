@@ -1,0 +1,249 @@
+from __future__ import annotations
+
+from collections import defaultdict, deque
+from datetime import datetime, timedelta, timezone
+from pathlib import PureWindowsPath
+
+from .models import (
+    FileEvent,
+    Finding,
+    MemoryPrimitive,
+    PrimitiveKind,
+    ProcessEvent,
+    Severity,
+)
+
+
+class Correlator:
+    """Stateful file/process/injection correlation engine."""
+
+    def __init__(
+        self,
+        window_seconds: int = 300,
+        minimum_score: int = 50,
+    ) -> None:
+        self.window = timedelta(seconds=window_seconds)
+        self.minimum_score = minimum_score
+        self.files_by_path: dict[str, FileEvent] = {}
+        self.processes_by_pid: dict[int, ProcessEvent] = {}
+        self.primitives: deque[MemoryPrimitive] = deque()
+        self._reported_keys: set[tuple[int, int | None, str]] = set()
+
+    def add_file(self, event: FileEvent) -> None:
+        if event.path:
+            self.files_by_path[_norm_path(event.path)] = event
+        self._expire(event.timestamp)
+
+    def add_process(self, event: ProcessEvent) -> None:
+        related_file = self.files_by_path.get(_norm_path(event.image))
+        if related_file is not None and event.created_from_file is None:
+            event = ProcessEvent(
+                timestamp=event.timestamp,
+                pid=event.pid,
+                image=event.image,
+                command_line=event.command_line,
+                parent_pid=event.parent_pid,
+                parent_image=event.parent_image,
+                created_from_file=related_file.path,
+                flags=event.flags,
+            )
+        self.processes_by_pid[event.pid] = event
+        self._expire(event.timestamp)
+
+    def add_primitive(self, event: MemoryPrimitive) -> list[Finding]:
+        self.primitives.append(event)
+        self._expire(event.timestamp)
+        return self._find_injection_chains(event)
+
+    def _find_injection_chains(self, latest: MemoryPrimitive) -> list[Finding]:
+        grouped: dict[tuple[int, int | None], list[MemoryPrimitive]] = defaultdict(list)
+        for primitive in self.primitives:
+            if primitive.actor_pid == latest.actor_pid and primitive.target_pid == latest.target_pid:
+                grouped[(primitive.actor_pid, primitive.target_pid)].append(primitive)
+
+        findings: list[Finding] = []
+        for (actor_pid, target_pid), primitives in grouped.items():
+            kinds = {primitive.kind for primitive in primitives}
+            if len(kinds) < 2:
+                continue
+            if not _has_temporal_consistency(primitives):
+                continue
+            if not _has_memory_congruence(primitives):
+                continue
+
+            related_process = self.processes_by_pid.get(actor_pid)
+            related_file = self._related_file_for_process(related_process)
+            score, evidence = self._score(primitives, related_process, related_file)
+            if score < self.minimum_score:
+                continue
+            title = "Probable process injection chain"
+            key = (actor_pid, target_pid, _primitive_signature(primitives))
+            if key in self._reported_keys:
+                continue
+            self._reported_keys.add(key)
+            findings.append(
+                Finding(
+                    timestamp=latest.timestamp,
+                    severity=_severity(score),
+                    title=title,
+                    description=_describe(primitives, related_process, related_file),
+                    actor_pid=actor_pid,
+                    target_pid=target_pid,
+                    primitives=tuple(sorted(primitives, key=lambda item: item.timestamp)),
+                    related_file=related_file,
+                    related_process=related_process,
+                    score=score,
+                    evidence=evidence,
+                )
+            )
+        return findings
+
+    def _related_file_for_process(self, process: ProcessEvent | None) -> FileEvent | None:
+        if process is None:
+            return None
+        if process.created_from_file:
+            return self.files_by_path.get(_norm_path(process.created_from_file))
+        image_event = self.files_by_path.get(_norm_path(process.image))
+        if image_event is not None:
+            return image_event
+        if process.parent_pid is not None:
+            parent = self.processes_by_pid.get(process.parent_pid)
+            if parent is not None:
+                return self.files_by_path.get(_norm_path(parent.image))
+        return None
+
+    def _score(
+        self,
+        primitives: list[MemoryPrimitive],
+        process: ProcessEvent | None,
+        related_file: FileEvent | None,
+    ) -> tuple[int, dict[str, object]]:
+        kinds = {primitive.kind for primitive in primitives}
+        apis = sorted({primitive.api for primitive in primitives})
+        score = 0
+        evidence: dict[str, object] = {"apis": apis, "primitive_kinds": sorted(kinds)}
+
+        if PrimitiveKind.WRITE in kinds and PrimitiveKind.EXECUTE in kinds:
+            score += 45
+        elif len(kinds) >= 2:
+            score += 35
+        if PrimitiveKind.ALLOCATE in kinds and PrimitiveKind.WRITE in kinds and PrimitiveKind.EXECUTE in kinds:
+            score += 20
+        if any(primitive.target_pid and primitive.target_pid != primitive.actor_pid for primitive in primitives):
+            score += 15
+            evidence["cross_process"] = True
+        if any("section" in primitive.api.lower() for primitive in primitives):
+            score += 10
+            evidence["section_mapping"] = True
+        if any(primitive.details.get("protection", "").upper().find("EXECUTE") >= 0 for primitive in primitives):
+            score += 10
+            evidence["executable_protection"] = True
+        if process is not None and any(flag.upper() == "CREATE_SUSPENDED" for flag in process.flags):
+            score += 15
+            evidence["create_suspended"] = True
+        if process is not None and process.parent_image:
+            evidence["parent_image"] = process.parent_image
+        if related_file is not None:
+            score += 10
+            evidence["related_file"] = related_file.path
+            if related_file.pe:
+                score += 5
+            if related_file.signed is False:
+                score += 10
+            if related_file.entropy is not None and related_file.entropy >= 7.0:
+                score += 5
+        return min(score, 100), evidence
+
+    def _expire(self, now: datetime) -> None:
+        cutoff = now - self.window
+        while self.primitives and self.primitives[0].timestamp < cutoff:
+            self.primitives.popleft()
+        self.files_by_path = {
+            path: event for path, event in self.files_by_path.items() if event.timestamp >= cutoff
+        }
+
+
+def _has_temporal_consistency(primitives: list[MemoryPrimitive]) -> bool:
+    order = {
+        PrimitiveKind.ALLOCATE: 0,
+        PrimitiveKind.WRITE: 1,
+        PrimitiveKind.EXECUTE: 2,
+    }
+    sorted_primitives = sorted(primitives, key=lambda item: item.timestamp)
+    last_seen = -1
+    for primitive in sorted_primitives:
+        current = order[primitive.kind]
+        if current < last_seen and primitive.kind == PrimitiveKind.ALLOCATE:
+            return False
+        last_seen = max(last_seen, current)
+    return True
+
+
+def _has_memory_congruence(primitives: list[MemoryPrimitive]) -> bool:
+    with_addresses = [primitive for primitive in primitives if primitive.address is not None]
+    if len(with_addresses) < 2:
+        return True
+
+    by_kind: dict[PrimitiveKind, list[MemoryPrimitive]] = defaultdict(list)
+    for primitive in with_addresses:
+        by_kind[primitive.kind].append(primitive)
+
+    for left_kind, left_values in by_kind.items():
+        for right_kind, right_values in by_kind.items():
+            if left_kind == right_kind:
+                continue
+            for left in left_values:
+                for right in right_values:
+                    if _ranges_overlap_or_contain(left, right):
+                        return True
+    return False
+
+
+def _ranges_overlap_or_contain(left: MemoryPrimitive, right: MemoryPrimitive) -> bool:
+    if left.address is None or right.address is None:
+        return True
+    left_size = left.size or 1
+    right_size = right.size or 1
+    left_start = left.address
+    left_end = left.address + left_size
+    right_start = right.address
+    right_end = right.address + right_size
+    return left_start < right_end and right_start < left_end
+
+
+def _severity(score: int) -> Severity:
+    if score >= 85:
+        return Severity.CRITICAL
+    if score >= 70:
+        return Severity.HIGH
+    if score >= 50:
+        return Severity.MEDIUM
+    return Severity.LOW
+
+
+def _primitive_signature(primitives: list[MemoryPrimitive]) -> str:
+    parts = []
+    for primitive in sorted(primitives, key=lambda item: (item.kind, item.api)):
+        address = "0" if primitive.address is None else f"{primitive.address:x}"
+        parts.append(f"{primitive.kind}:{primitive.api}:{address}")
+    return "|".join(parts)
+
+
+def _describe(
+    primitives: list[MemoryPrimitive],
+    process: ProcessEvent | None,
+    related_file: FileEvent | None,
+) -> str:
+    actor = process.image if process else f"pid {primitives[0].actor_pid}"
+    target = primitives[0].target_image or f"pid {primitives[0].target_pid}"
+    kinds = ", ".join(sorted({primitive.kind.value for primitive in primitives}))
+    file_part = f" Related file: {related_file.path}." if related_file else ""
+    return f"{actor} performed correlated {kinds} primitives against {target}.{file_part}"
+
+
+def _norm_path(path: str) -> str:
+    return str(PureWindowsPath(path)).lower()
+
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc)
