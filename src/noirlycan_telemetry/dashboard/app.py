@@ -6,6 +6,7 @@ from flask import Flask, jsonify, render_template, request, send_file
 
 from ..log_store import aggregate_logs, resolve_log_path, resolve_logs_dir, session_detail
 from ..runtime_config import load_runtime_config, runtime_config_payload, save_runtime_config
+from ..analysis_queue import enqueue_analysis
 
 
 def create_app(logs_dir: Path | str | None = None) -> Flask:
@@ -44,8 +45,41 @@ def create_app(logs_dir: Path | str | None = None) -> Flask:
             return jsonify({"error": "file drop watch is locked by CLI (--no-watch-files)"}), 409
         if "file_drop_watch_enabled" in payload:
             config.file_drop_watch_enabled = bool(payload["file_drop_watch_enabled"])
+        if "auto_triage_enabled" in payload:
+            config.auto_triage_enabled = bool(payload["auto_triage_enabled"])
+            config.auto_api_analysis_enabled = config.auto_triage_enabled
+        if "auto_api_analysis_enabled" in payload:
+            config.auto_api_analysis_enabled = bool(payload["auto_api_analysis_enabled"])
+            config.auto_triage_enabled = config.auto_api_analysis_enabled
+        if "auto_static_triage_enabled" in payload:
+            config.auto_static_triage_enabled = bool(payload["auto_static_triage_enabled"])
         save_runtime_config(config, app.config["LOGS_DIR"])
         return jsonify(runtime_config_payload(config))
+
+    @app.post("/api/triage/request")
+    def triage_request():
+        payload = request.get_json(silent=True) or {}
+        path = str(payload.get("path") or "").strip()
+        mode = str(payload.get("mode") or "api").strip().lower()
+        if not path:
+            return jsonify({"error": "path is required"}), 400
+        target = Path(path)
+        if not target.exists() or not target.is_file():
+            return jsonify({"error": f"file not found: {path}"}), 404
+        queued = enqueue_analysis(
+            str(target.resolve()),
+            app.config["LOGS_DIR"],
+            mode=mode,
+        )
+        return jsonify(
+            {
+                "ok": True,
+                "path": str(target.resolve()),
+                "mode": mode,
+                "queued": queued,
+                "message": "queued" if queued else "already queued",
+            }
+        )
 
     @app.get("/api/session/<path:name>")
     def session(name: str):

@@ -198,9 +198,12 @@ dashboard **File drops** tab for the active session.
 Disable folder polling with `--no-watch-files` (locks the dashboard toggle off).
 Add paths with `--watch-path C:\Lab`.
 
-While `run` is active, open the dashboard **File drops** tab and use the
-**File drop watch + auto-triage** toggle to pause or resume scanning without
-restarting the collector.
+While `run` is active, open the dashboard **File drops** tab:
+
+- **Watch folders** — detect new executables without restarting the collector
+- **Auto API analysis on drop** — spawn every new EXE under Frida injection hooks (off by default)
+- **Analyze APIs** button — spawn a pending drop under Frida hooks (`NtMapViewOfSection`, `ResumeThread`, …)
+- Primitives and findings appear in the **Primitives** / **Findings** tabs of the same session
 
 ### 8. Static triage a file
 

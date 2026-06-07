@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import PureWindowsPath
 
+from .process_resolve import image_for_pid as resolve_image_for_pid
 from .models import (
     FileEvent,
     Finding,
@@ -35,6 +37,7 @@ class Correlator:
         self._reported_chain_scores: dict[tuple[int, int | None], int] = {}
         self._network_watch_until: dict[int, datetime] = {}
         self.network_connections: dict[int, list[NetworkConnectionEvent]] = defaultdict(list)
+        self._pid_image_cache: dict[int, str] = {}
 
     def add_file(self, event: FileEvent) -> None:
         if event.path:
@@ -58,9 +61,10 @@ class Correlator:
         self._expire(event.timestamp)
 
     def add_primitive(self, event: MemoryPrimitive) -> list[Finding]:
-        self.primitives.append(event)
-        self._expire(event.timestamp)
-        return self._find_injection_chains(event)
+        enriched = self._enrich_primitive(event)
+        self.primitives.append(enriched)
+        self._expire(enriched.timestamp)
+        return self._find_injection_chains(enriched)
 
     def add_network_connection(self, event: NetworkConnectionEvent) -> NetworkConnectionEvent | None:
         self._expire(event.timestamp)
@@ -87,7 +91,13 @@ class Correlator:
 
             related_process = self.processes_by_pid.get(actor_pid)
             related_file = self._related_file_for_process(related_process)
+            actor_image = self._resolve_process_image(actor_pid, primitives, related_process)
+            target_image = self._resolve_process_image(target_pid, primitives, None)
             score, evidence = self._score(primitives, related_process, related_file)
+            if actor_image:
+                evidence["actor_image"] = actor_image
+            if target_image:
+                evidence["target_image"] = target_image
             if score < self.minimum_score:
                 continue
             title = "Probable process injection chain"
@@ -105,12 +115,20 @@ class Correlator:
                     timestamp=latest.timestamp,
                     severity=_severity(score),
                     title=title,
-                    description=_describe(primitives, related_process, related_file),
+                    description=_describe(
+                        primitives,
+                        related_process,
+                        related_file,
+                        actor_image=actor_image,
+                        target_image=target_image,
+                    ),
                     actor_pid=actor_pid,
                     target_pid=target_pid,
                     primitives=tuple(sorted(primitives, key=lambda item: item.timestamp)),
                     related_file=related_file,
                     related_process=related_process,
+                    actor_image=actor_image,
+                    target_image=target_image,
                     score=score,
                     evidence=evidence,
                 )
@@ -122,6 +140,52 @@ class Correlator:
         for pid in expired:
             del self._network_watch_until[pid]
         return set(self._network_watch_until)
+
+    def _enrich_primitive(self, event: MemoryPrimitive) -> MemoryPrimitive:
+        actor_image = event.actor_image or self._image_for_pid(event.actor_pid)
+        target_image = event.target_image or self._image_for_pid(event.target_pid)
+        if actor_image == event.actor_image and target_image == event.target_image:
+            return event
+        return replace(event, actor_image=actor_image, target_image=target_image)
+
+    def _image_for_pid(self, pid: int | None) -> str | None:
+        if pid is None:
+            return None
+        cached = self._pid_image_cache.get(pid)
+        if cached:
+            return cached
+        process = self.processes_by_pid.get(pid)
+        if process is not None and process.image:
+            self._pid_image_cache[pid] = process.image
+            return process.image
+        resolved = resolve_image_for_pid(pid)
+        if resolved:
+            self._pid_image_cache[pid] = resolved
+            if pid not in self.processes_by_pid:
+                self.processes_by_pid[pid] = ProcessEvent(
+                    timestamp=now_utc(),
+                    pid=pid,
+                    image=resolved,
+                )
+            return resolved
+        return None
+
+    def _resolve_process_image(
+        self,
+        pid: int | None,
+        primitives: list[MemoryPrimitive],
+        process: ProcessEvent | None,
+    ) -> str | None:
+        if process is not None and process.image:
+            return process.image
+        if pid is None:
+            return None
+        for primitive in primitives:
+            if primitive.target_pid == pid and primitive.target_image:
+                return primitive.target_image
+            if primitive.actor_pid == pid and primitive.actor_image:
+                return primitive.actor_image
+        return self._image_for_pid(pid)
 
     def _related_file_for_process(self, process: ProcessEvent | None) -> FileEvent | None:
         if process is None:
@@ -257,9 +321,16 @@ def _describe(
     primitives: list[MemoryPrimitive],
     process: ProcessEvent | None,
     related_file: FileEvent | None,
+    *,
+    actor_image: str | None = None,
+    target_image: str | None = None,
 ) -> str:
-    actor = process.image if process else f"pid {primitives[0].actor_pid}"
-    target = primitives[0].target_image or f"pid {primitives[0].target_pid}"
+    actor = actor_image or (process.image if process else None) or f"pid {primitives[0].actor_pid}"
+    target = target_image or primitives[0].target_image or f"pid {primitives[0].target_pid}"
+    if primitives[0].target_pid is not None and target_image:
+        target = f"{target_image} (pid {primitives[0].target_pid})"
+    elif primitives[0].target_pid is not None and not target_image:
+        target = f"pid {primitives[0].target_pid}"
     kinds = ", ".join(sorted({primitive.kind.value for primitive in primitives}))
     file_part = f" Related file: {related_file.path}." if related_file else ""
     return f"{actor} performed correlated {kinds} primitives against {target}.{file_part}"

@@ -147,7 +147,7 @@
                   <th>Time</th>
                   <th>Severity</th>
                   <th>Score</th>
-                  <th>Target PID</th>
+                  <th>Injection target</th>
                   <th>APIs</th>
                   <th>Network</th>
                   <th>Description</th>
@@ -197,7 +197,7 @@
                   <th>Kind</th>
                   <th>API</th>
                   <th>Actor</th>
-                  <th>Target PID</th>
+                  <th>Injection target</th>
                   <th>Address</th>
                   <th>Size</th>
                 </tr>
@@ -217,10 +217,14 @@
           <div class="runtime-controls">
             <label class="toggle">
               <input id="file-drop-toggle" type="checkbox" checked />
-              <span>File drop watch + auto-triage</span>
+              <span>Watch folders for new files</span>
+            </label>
+            <label class="toggle">
+              <input id="auto-api-toggle" type="checkbox" />
+              <span>Auto API analysis on drop</span>
             </label>
             <p id="runtime-hint" class="hint">
-              Requires an active <code>run</code> session. Copy a <strong>new</strong> .exe to a watched folder.
+              Requires an active <code>run</code> session with Frida. Copy a <strong>new</strong> .exe, then click <strong>Analyze APIs</strong> to spawn it under injection hooks.
             </p>
           </div>
           <div class="table-wrap">
@@ -235,6 +239,8 @@
                   <th>Entropy</th>
                   <th>SHA256</th>
                   <th>Reasons</th>
+                  <th>Status</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="triage-body"></tbody>

@@ -114,5 +114,7 @@ class Finding:
     primitives: tuple[MemoryPrimitive, ...]
     related_file: FileEvent | None = None
     related_process: ProcessEvent | None = None
+    actor_image: str | None = None
+    target_image: str | None = None
     score: int = 0
     evidence: dict[str, Any] = field(default_factory=dict)

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .network import is_external_beacon_candidate
+from .process_resolve import image_for_pid as resolve_image_for_pid
 
 _PACKAGE_ROOT = Path(__file__).resolve().parent
 
@@ -177,6 +178,9 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         if event_type == "file" and value.get("sha256"):
             triages.append(_normalize_file_triage(value, timestamp))
 
+    _merge_triage_scores(triages)
+    process_images = _build_process_image_index(events)
+    _enrich_findings_with_process_images(findings, process_images)
     deduped_findings = _dedupe_findings(findings)
     deduped_severity: Counter[str] = Counter()
     for finding in deduped_findings:
@@ -206,8 +210,9 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         "timeline": sorted(timeline.items()),
         "recent_findings": deduped_findings[:50],
         "recent_network": _recent_network_events(networks_by_pid),
-        "recent_primitives": _extract_primitives(events, limit=50),
+        "recent_primitives": _extract_primitives(events, limit=50, process_images=process_images),
         "recent_triages": _dedupe_triages(triages)[:30],
+        "pending_file_drops": _extract_pending_file_drops(events)[:30],
         "recent_processes": sorted(processes, key=lambda item: item.get("timestamp") or "", reverse=True)[:15],
     }
 
@@ -252,8 +257,15 @@ def session_detail(
         "summary": summarize_log_file(path).__dict__,
         "stats": stats,
         "findings": _apply_finding_filters(stats["recent_findings"], severity, target_pid, query),
-        "primitives": _extract_primitives(events, target_pid=target_pid, query=query, limit=limit),
+        "primitives": _extract_primitives(
+            events,
+            target_pid=target_pid,
+            query=query,
+            limit=limit,
+            process_images=_build_process_image_index(events),
+        ),
         "triages": stats["recent_triages"],
+        "pending_file_drops": stats["pending_file_drops"],
         "network": _apply_network_filters(stats["recent_network"], target_pid, query),
         "events": filtered_events,
     }
@@ -340,6 +352,137 @@ def _normalize_file_triage(value: dict[str, Any], timestamp: str | None) -> dict
     }
 
 
+def _build_process_image_index(events: list[dict[str, Any]]) -> dict[int, str]:
+    images: dict[int, str] = {}
+    for event in events:
+        event_type = event.get("type")
+        if event_type not in {"sysmon", "frida_process", "api_run"}:
+            continue
+        value = event.get("value", {})
+        if not isinstance(value, dict):
+            continue
+        pid = value.get("pid")
+        image = value.get("image")
+        if pid is None or not image:
+            continue
+        images[int(pid)] = str(image)
+    return images
+
+
+def _resolve_image_from_index(
+    pid: int | None,
+    process_images: dict[int, str],
+    *,
+    primitives: list[dict[str, Any]] | None = None,
+) -> str | None:
+    if pid is None:
+        return None
+    for primitive in primitives or []:
+        if not isinstance(primitive, dict):
+            continue
+        if primitive.get("target_pid") == pid and primitive.get("target_image"):
+            return str(primitive["target_image"])
+        if primitive.get("actor_pid") == pid and primitive.get("actor_image"):
+            return str(primitive["actor_image"])
+    return process_images.get(int(pid))
+
+
+def _enrich_findings_with_process_images(
+    findings: list[dict[str, Any]],
+    process_images: dict[int, str],
+) -> None:
+    for finding in findings:
+        primitives = finding.get("primitives") or []
+        if not finding.get("actor_image"):
+            finding["actor_image"] = _resolve_image_from_index(
+                finding.get("actor_pid"),
+                process_images,
+                primitives=primitives,
+            )
+        if not finding.get("target_image"):
+            finding["target_image"] = _resolve_image_from_index(
+                finding.get("target_pid"),
+                process_images,
+                primitives=primitives,
+            )
+        if not finding.get("target_image") and finding.get("target_pid") is not None:
+            finding["target_image"] = resolve_image_for_pid(int(finding["target_pid"]))
+        evidence = finding.setdefault("evidence", {})
+        if finding.get("actor_image") and "actor_image" not in evidence:
+            evidence["actor_image"] = finding["actor_image"]
+        if finding.get("target_image") and "target_image" not in evidence:
+            evidence["target_image"] = finding["target_image"]
+
+
+def _merge_triage_scores(triages: list[dict[str, Any]]) -> None:
+    scores: dict[str, Any] = {}
+    reasons: dict[str, list[Any]] = {}
+    for row in triages:
+        path = str(row.get("path") or "").lower()
+        if not path:
+            continue
+        if row.get("score") is not None:
+            scores[path] = row.get("score")
+        if row.get("reasons"):
+            reasons[path] = row.get("reasons")
+    for row in triages:
+        path = str(row.get("path") or "").lower()
+        if not path:
+            continue
+        if row.get("score") is None and path in scores:
+            row["score"] = scores[path]
+        if not row.get("reasons") and path in reasons:
+            row["reasons"] = reasons[path]
+
+
+def _extract_pending_file_drops(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    triaged_paths: set[str] = set()
+    api_status_by_path: dict[str, str] = {}
+    for event in events:
+        event_type = event.get("type")
+        value = event.get("value", {})
+        if not isinstance(value, dict):
+            continue
+        path = value.get("path")
+        if not path:
+            continue
+        key = str(path).lower()
+        if event_type == "triage":
+            triaged_paths.add(key)
+        if event_type == "file" and value.get("sha256"):
+            triaged_paths.add(key)
+        if event_type == "api_run":
+            api_status_by_path[key] = str(value.get("status") or "started")
+
+    seen: set[str] = set()
+    pending: list[dict[str, Any]] = []
+    for event in reversed(events):
+        if event.get("type") != "file":
+            continue
+        value = event.get("value", {})
+        if not isinstance(value, dict):
+            continue
+        path = value.get("path")
+        if not path:
+            continue
+        key = str(path).lower()
+        if value.get("sha256") or key in triaged_paths or key in seen:
+            continue
+        seen.add(key)
+        api_status = api_status_by_path.get(key, "pending")
+        pending.append(
+            {
+                "timestamp": value.get("timestamp") or _extract_timestamp(value),
+                "path": path,
+                "creator_image": value.get("creator_image"),
+                "creator_pid": value.get("creator_pid"),
+                "status": "pending",
+                "api_status": api_status,
+            }
+        )
+    return pending
+
+
 def _dedupe_triages(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: dict[str, dict[str, Any]] = {}
     for row in rows:
@@ -379,6 +522,7 @@ def _extract_primitives(
     target_pid: int | None = None,
     query: str | None = None,
     limit: int = 50,
+    process_images: dict[int, str] | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for event in events:
@@ -394,12 +538,17 @@ def _extract_primitives(
             "actor_pid": value.get("actor_pid"),
             "actor_image": value.get("actor_image"),
             "target_pid": value.get("target_pid"),
+            "target_image": value.get("target_image"),
             "address": value.get("address"),
             "size": value.get("size"),
             "details": value.get("details", {}),
         }
         if target_pid is not None and row.get("target_pid") != target_pid:
             continue
+        if not row.get("actor_image") and process_images is not None:
+            row["actor_image"] = _resolve_image_from_index(row.get("actor_pid"), process_images)
+        if not row.get("target_image") and process_images is not None:
+            row["target_image"] = _resolve_image_from_index(row.get("target_pid"), process_images)
         if query and not _matches_query(query, row):
             continue
         rows.append(row)
@@ -493,6 +642,10 @@ def _normalize_finding(value: dict[str, Any], timestamp: str | None) -> dict[str
             if isinstance(primitive, dict) and primitive.get("api")
         }
     )
+    primitives = value.get("primitives", [])
+    evidence = value.get("evidence", {})
+    actor_image = value.get("actor_image") or evidence.get("actor_image")
+    target_image = value.get("target_image") or evidence.get("target_image")
     return {
         "timestamp": timestamp,
         "severity": value.get("severity"),
@@ -500,8 +653,10 @@ def _normalize_finding(value: dict[str, Any], timestamp: str | None) -> dict[str
         "title": value.get("title"),
         "description": value.get("description"),
         "actor_pid": value.get("actor_pid"),
+        "actor_image": actor_image,
         "target_pid": value.get("target_pid"),
+        "target_image": target_image,
         "apis": apis,
-        "evidence": value.get("evidence", {}),
-        "primitives": value.get("primitives", []),
+        "evidence": evidence,
+        "primitives": primitives,
     }

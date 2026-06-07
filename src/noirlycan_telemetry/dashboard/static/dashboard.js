@@ -274,6 +274,21 @@ function renderRankList(elementId, rows) {
     .join("");
 }
 
+function formatInjectionTarget(row) {
+  const image = row.target_image;
+  const pid = row.target_pid;
+  if (image && pid != null) {
+    return `<span class="mono" title="${image}">${shortPath(image)} <span class="muted">(${pid})</span></span>`;
+  }
+  if (image) {
+    return `<span class="mono" title="${image}">${shortPath(image)}</span>`;
+  }
+  if (pid != null) {
+    return `pid ${pid}`;
+  }
+  return "-";
+}
+
 function renderNetworkSummary(networkRows) {
   const endpoints = (networkRows || [])
     .map((row) => row.endpoint)
@@ -300,7 +315,7 @@ function renderFindings(rows) {
         <td>${formatTime(row.timestamp)}</td>
         <td><span class="severity ${severity}">${severity}</span></td>
         <td>${row.score ?? "-"}</td>
-        <td>${row.target_pid ?? "-"}</td>
+        <td>${formatInjectionTarget(row)}</td>
         <td class="mono">${(row.apis || []).join(", ")}</td>
         <td class="mono">${renderNetworkSummary(row.network)}</td>
         <td>${row.description || row.title || "-"}</td>
@@ -337,20 +352,58 @@ function renderNetwork(rows) {
     .join("");
 }
 
-function renderTriages(rows) {
+function buildFileDropRows(pendingRows, triagedRows) {
+  const analyzed = (triagedRows || []).map((row) => ({
+    ...row,
+    status: row.status || "analyzed",
+  }));
+  const pending = (pendingRows || []).map((row) => ({
+    ...row,
+    status: "pending",
+    score: row.score ?? null,
+    sha256: row.sha256 ?? null,
+  }));
+  const seen = new Set();
+  const merged = [];
+  for (const row of [...pending, ...analyzed]) {
+    const key = String(row.path || "").toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(row);
+  }
+  return merged.sort(
+    (left, right) =>
+      String(right.timestamp || "").localeCompare(String(left.timestamp || ""))
+  );
+}
+
+function renderTriages(pendingRows, triagedRows) {
+  const rows = buildFileDropRows(pendingRows, triagedRows);
   if (!shouldRender("triages", rows)) {
     return;
   }
   const body = document.getElementById("triage-body");
+  const collectorOnline = Boolean(state.runtime?.collector_online);
   if (!rows.length) {
     body.innerHTML =
-      '<tr><td colspan="8" class="empty">No file drops triaged yet. Start <code>run</code> (or <code>run --watch-sysmon</code>) then copy a NEW .exe to D:\\ or Downloads.</td></tr>';
+      '<tr><td colspan="10" class="empty">No file drops yet. Start <code>run</code>, copy a NEW .exe to D:\\ or Downloads, then click <strong>Analyze</strong>.</td></tr>';
     return;
   }
   body.innerHTML = rows
     .map((row) => {
       const reasons = (row.reasons || []).join(", ") || "-";
       const sha = row.sha256 ? `${row.sha256.slice(0, 12)}…` : "-";
+      const apiStatus = row.api_status || (row.status === "pending" ? "pending" : "started");
+      const isPending = apiStatus === "pending";
+      const statusClass = isPending ? "status-pending" : apiStatus === "failed" ? "status-pending" : "status-analyzed";
+      const statusLabel = isPending ? "pending" : apiStatus === "failed" ? "api failed" : "hooks active";
+      const analyzeBtn = isPending
+        ? `<button type="button" class="btn-analyze" data-analyze-path="${encodeURIComponent(
+            row.path || ""
+          )}" ${collectorOnline ? "" : "disabled"} title="${
+            collectorOnline ? "Spawn under Frida API hooks" : "Start run collector with Frida first"
+          }">Analyze APIs</button>`
+        : "-";
       return `
       <tr>
         <td>${formatTime(row.timestamp)}</td>
@@ -361,6 +414,8 @@ function renderTriages(rows) {
         <td>${row.entropy != null ? Number(row.entropy).toFixed(2) : "-"}</td>
         <td class="mono" title="${row.sha256 || ""}">${sha}</td>
         <td>${reasons}</td>
+        <td class="${statusClass}">${statusLabel}</td>
+        <td>${analyzeBtn}</td>
       </tr>`;
     })
     .join("");
@@ -383,7 +438,7 @@ function renderPrimitives(rows) {
         <td><span class="kind ${row.kind || ""}">${row.kind || "-"}</span></td>
         <td class="mono">${row.api || "-"}</td>
         <td class="mono">${shortPath(row.actor_image)} (${row.actor_pid ?? "-"})</td>
-        <td>${row.target_pid ?? "-"}</td>
+        <td>${formatInjectionTarget(row)}</td>
         <td class="mono">${row.address ?? "-"}</td>
         <td>${row.size ?? "-"}</td>
       </tr>`
@@ -503,20 +558,25 @@ function renderSessionViews(session) {
   renderFindings(session.findings || []);
   renderNetwork(session.network || []);
   renderPrimitives(session.primitives || []);
-  renderTriages(session.triages || []);
+  renderTriages(session.pending_file_drops || [], session.triages || []);
   renderEvents(session.events || []);
 }
 
 function openFindingModal(finding) {
   const modal = document.getElementById("finding-modal");
   document.getElementById("modal-title").textContent = finding.title || finding.description || "Injection finding";
+  const severity = String(finding.severity || "unknown").toLowerCase();
+  const targetLabel = finding.target_image
+    ? `${finding.target_image}${finding.target_pid != null ? ` (pid ${finding.target_pid})` : ""}`
+    : finding.target_pid != null
+      ? `pid ${finding.target_pid}`
+      : "-";
   document.getElementById("modal-summary").innerHTML = `
-    <div><dt>Severity</dt><dd>${finding.severity || "-"}</dd></div>
-    <div><dt>Score</dt><dd>${finding.score ?? "-"}</dd></div>
-    <div><dt>Actor PID</dt><dd>${finding.actor_pid ?? "-"}</dd></div>
-    <div><dt>Target PID</dt><dd>${finding.target_pid ?? "-"}</dd></div>
-    <div><dt>Target image</dt><dd class="mono">${finding.target_image || "-"}</dd></div>
-    <div><dt>Time</dt><dd>${formatTime(finding.timestamp)}</dd></div>
+    <div class="detail-row"><dt>Severity</dt><dd><span class="severity ${severity}">${severity}</span></dd></div>
+    <div class="detail-row"><dt>Score</dt><dd>${finding.score ?? "-"}</dd></div>
+    <div class="detail-row"><dt>Actor</dt><dd class="mono">${finding.actor_image || `pid ${finding.actor_pid ?? "-"}`}</dd></div>
+    <div class="detail-row"><dt>Injection target</dt><dd class="mono">${targetLabel}</dd></div>
+    <div class="detail-row"><dt>Time</dt><dd>${formatTime(finding.timestamp)}</dd></div>
   `;
   document.getElementById("modal-apis").innerHTML = (finding.apis || [])
     .map((api) => `<span class="tag">${api}</span>`)
@@ -526,7 +586,7 @@ function openFindingModal(finding) {
   const primitives = finding.primitives || [];
   document.getElementById("modal-primitives").innerHTML = primitives.length
     ? `<table>
-        <thead><tr><th>Kind</th><th>API</th><th>Target PID</th><th>Address</th></tr></thead>
+        <thead><tr><th>Kind</th><th>API</th><th>Injection target</th><th>Address</th></tr></thead>
         <tbody>
           ${primitives
             .map(
@@ -534,7 +594,7 @@ function openFindingModal(finding) {
             <tr>
               <td>${row.kind || "-"}</td>
               <td class="mono">${row.api || "-"}</td>
-              <td>${row.target_pid ?? "-"}</td>
+              <td>${formatInjectionTarget(row)}</td>
               <td class="mono">${row.address ?? "-"}</td>
             </tr>`
             )
@@ -597,11 +657,16 @@ function renderRuntimeControls(runtime) {
   state.runtime = runtime;
 
   const toggle = document.getElementById("file-drop-toggle");
+  const autoApiToggle = document.getElementById("auto-api-toggle");
   const hint = document.getElementById("runtime-hint");
   const status = document.getElementById("collector-status-chip");
 
   toggle.checked = Boolean(runtime.file_drop_watch_enabled);
   toggle.disabled = Boolean(runtime.file_drop_watch_locked) || state.runtimeSaving;
+  autoApiToggle.checked = Boolean(
+    runtime.auto_api_analysis_enabled ?? runtime.auto_triage_enabled
+  );
+  autoApiToggle.disabled = Boolean(runtime.file_drop_watch_locked) || state.runtimeSaving;
 
   if (runtime.collector_online) {
     status.textContent = "collector online";
@@ -620,23 +685,27 @@ function renderRuntimeControls(runtime) {
   } else if (!runtime.collector_online) {
     hint.textContent =
       "Start python -m noirlycan_telemetry run in a terminal, then toggle watch here. Changes apply within ~1s.";
+  } else if (runtime.auto_api_analysis_enabled || runtime.auto_triage_enabled) {
+    hint.textContent = paths
+      ? `Watching: ${paths}. New files are auto-spawned under Frida API hooks.`
+      : "Auto API analysis is on. Dropped EXEs run under injection hooks automatically.";
   } else if (runtime.file_drop_watch_enabled) {
     hint.textContent = paths
-      ? `Watching: ${paths}. Copy a new .exe to trigger auto-triage.`
-      : "File drop watch is on. Copy a new .exe to a watched folder.";
+      ? `Watching: ${paths}. Click Analyze APIs on pending rows to spawn under Frida hooks.`
+      : "File watch is on. Click Analyze APIs to run dropped EXEs under injection hooks.";
   } else {
-    hint.textContent = "File drop watch is paused. Enable the toggle to scan folders and auto-triage new files.";
+    hint.textContent = "File watch is paused. Enable watch to detect new files.";
   }
 }
 
-async function saveRuntimeConfig(enabled) {
+async function saveRuntimeConfig(patch) {
   state.runtimeSaving = true;
-  renderRuntimeControls(state.runtime || { file_drop_watch_enabled: enabled });
+  renderRuntimeControls({ ...(state.runtime || {}), ...patch });
   try {
     const response = await fetch("/api/runtime", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ file_drop_watch_enabled: enabled }),
+      body: JSON.stringify(patch),
     });
     const payload = await response.json();
     if (!response.ok) {
@@ -715,7 +784,10 @@ async function loadDashboard(selectedLog, { force = false } = {}) {
         renderEvents(session.events || []);
       }
       if (state.activeTab === "files" || force) {
-        renderTriages(session.triages || state.overview?.stats?.recent_triages || []);
+        renderTriages(
+          session.pending_file_drops || state.overview?.stats?.pending_file_drops || [],
+          session.triages || state.overview?.stats?.recent_triages || []
+        );
       }
       if (force) {
         renderSessionViews(session);
@@ -766,6 +838,7 @@ function switchTab(tabName) {
     }
     if (tabName === "files") {
       renderTriages(
+        state.session?.pending_file_drops || state.overview?.stats?.pending_file_drops || [],
         state.session?.triages || state.overview?.stats?.recent_triages || []
       );
     }
@@ -803,6 +876,14 @@ function setupDelegatedClicks() {
     document.getElementById("filter-type").value = "network";
     applyFilters();
     switchTab("network");
+  });
+
+  document.getElementById("triage-body").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-analyze-path]");
+    if (!button || button.disabled) return;
+    const path = decodeURIComponent(button.dataset.analyzePath || "");
+    if (!path) return;
+    requestFileAnalysis(path, button);
   });
 
   document.getElementById("files-body").addEventListener("click", (event) => {
@@ -858,8 +939,41 @@ function setupAutoRefresh() {
 document.getElementById("auto-refresh").addEventListener("change", setupAutoRefresh);
 
 document.getElementById("file-drop-toggle").addEventListener("change", (event) => {
-  saveRuntimeConfig(event.target.checked);
+  saveRuntimeConfig({ file_drop_watch_enabled: event.target.checked });
 });
+
+document.getElementById("auto-api-toggle").addEventListener("change", (event) => {
+  const enabled = event.target.checked;
+  saveRuntimeConfig({
+    auto_api_analysis_enabled: enabled,
+    auto_triage_enabled: enabled,
+  });
+});
+
+async function requestFileAnalysis(path, button) {
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = "Queued…";
+  try {
+    const response = await fetch("/api/triage/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, mode: "api" }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || `API error ${response.status}`);
+    }
+    button.textContent = "Queued";
+    const selected = document.getElementById("log-select").value;
+    setTimeout(() => loadDashboard(selected || undefined, { force: true }), 1200);
+  } catch (error) {
+    console.error(error);
+    button.disabled = false;
+    button.textContent = original;
+    showLoadError("Could not queue API hook analysis");
+  }
+}
 
 setupDelegatedClicks();
 loadDashboard(undefined, { force: true }).catch((error) => {

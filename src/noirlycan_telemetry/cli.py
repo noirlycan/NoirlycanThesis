@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,7 @@ from .runtime_config import (
     save_runtime_config,
     touch_collector_heartbeat,
 )
+from .analysis_queue import drain_analysis_queue, enqueue_analysis
 from .models import FileEvent, Finding, NetworkConnectionEvent, ProcessEvent, TelemetryEvent
 from .network import is_external_beacon_candidate
 from .sysmon import SYSMON_ACCESS_HINT, SYSMON_INSTALL_HINT, SysmonPoller, SysmonUnavailable
@@ -36,6 +38,7 @@ from .triage import FileTriage, is_interesting_path, triage_file
 
 _SESSION_TRIAGED_PATHS: set[str] = set()
 _SESSION_TRIAGED_SHA: dict[str, str] = {}
+_SESSION_API_SPAWNED: set[str] = set()
 _WATCH_PATHS: list[str] = []
 _TRIAGE_PENDING: set[str] = set()
 _TRIAGE_LOCK = threading.Lock()
@@ -124,6 +127,7 @@ def command_run(args: argparse.Namespace) -> int:
     global _WATCH_PATHS
     _SESSION_TRIAGED_PATHS.clear()
     _SESSION_TRIAGED_SHA.clear()
+    _SESSION_API_SPAWNED.clear()
     _TRIAGE_PENDING.clear()
     correlator = Correlator(minimum_score=args.minimum_score)
     writer = _create_writer(args)
@@ -136,7 +140,7 @@ def command_run(args: argparse.Namespace) -> int:
     sysmon = _create_sysmon_or_none(args.watch_sysmon)
     file_watcher: FileDropWatcher | None = None
     file_watch_active = False
-    _WATCH_PATHS: list[str] = []
+    _WATCH_PATHS = []
     if writer.path is not None:
         print(f"[+] Dashboard tab 'File drops' -> session {writer.path.name}", flush=True)
         print("[+] Toggle file-drop watch from dashboard (File drops tab)", flush=True)
@@ -156,6 +160,7 @@ def command_run(args: argparse.Namespace) -> int:
             )
             if file_watcher is not None:
                 _process_file_watch_batch(file_watcher, correlator, writer, args, logs_dir)
+            _process_analysis_queue(monitor, correlator, writer, args, logs_dir)
             if sysmon is not None:
                 _process_sysmon_batch(
                     sysmon,
@@ -259,6 +264,24 @@ def _file_drop_watch_enabled(args: argparse.Namespace, logs_dir: Path | None) ->
     return config.file_drop_watch_enabled
 
 
+def _auto_api_analysis_enabled(args: argparse.Namespace, logs_dir: Path | None) -> bool:
+    if getattr(args, "no_watch_files", False):
+        return False
+    if logs_dir is None:
+        return False
+    config = load_runtime_config(logs_dir)
+    return config.auto_api_analysis_enabled
+
+
+def _auto_static_triage_enabled(args: argparse.Namespace, logs_dir: Path | None) -> bool:
+    if getattr(args, "no_watch_files", False):
+        return False
+    if logs_dir is None:
+        return False
+    config = load_runtime_config(logs_dir)
+    return config.auto_static_triage_enabled
+
+
 def _create_file_watcher(args: argparse.Namespace) -> FileDropWatcher | None:
     paths = default_watch_paths(args.watch_path)
     if not paths:
@@ -298,7 +321,159 @@ def _process_file_watch_batch(
     logs_dir: Path | None,
 ) -> None:
     for event in watcher.drain():
-        _handle_file_event(event, correlator, writer, args, logs_dir)
+        _handle_file_event(event, correlator, writer, args=args, logs_dir=logs_dir)
+
+
+def _process_analysis_queue(
+    monitor: FridaInjectionMonitor | None,
+    correlator: Correlator,
+    writer: "JsonlWriter",
+    args: argparse.Namespace,
+    logs_dir: Path | None,
+) -> None:
+    if logs_dir is None:
+        return
+    for request in drain_analysis_queue(logs_dir):
+        if not is_interesting_path(request.path) or _is_frida_lab_noise(request.path):
+            continue
+        if request.mode == "api":
+            _run_api_analysis(
+                monitor,
+                request.path,
+                correlator,
+                writer,
+                source="dashboard",
+            )
+            continue
+        event = FileEvent(
+            timestamp=datetime.now(timezone.utc),
+            path=request.path,
+            creator_pid=None,
+            creator_image="dashboard",
+        )
+        _schedule_file_triage(event, correlator, writer, source="dashboard", write_event=False)
+
+
+def _run_api_analysis(
+    monitor: FridaInjectionMonitor | None,
+    path: str,
+    correlator: Correlator,
+    writer: "JsonlWriter",
+    *,
+    source: str,
+) -> bool:
+    key = _norm_path(path)
+    if monitor is None:
+        print(
+            f"[!] Cannot run API analysis for {path}: Frida is unavailable",
+            file=sys.stderr,
+            flush=True,
+        )
+        writer.write(
+            "api_run",
+            {
+                "path": path,
+                "source": source,
+                "status": "failed",
+                "error": "frida_unavailable",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        return False
+
+    try:
+        import frida
+    except ImportError:
+        print(
+            f"[!] Cannot run API analysis for {path}: Frida package not installed",
+            file=sys.stderr,
+            flush=True,
+        )
+        return False
+
+    resolved = str(Path(path).resolve())
+    try:
+        device = frida.get_local_device()
+        pid = device.spawn([resolved])
+        _safe_attach(monitor, pid)
+        device.resume(pid)
+    except Exception as exc:
+        print(f"[!] API spawn failed for {path}: {exc}", file=sys.stderr, flush=True)
+        writer.write(
+            "api_run",
+            {
+                "path": resolved,
+                "source": source,
+                "status": "failed",
+                "error": str(exc),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        return False
+
+    _SESSION_API_SPAWNED.add(key)
+    timestamp = datetime.now(timezone.utc)
+    writer.write(
+        "api_run",
+        {
+            "path": resolved,
+            "pid": pid,
+            "argv": [resolved],
+            "source": source,
+            "status": "started",
+            "timestamp": timestamp.isoformat(),
+        },
+    )
+    process_event = ProcessEvent(
+        timestamp=timestamp,
+        pid=pid,
+        image=resolved,
+        parent_image="noirlycan-api-spawn",
+        parent_pid=None,
+        command_line=resolved,
+        created_from_file=resolved,
+        flags=["api_spawn"],
+    )
+    writer.write("frida_process", process_event)
+    correlator.add_process(process_event)
+    print(
+        f"[API:RUN] Spawned {resolved} as PID {pid} under Frida injection hooks",
+        flush=True,
+    )
+    return True
+
+
+def _schedule_file_triage(
+    event: FileEvent,
+    correlator: Correlator,
+    writer: "JsonlWriter",
+    *,
+    source: str,
+    write_event: bool = True,
+) -> None:
+    if not event.path:
+        return
+    key = _norm_path(event.path)
+    if _already_triaged(event.path) or key in _TRIAGE_PENDING:
+        return
+
+    _TRIAGE_PENDING.add(key)
+    if source == "dashboard":
+        print(
+            f"[FILE:TRIAGE] Queued analysis for {event.path} (from dashboard)",
+            file=sys.stderr,
+            flush=True,
+        )
+    else:
+        print(
+            f"[FILE:DROP] Detected {event.path} - starting triage...",
+            file=sys.stderr,
+            flush=True,
+        )
+    if write_event:
+        writer.write("file", event)
+        correlator.add_file(event)
+    _get_triage_executor().submit(_triage_worker, event, correlator, writer)
 
 
 def _create_sysmon_or_none(watch_sysmon: bool) -> SysmonPoller | None:
@@ -545,24 +720,26 @@ def _handle_file_event(
         correlator.add_file(event)
         return
 
-    if args is not None and not _file_drop_watch_enabled(args, logs_dir):
-        writer.write("file", event)
-        correlator.add_file(event)
-        return
-
-    key = _norm_path(event.path)
-    if _already_triaged(event.path) or key in _TRIAGE_PENDING:
-        return
-
-    _TRIAGE_PENDING.add(key)
-    print(
-        f"[FILE:DROP] Detected {event.path} - starting triage...",
-        file=sys.stderr,
-        flush=True,
-    )
     writer.write("file", event)
     correlator.add_file(event)
-    _get_triage_executor().submit(_triage_worker, event, correlator, writer)
+
+    auto_api = args is not None and _auto_api_analysis_enabled(args, logs_dir)
+    auto_static = args is not None and _auto_static_triage_enabled(args, logs_dir)
+    if auto_api and logs_dir is not None:
+        enqueue_analysis(event.path, logs_dir, mode="api")
+        print(
+            f"[FILE:DROP] Detected {event.path} - queued API hook analysis",
+            file=sys.stderr,
+            flush=True,
+        )
+    elif auto_static:
+        _schedule_file_triage(event, correlator, writer, source="auto", write_event=False)
+    else:
+        print(
+            f"[FILE:DROP] Detected {event.path} - click Analyze APIs in dashboard",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 def _maybe_triage_process_image(
@@ -684,6 +861,10 @@ def print_finding(finding: Finding) -> None:
         f"[{finding.severity.value.upper()}:{finding.score}] "
         f"{finding.title}: {finding.description}"
     )
+    if finding.target_image or finding.target_pid is not None:
+        target_label = finding.target_image or "unknown image"
+        pid_label = finding.target_pid if finding.target_pid is not None else "-"
+        print(f"  Injection target: {target_label} (pid={pid_label})")
     print("  APIs:", ", ".join(sorted({primitive.api for primitive in finding.primitives})))
     if finding.related_file:
         print(f"  Related file: {finding.related_file.path}")

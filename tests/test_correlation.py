@@ -120,3 +120,57 @@ def test_rejects_unrelated_memory_ranges() -> None:
     )
 
     assert findings == []
+
+
+def test_resolves_target_image_from_child_process() -> None:
+    now = datetime.now(timezone.utc)
+    correlator = Correlator(minimum_score=40)
+    correlator.add_process(
+        ProcessEvent(
+            timestamp=now,
+            pid=1337,
+            image=r"C:\Lab\loader.exe",
+        )
+    )
+    correlator.add_process(
+        ProcessEvent(
+            timestamp=now + timedelta(milliseconds=5),
+            pid=4242,
+            image=r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+            parent_pid=1337,
+            parent_image=r"C:\Lab\loader.exe",
+            flags=["CREATE_SUSPENDED"],
+        )
+    )
+    correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now + timedelta(milliseconds=20),
+            kind=PrimitiveKind.WRITE,
+            actor_pid=1337,
+            actor_image=None,
+            target_pid=4242,
+            target_image=None,
+            address=0x200000,
+            size=0x1000,
+            api="NtMapViewOfSection",
+            details={"protection": "EXECUTE_READWRITE", "cross_process": True},
+        )
+    )
+    findings = correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now + timedelta(milliseconds=30),
+            kind=PrimitiveKind.EXECUTE,
+            actor_pid=1337,
+            actor_image=None,
+            target_pid=4242,
+            target_image=None,
+            address=None,
+            size=None,
+            api="ResumeThread",
+        )
+    )
+
+    assert len(findings) == 1
+    assert findings[0].target_image is not None
+    assert findings[0].target_image.endswith("msedge.exe")
+    assert "msedge.exe" in findings[0].description

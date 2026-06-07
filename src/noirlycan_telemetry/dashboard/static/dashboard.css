@@ -79,6 +79,10 @@ code,
   font-family: "IBM Plex Mono", monospace;
 }
 
+.muted {
+  color: var(--muted);
+}
+
 .hero-actions {
   display: flex;
   gap: 12px;
@@ -187,8 +191,32 @@ button:hover {
   color: var(--muted);
 }
 
-#file-drop-toggle:disabled + span {
+#file-drop-toggle:disabled + span,
+#auto-api-toggle:disabled + span {
   opacity: 0.55;
+}
+
+.btn-analyze {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  border: 1px solid rgba(61, 224, 197, 0.35);
+  background: rgba(61, 224, 197, 0.12);
+  color: var(--cyan);
+  cursor: pointer;
+}
+
+.btn-analyze:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status-pending {
+  color: var(--amber);
+}
+
+.status-analyzed {
+  color: var(--cyan);
 }
 
 .tabs {
@@ -461,6 +489,17 @@ th {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   color: var(--text);
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+.modal-card,
+.modal-card dt,
+.modal-card dd,
+.modal-card th,
+.modal-card td,
+.modal-card p,
+.modal-card .empty {
+  color: var(--text);
 }
 
 .modal-head {
@@ -514,24 +553,46 @@ th {
 
 .detail-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
 }
 
-.detail-list div {
+.detail-list .detail-row {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 8px;
+  grid-template-columns: minmax(110px, 130px) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
 }
 
 .detail-list dt {
   margin: 0;
   color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .detail-list dd {
   margin: 0;
   color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.modal-card .mono {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.modal-card .severity {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .tag-list {

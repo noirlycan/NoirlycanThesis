@@ -151,6 +151,22 @@ const GetProcessIdOfThread = GetProcessIdOfThreadPtr
   ? new NativeFunction(GetProcessIdOfThreadPtr, "uint32", ["pointer"])
   : null;
 
+const OpenProcessPtr = getExport(kernel32, "OpenProcess");
+const OpenProcess = OpenProcessPtr
+  ? new NativeFunction(OpenProcessPtr, "pointer", ["uint32", "int", "uint32"])
+  : null;
+
+const CloseHandlePtr = getExport(kernel32, "CloseHandle");
+const CloseHandle = CloseHandlePtr ? new NativeFunction(CloseHandlePtr, "int", ["pointer"]) : null;
+
+const QueryFullProcessImageNameWPtr = getExport(kernel32, "QueryFullProcessImageNameW");
+const QueryFullProcessImageNameW = QueryFullProcessImageNameWPtr
+  ? new NativeFunction(QueryFullProcessImageNameWPtr, "int", ["pointer", "uint32", "pointer", "pointer"])
+  : null;
+
+const PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+const pidImageCache = {};
+
 function currentPid() {
   if (GetCurrentProcessId) {
     return GetCurrentProcessId();
@@ -166,6 +182,54 @@ function actorImage() {
     }
   } catch (_) {}
   return null;
+}
+
+function rememberProcessImage(pid, image) {
+  if (!pid || !image) {
+    return;
+  }
+  pidImageCache[pid] = image;
+}
+
+function processImageFromPid(pid) {
+  if (!pid) {
+    return null;
+  }
+  if (pidImageCache[pid]) {
+    return pidImageCache[pid];
+  }
+  if (pid === currentPid()) {
+    const image = actorImage();
+    if (image) {
+      pidImageCache[pid] = image;
+    }
+    return image;
+  }
+  if (!OpenProcess || !QueryFullProcessImageNameW || !CloseHandle) {
+    return null;
+  }
+  const handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+  if (!handle || handle.isNull()) {
+    return null;
+  }
+  let image = null;
+  try {
+    const sizePtr = Memory.alloc(4);
+    Memory.writeU32(sizePtr, 32768);
+    const buffer = Memory.alloc(32768 * 2);
+    const ok = QueryFullProcessImageNameW(handle, 0, buffer, sizePtr);
+    if (ok) {
+      image = Memory.readUtf16String(buffer);
+      if (image) {
+        pidImageCache[pid] = image;
+      }
+    }
+  } catch (_) {
+    image = null;
+  } finally {
+    CloseHandle(handle);
+  }
+  return image;
 }
 
 function processIdFromHandle(handle) {
@@ -199,6 +263,9 @@ function processIdFromThreadHandle(handle) {
 }
 
 function emit(primitive, api, fields) {
+  if (fields.target_pid && !fields.target_image) {
+    fields.target_image = processImageFromPid(fields.target_pid);
+  }
   const payload = Object.assign(
     {
       type: "memory_primitive",
@@ -214,6 +281,9 @@ function emit(primitive, api, fields) {
 }
 
 function emitProcessCreate(api, fields) {
+  if (fields.pid && fields.image) {
+    rememberProcessImage(fields.pid, fields.image);
+  }
   const payload = Object.assign(
     {
       type: "process_create",
@@ -682,18 +752,17 @@ function installStaticHooks() {
       if (!boolSuccess(retval)) {
         return;
       }
-      const image = this.image;
-      const commandLine = this.commandLine;
-      const flags = this.flags;
-      const processInformation = this.processInformation;
-      setImmediate(function () {
-        emitProcessCreate("CreateProcessW", {
-          pid: processInformationPid(processInformation),
-          image: image,
-          command_line: commandLine,
-          flags: flags,
-        });
+      const pid = processInformationPid(this.processInformation);
+      const image = this.image || this.commandLine;
+      emitProcessCreate("CreateProcessW", {
+        pid: pid,
+        image: image,
+        command_line: this.commandLine,
+        flags: this.flags,
       });
+      if (pid && image) {
+        rememberProcessImage(pid, image);
+      }
     },
   });
 
@@ -708,18 +777,17 @@ function installStaticHooks() {
       if (!boolSuccess(retval)) {
         return;
       }
-      const image = this.image;
-      const commandLine = this.commandLine;
-      const flags = this.flags;
-      const processInformation = this.processInformation;
-      setImmediate(function () {
-        emitProcessCreate("CreateProcessA", {
-          pid: processInformationPid(processInformation),
-          image: image,
-          command_line: commandLine,
-          flags: flags,
-        });
+      const pid = processInformationPid(this.processInformation);
+      const image = this.image || this.commandLine;
+      emitProcessCreate("CreateProcessA", {
+        pid: pid,
+        image: image,
+        command_line: this.commandLine,
+        flags: this.flags,
       });
+      if (pid && image) {
+        rememberProcessImage(pid, image);
+      }
     },
   });
 

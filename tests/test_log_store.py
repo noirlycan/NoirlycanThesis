@@ -166,3 +166,71 @@ def test_aggregate_events_collects_triage_rows(tmp_path: Path) -> None:
     stats = aggregate_events(events)
     assert stats["totals"]["triage"] == 1
     assert stats["recent_triages"][0]["path"].endswith("Copy.exe")
+
+
+def test_pending_file_drops_without_triage(tmp_path: Path) -> None:
+    log_path = tmp_path / "drops.jsonl"
+    log_path.write_text(
+        json.dumps(
+            {
+                "type": "file",
+                "value": {
+                    "timestamp": "2026-06-07T18:00:00+00:00",
+                    "path": "D:\\drop_pending.exe",
+                    "creator_image": "file-scanner",
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    stats = aggregate_events(read_jsonl(log_path))
+    assert len(stats["pending_file_drops"]) == 1
+    assert stats["pending_file_drops"][0]["path"].endswith("drop_pending.exe")
+    assert stats["pending_file_drops"][0]["status"] == "pending"
+
+
+def test_findings_enriched_with_target_image_from_process_events(tmp_path: Path) -> None:
+    log_path = tmp_path / "injection.jsonl"
+    log_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "frida_process",
+                        "value": {
+                            "timestamp": "2026-06-07T18:00:00+00:00",
+                            "pid": 4242,
+                            "image": r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                        },
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "finding",
+                        "value": {
+                            "timestamp": "2026-06-07T18:00:01+00:00",
+                            "severity": "high",
+                            "score": 75,
+                            "title": "Probable process injection chain",
+                            "description": "loader against pid 4242",
+                            "actor_pid": 1337,
+                            "target_pid": 4242,
+                            "primitives": [
+                                {
+                                    "kind": "write",
+                                    "api": "NtMapViewOfSection",
+                                    "actor_pid": 1337,
+                                    "target_pid": 4242,
+                                }
+                            ],
+                            "evidence": {"cross_process": True},
+                        },
+                    }
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    stats = aggregate_events(read_jsonl(log_path))
+    assert stats["recent_findings"][0]["target_image"].endswith("msedge.exe")

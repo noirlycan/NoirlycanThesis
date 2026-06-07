@@ -15,6 +15,9 @@ COLLECTOR_STALE_SECONDS = 8
 @dataclass
 class RuntimeConfig:
     file_drop_watch_enabled: bool = True
+    auto_triage_enabled: bool = False  # legacy alias for auto_api_analysis_enabled
+    auto_api_analysis_enabled: bool = False
+    auto_static_triage_enabled: bool = False
     file_drop_watch_locked: bool = False
     collector_active: bool = False
     last_heartbeat: str | None = None
@@ -39,6 +42,14 @@ def load_runtime_config(logs_dir: Path | str | None = None) -> RuntimeConfig:
         return RuntimeConfig()
     return RuntimeConfig(
         file_drop_watch_enabled=bool(raw.get("file_drop_watch_enabled", True)),
+        auto_triage_enabled=bool(raw.get("auto_triage_enabled", False)),
+        auto_api_analysis_enabled=bool(
+            raw.get(
+                "auto_api_analysis_enabled",
+                raw.get("auto_triage_enabled", False),
+            )
+        ),
+        auto_static_triage_enabled=bool(raw.get("auto_static_triage_enabled", False)),
         file_drop_watch_locked=bool(raw.get("file_drop_watch_locked", False)),
         collector_active=bool(raw.get("collector_active", False)),
         last_heartbeat=raw.get("last_heartbeat"),
