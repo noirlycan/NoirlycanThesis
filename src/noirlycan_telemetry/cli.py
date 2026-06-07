@@ -42,6 +42,7 @@ from .triage import FileTriage, is_interesting_path, triage_file
 
 _SESSION_TRIAGED_PATHS: set[str] = set()
 _SESSION_TRIAGED_SHA: dict[str, str] = {}
+_SESSION_API_SCHEDULED: set[str] = set()
 _SESSION_API_SPAWNED: set[str] = set()
 _WATCH_PATHS: list[str] = []
 _TRIAGE_PENDING: set[str] = set()
@@ -191,6 +192,7 @@ def command_run(args: argparse.Namespace) -> int:
     global _WATCH_PATHS
     _SESSION_TRIAGED_PATHS.clear()
     _SESSION_TRIAGED_SHA.clear()
+    _SESSION_API_SCHEDULED.clear()
     _SESSION_API_SPAWNED.clear()
     _TRIAGE_PENDING.clear()
     correlator = Correlator(minimum_score=args.minimum_score)
@@ -418,6 +420,15 @@ def _process_analysis_queue(
         _schedule_file_triage(event, correlator, writer, source="dashboard", write_event=False)
 
 
+def _schedule_api_analysis(path: str) -> bool:
+    """Reserve one auto API analysis per normalized path for this run session."""
+    key = _norm_path(path)
+    if key in _SESSION_API_SCHEDULED or key in _SESSION_API_SPAWNED:
+        return False
+    _SESSION_API_SCHEDULED.add(key)
+    return True
+
+
 def _run_api_analysis(
     monitor: FridaInjectionMonitor | None,
     path: str,
@@ -427,6 +438,13 @@ def _run_api_analysis(
     source: str,
 ) -> bool:
     key = _norm_path(path)
+    if key in _SESSION_API_SPAWNED:
+        print(
+            f"[!] API analysis already completed for {path}, skipping duplicate spawn",
+            file=sys.stderr,
+            flush=True,
+        )
+        return False
     if monitor is None:
         print(
             f"[!] Cannot run API analysis for {path}: Frida is unavailable",
@@ -475,7 +493,6 @@ def _run_api_analysis(
         )
         return False
 
-    _SESSION_API_SPAWNED.add(key)
     timestamp = datetime.now(timezone.utc)
     writer.write(
         "api_run",
@@ -488,6 +505,7 @@ def _run_api_analysis(
             "timestamp": timestamp.isoformat(),
         },
     )
+    _SESSION_API_SPAWNED.add(key)
     process_event = ProcessEvent(
         timestamp=timestamp,
         pid=pid,
@@ -745,12 +763,19 @@ def _handle_file_event(
     auto_api = args is not None and _auto_api_analysis_enabled(args, logs_dir)
     auto_static = args is not None and _auto_static_triage_enabled(args, logs_dir)
     if auto_api and logs_dir is not None:
-        enqueue_analysis(event.path, logs_dir, mode="api")
-        print(
-            f"[FILE:DROP] Detected {event.path} - queued API hook analysis",
-            file=sys.stderr,
-            flush=True,
-        )
+        if _schedule_api_analysis(event.path):
+            enqueue_analysis(event.path, logs_dir, mode="api")
+            print(
+                f"[FILE:DROP] Detected {event.path} - queued API hook analysis",
+                file=sys.stderr,
+                flush=True,
+            )
+        else:
+            print(
+                f"[FILE:DROP] Detected {event.path} - API analysis already scheduled for this session",
+                file=sys.stderr,
+                flush=True,
+            )
     elif auto_static:
         _schedule_file_triage(event, correlator, writer, source="auto", write_event=False)
     else:
