@@ -11,14 +11,16 @@ from pathlib import Path
 from typing import Any
 
 from .correlation import Correlator
+from .dashboard.app import run_dashboard
 from .frida_manager import (
     FridaInjectionMonitor,
     FridaUnavailable,
     runtime_event_to_primitive,
     runtime_event_to_process,
 )
+from .log_store import new_session_log_path
 from .models import FileEvent, Finding, ProcessEvent, TelemetryEvent
-from .sysmon import SysmonPoller, SysmonUnavailable
+from .sysmon import SYSMON_INSTALL_HINT, SysmonPoller, SysmonUnavailable
 from .triage import is_interesting_path, triage_file
 
 
@@ -31,6 +33,8 @@ def main(argv: list[str] | None = None) -> int:
         return command_run(args)
     if args.command == "spawn":
         return command_spawn(args)
+    if args.command == "dashboard":
+        return command_dashboard(args)
     parser.print_help()
     return 2
 
@@ -51,13 +55,28 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--auto-attach-new-processes", action="store_true", help="Attach Frida to new interesting processes observed by Sysmon")
     run.add_argument("--minimum-score", type=int, default=50, help="Minimum finding score")
     run.add_argument("--poll-interval", type=float, default=1.0, help="Sysmon polling interval in seconds")
-    run.add_argument("--jsonl", type=Path, help="Optional JSONL output path")
+    run.add_argument(
+        "--jsonl",
+        type=Path,
+        help="JSONL output path (default: logs/session-<timestamp>.jsonl)",
+    )
+    run.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging")
 
     spawn = subparsers.add_parser("spawn", help="Spawn a sample under Frida, then correlate events")
     spawn.add_argument("argv", nargs=argparse.REMAINDER, help="Command line to spawn under Frida")
     spawn.add_argument("--watch-sysmon", action="store_true", help="Also poll Sysmon while the sample runs")
     spawn.add_argument("--minimum-score", type=int, default=50, help="Minimum finding score")
-    spawn.add_argument("--jsonl", type=Path, help="Optional JSONL output path")
+    spawn.add_argument(
+        "--jsonl",
+        type=Path,
+        help="JSONL output path (default: logs/session-<timestamp>.jsonl)",
+    )
+    spawn.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging")
+
+    dashboard = subparsers.add_parser("dashboard", help="Launch the web statistics dashboard")
+    dashboard.add_argument("--host", default="127.0.0.1", help="Dashboard bind host")
+    dashboard.add_argument("--port", type=int, default=8765, help="Dashboard bind port")
+    dashboard.add_argument("--logs-dir", type=Path, help="Directory containing JSONL session logs")
     return parser
 
 
@@ -67,14 +86,19 @@ def command_triage(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_dashboard(args: argparse.Namespace) -> int:
+    run_dashboard(host=args.host, port=args.port, logs_dir=args.logs_dir)
+    return 0
+
+
 def command_run(args: argparse.Namespace) -> int:
     correlator = Correlator(minimum_score=args.minimum_score)
-    writer = JsonlWriter(args.jsonl)
+    writer = _create_writer(args)
     monitor = _create_monitor_or_none()
     if monitor is not None:
         for pid in args.attach_pid:
             _safe_attach(monitor, pid)
-    sysmon = SysmonPoller() if args.watch_sysmon else None
+    sysmon = _create_sysmon_or_none(args.watch_sysmon)
 
     try:
         while True:
@@ -87,7 +111,12 @@ def command_run(args: argparse.Namespace) -> int:
                     auto_attach=args.auto_attach_new_processes,
                 )
             if monitor is not None:
-                _drain_frida(monitor, correlator, writer)
+                _drain_frida(
+                monitor,
+                correlator,
+                writer,
+                auto_attach=args.auto_attach_new_processes,
+            )
             time.sleep(args.poll_interval)
     except KeyboardInterrupt:
         if monitor is not None:
@@ -107,7 +136,7 @@ def command_spawn(args: argparse.Namespace) -> int:
         return 2
 
     correlator = Correlator(minimum_score=args.minimum_score)
-    writer = JsonlWriter(args.jsonl)
+    writer = _create_writer(args)
     monitor = _create_monitor_or_none()
     if monitor is None:
         return 2
@@ -117,7 +146,7 @@ def command_spawn(args: argparse.Namespace) -> int:
     _safe_attach(monitor, pid)
     device.resume(pid)
     print(f"[+] Spawned and attached PID {pid}: {' '.join(spawn_argv)}")
-    sysmon = SysmonPoller() if args.watch_sysmon else None
+    sysmon = _create_sysmon_or_none(args.watch_sysmon)
     try:
         while True:
             if sysmon is not None:
@@ -128,11 +157,32 @@ def command_spawn(args: argparse.Namespace) -> int:
                     monitor,
                     auto_attach=False,
                 )
-            _drain_frida(monitor, correlator, writer)
+            _drain_frida(monitor, correlator, writer, auto_attach=True)
             time.sleep(0.25)
     except KeyboardInterrupt:
         monitor.detach_all()
         return 0
+
+
+def _create_writer(args: argparse.Namespace) -> "JsonlWriter":
+    if getattr(args, "no_jsonl", False):
+        return JsonlWriter(None)
+    path = args.jsonl or new_session_log_path()
+    print(f"[+] Logging to {path}")
+    return JsonlWriter(path)
+
+
+def _create_sysmon_or_none(watch_sysmon: bool) -> SysmonPoller | None:
+    if not watch_sysmon:
+        return None
+    sysmon = SysmonPoller()
+    try:
+        list(sysmon.poll_once())
+    except SysmonUnavailable as exc:
+        print(f"[!] Sysmon unavailable: {exc}", file=sys.stderr)
+        print(f"[!] Continuing with Frida-only telemetry. {SYSMON_INSTALL_HINT}", file=sys.stderr)
+        return None
+    return sysmon
 
 
 def _create_monitor_or_none() -> FridaInjectionMonitor | None:
@@ -175,13 +225,23 @@ def _process_sysmon_batch(
             pass
 
 
+def _is_frida_lab_noise(path: str) -> bool:
+    lower = path.lower()
+    return "\\temp\\frida-" in lower or "\\appdata\\local\\temp\\frida-" in lower
+
+
 def _handle_file_event(
     event: FileEvent,
     correlator: Correlator,
     writer: "JsonlWriter",
 ) -> None:
     enriched = event
-    if event.path and is_interesting_path(event.path) and os.path.exists(event.path):
+    if (
+        event.path
+        and is_interesting_path(event.path)
+        and not _is_frida_lab_noise(event.path)
+        and os.path.exists(event.path)
+    ):
         triage = triage_file(event.path)
         writer.write("triage", triage)
         enriched = FileEvent(
@@ -201,6 +261,7 @@ def _drain_frida(
     monitor: FridaInjectionMonitor,
     correlator: Correlator,
     writer: "JsonlWriter",
+    auto_attach: bool = False,
 ) -> None:
     while True:
         try:
@@ -212,6 +273,8 @@ def _drain_frida(
         if process_event is not None:
             writer.write("frida_process", process_event)
             correlator.add_process(process_event)
+            if auto_attach and _should_auto_attach(process_event):
+                _safe_attach(monitor, process_event.pid)
             continue
         primitive = runtime_event_to_primitive(runtime_event)
         if primitive is None:

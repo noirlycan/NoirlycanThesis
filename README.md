@@ -78,16 +78,24 @@ pip install -e .[dev]
 
 ### 2. Install Sysmon
 
-Download Sysmon from Microsoft Sysinternals, then install the included config:
+Sysmon binaries live in `.\Sysmon\`. From the repo root, install the included config:
 
 ```powershell
-Sysmon64.exe -accepteula -i .\configs\sysmon-noirlycan.xml
+cd D:\thesis\NoirlycanThesis
+.\Sysmon\Sysmon64.exe -accepteula -i .\configs\sysmon-noirlycan.xml
 ```
 
-If Sysmon is already installed:
+If Sysmon is already installed but broken or you need to refresh the config:
 
 ```powershell
-Sysmon64.exe -c .\configs\sysmon-noirlycan.xml
+.\Sysmon\Sysmon64.exe -u force
+.\Sysmon\Sysmon64.exe -accepteula -i .\configs\sysmon-noirlycan.xml
+```
+
+To update config only on a healthy install:
+
+```powershell
+.\Sysmon\Sysmon64.exe -c .\configs\sysmon-noirlycan.xml
 ```
 
 Relevant Sysmon events:
@@ -107,8 +115,11 @@ so Frida provides the API-level telemetry.
 This is the preferred mode for a loader because injection may happen quickly:
 
 ```powershell
-noirlycan-telemetry spawn --watch-sysmon --jsonl .\lab-output.jsonl -- C:\Lab\loader.exe
+noirlycan-telemetry spawn --watch-sysmon -- C:\Lab\loader.exe
 ```
+
+By default, telemetry is written to `logs/session-<timestamp>.jsonl`. Override the
+path with `--jsonl` or disable file logging with `--no-jsonl`.
 
 The `spawn` command starts the process suspended via Frida, loads the hook
 script, then resumes it. This gives the prototype the best chance to observe
@@ -122,20 +133,36 @@ early calls such as:
 ### 4. Attach to an already running process
 
 ```powershell
-noirlycan-telemetry run --watch-sysmon --attach-pid 1337 --jsonl .\lab-output.jsonl
+noirlycan-telemetry run --watch-sysmon --attach-pid 1337
 ```
 
 ### 5. Watch Sysmon and auto-attach to new interesting processes
 
 ```powershell
-noirlycan-telemetry run --watch-sysmon --auto-attach-new-processes --jsonl .\lab-output.jsonl
+noirlycan-telemetry run --watch-sysmon --auto-attach-new-processes
 ```
 
 Auto-attach is useful for file-dropping experiments, but it can miss very early
 injection activity if the process injects before Frida attaches. Use `spawn`
 for controlled tests where possible.
 
-### 6. Static triage a file
+### 6. Open the web dashboard
+
+After collecting one or more sessions in `logs/`, launch the statistics UI:
+
+```powershell
+noirlycan-telemetry dashboard
+```
+
+Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The dashboard shows:
+
+- finding severity and primitive breakdowns,
+- API and actor frequency,
+- event timeline,
+- recent injection findings,
+- a list of all JSONL sessions in `logs/`.
+
+### 7. Static triage a file
 
 ```powershell
 noirlycan-telemetry triage C:\Lab\loader.exe

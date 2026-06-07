@@ -5,3 +5,5 @@ __pycache__/
 venv/
 *.jsonl
 lab-output/
+logs/*.jsonl
+src/noirlycan_telemetry.egg-info/

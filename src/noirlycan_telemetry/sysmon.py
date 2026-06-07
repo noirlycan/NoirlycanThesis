@@ -8,6 +8,10 @@ from datetime import datetime, timezone
 from .models import FileEvent, ProcessEvent, TelemetryEvent, EventSource
 
 SYSMON_CHANNEL = "Microsoft-Windows-Sysmon/Operational"
+SYSMON_INSTALL_HINT = (
+    "Install Sysmon first, for example: "
+    ".\\Sysmon\\Sysmon64.exe -accepteula -i .\\configs\\sysmon-noirlycan.xml"
+)
 
 
 class SysmonUnavailable(RuntimeError):
@@ -23,6 +27,15 @@ def _load_win32evtlog():
         raise SysmonUnavailable(
             "pywin32 is required on Windows to read Sysmon events"
         ) from exc
+
+
+def _evt_query_error(exc: BaseException) -> SysmonUnavailable | None:
+    winerror = getattr(exc, "winerror", None)
+    if winerror == 15007:
+        return SysmonUnavailable(
+            f"Sysmon event log channel not found ({SYSMON_CHANNEL}). {SYSMON_INSTALL_HINT}"
+        )
+    return None
 
 
 def _parse_utc(value: str | None) -> datetime:
@@ -109,7 +122,13 @@ class SysmonPoller:
     def poll_once(self) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent]:
         win32evtlog = _load_win32evtlog()
         flags = win32evtlog.EvtQueryChannelPath | win32evtlog.EvtQueryReverseDirection
-        handle = win32evtlog.EvtQuery(self.channel, flags, self.query)
+        try:
+            handle = win32evtlog.EvtQuery(self.channel, flags, self.query)
+        except Exception as exc:
+            mapped = _evt_query_error(exc)
+            if mapped is not None:
+                raise mapped from exc
+            raise
         batch = win32evtlog.EvtNext(handle, 128)
         rendered: list[tuple[int, str]] = []
         for event in batch:

@@ -9,6 +9,7 @@ description = "Windows file-to-memory telemetry prototype using Sysmon and Frida
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "flask>=3.0",
     "frida",
     "pefile",
     "pywin32; platform_system == 'Windows'",
@@ -26,4 +27,4 @@ noirlycan-telemetry = "noirlycan_telemetry.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-noirlycan_telemetry = ["frida_hooks/*.js"]
+noirlycan_telemetry = ["frida_hooks/*.js", "dashboard/templates/*", "dashboard/static/*"]

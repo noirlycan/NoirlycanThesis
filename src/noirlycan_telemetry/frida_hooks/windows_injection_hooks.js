@@ -2,6 +2,49 @@
 
 const kernel32 = "kernel32.dll";
 const ntdll = "ntdll.dll";
+const advapi32 = "advapi32.dll";
+const shell32 = "shell32.dll";
+const user32 = "user32.dll";
+
+const hookedAddresses = new Set();
+
+const DYNAMIC_INJECTION_APIS = new Set([
+  "NtAllocateVirtualMemory",
+  "NtCreateSection",
+  "NtMapViewOfSection",
+  "NtWriteVirtualMemory",
+  "NtReadVirtualMemory",
+  "NtProtectVirtualMemory",
+  "NtCreateThread",
+  "NtCreateThreadEx",
+  "NtSetContextThread",
+  "NtGetContextThread",
+  "NtResumeThread",
+  "NtAlertResumeThread",
+  "NtSuspendThread",
+  "NtSuspendProcess",
+  "NtResumeProcess",
+  "NtQueueApcThread",
+  "NtQueueApcThreadEx",
+  "NtUnmapViewOfSection",
+  "NtCreateProcess",
+  "NtCreateProcessEx",
+  "NtCreateUserProcess",
+  "NtOpenProcess",
+  "NtOpenThread",
+  "NtAddAtom",
+  "RtlCreateUserThread",
+  "RtlCreateUserProcess",
+  "LdrLoadDll",
+  "ZwAllocateVirtualMemory",
+  "ZwCreateSection",
+  "ZwMapViewOfSection",
+  "ZwWriteVirtualMemory",
+  "ZwProtectVirtualMemory",
+  "ZwCreateThreadEx",
+  "ZwSetContextThread",
+  "ZwResumeThread",
+]);
 
 function ptrToString(value) {
   if (value === null || value === undefined) {
@@ -29,6 +72,23 @@ function ptrToNumber(value) {
   }
 }
 
+function boolSuccess(retval) {
+  try {
+    return retval.toInt32() !== 0;
+  } catch (_) {
+    return !retval.isNull();
+  }
+}
+
+function ntSuccess(retval) {
+  try {
+    const status = retval.toInt32();
+    return status >= 0;
+  } catch (_) {
+    return false;
+  }
+}
+
 function readPointerSafe(address) {
   try {
     return Memory.readPointer(address);
@@ -45,12 +105,35 @@ function readSizeSafe(address) {
   }
 }
 
-function getExport(moduleName, exportName) {
+function getModuleByName(moduleName) {
   try {
-    return Module.getExportByName(moduleName, exportName);
+    return Process.getModuleByName(moduleName);
   } catch (_) {
+    try {
+      return Process.findModuleByName(moduleName);
+    } catch (_2) {
+      return null;
+    }
+  }
+}
+
+function getExport(moduleName, exportName) {
+  const module = getModuleByName(moduleName);
+  if (!module) {
     return null;
   }
+  try {
+    if (typeof module.findExportByName === "function") {
+      const address = module.findExportByName(exportName);
+      if (address) {
+        return address;
+      }
+    }
+    if (typeof module.getExportByName === "function") {
+      return module.getExportByName(exportName);
+    }
+  } catch (_) {}
+  return null;
 }
 
 const GetCurrentProcessIdPtr = getExport(kernel32, "GetCurrentProcessId");
@@ -75,8 +158,18 @@ function currentPid() {
   return Process.id;
 }
 
+function actorImage() {
+  try {
+    const modules = Process.enumerateModules();
+    if (modules.length > 0) {
+      return modules[0].path;
+    }
+  } catch (_) {}
+  return null;
+}
+
 function processIdFromHandle(handle) {
-  if (handle.isNull()) {
+  if (!handle || handle.isNull()) {
     return null;
   }
   if (handle.equals(ptr("-1"))) {
@@ -94,7 +187,7 @@ function processIdFromHandle(handle) {
 }
 
 function processIdFromThreadHandle(handle) {
-  if (!GetProcessIdOfThread || handle.isNull()) {
+  if (!GetProcessIdOfThread || !handle || handle.isNull()) {
     return null;
   }
   try {
@@ -113,7 +206,7 @@ function emit(primitive, api, fields) {
       api: api,
       timestamp: new Date().toISOString(),
       actor_pid: currentPid(),
-      actor_image: Process.enumerateModules()[0].path,
+      actor_image: actorImage(),
     },
     fields
   );
@@ -127,19 +220,39 @@ function emitProcessCreate(api, fields) {
       api: api,
       timestamp: new Date().toISOString(),
       parent_pid: currentPid(),
-      parent_image: Process.enumerateModules()[0].path,
+      parent_image: actorImage(),
     },
     fields
   );
   send(payload);
 }
 
-function hook(moduleName, exportName, handlers) {
-  const address = getExport(moduleName, exportName);
-  if (!address) {
-    return;
-  }
-  Interceptor.attach(address, handlers);
+function emitApiResolve(apiName, address, sourceApi) {
+  send({
+    type: "api_resolve",
+    api: apiName,
+    address: ptrToString(address),
+    resolve_via: sourceApi,
+    timestamp: new Date().toISOString(),
+    actor_pid: currentPid(),
+    actor_image: actorImage(),
+  });
+}
+
+function emitObservation(category, api, fields) {
+  send(
+    Object.assign(
+      {
+        type: "api_observation",
+        category: category,
+        api: api,
+        timestamp: new Date().toISOString(),
+        actor_pid: currentPid(),
+        actor_image: actorImage(),
+      },
+      fields
+    )
+  );
 }
 
 function readUtf16Safe(value) {
@@ -164,6 +277,22 @@ function readAnsiSafe(value) {
   }
 }
 
+function readAnsiStringStruct(value) {
+  if (!value || value.isNull()) {
+    return null;
+  }
+  try {
+    const length = Memory.readU16(value.add(0));
+    const buffer = Memory.readPointer(value.add(Process.pointerSize));
+    if (buffer.isNull() || length === 0) {
+      return null;
+    }
+    return Memory.readUtf8String(buffer, length);
+  } catch (_) {
+    return null;
+  }
+}
+
 function creationFlags(value) {
   const flags = ptrToNumber(value) || 0;
   const names = [];
@@ -174,55 +303,6 @@ function creationFlags(value) {
   if (flags & 0x00000400) names.push("CREATE_UNICODE_ENVIRONMENT");
   return names;
 }
-
-function processInformationPid(processInformation) {
-  if (!processInformation || processInformation.isNull()) {
-    return null;
-  }
-  try {
-    return Memory.readU32(processInformation.add(Process.pointerSize * 2));
-  } catch (_) {
-    return null;
-  }
-}
-
-hook(kernel32, "CreateProcessW", {
-  onEnter(args) {
-    this.image = readUtf16Safe(args[0]);
-    this.commandLine = readUtf16Safe(args[1]);
-    this.flags = creationFlags(args[5]);
-    this.processInformation = args[9];
-  },
-  onLeave(retval) {
-    if (!retval.isNull()) {
-      emitProcessCreate("CreateProcessW", {
-        pid: processInformationPid(this.processInformation),
-        image: this.image,
-        command_line: this.commandLine,
-        flags: this.flags,
-      });
-    }
-  },
-});
-
-hook(kernel32, "CreateProcessA", {
-  onEnter(args) {
-    this.image = readAnsiSafe(args[0]);
-    this.commandLine = readAnsiSafe(args[1]);
-    this.flags = creationFlags(args[5]);
-    this.processInformation = args[9];
-  },
-  onLeave(retval) {
-    if (!retval.isNull()) {
-      emitProcessCreate("CreateProcessA", {
-        pid: processInformationPid(this.processInformation),
-        image: this.image,
-        command_line: this.commandLine,
-        flags: this.flags,
-      });
-    }
-  },
-});
 
 function protectionToString(value) {
   const flags = ptrToNumber(value) || 0;
@@ -236,259 +316,991 @@ function protectionToString(value) {
   return names.length ? names.join("|") : "0x" + flags.toString(16);
 }
 
-hook(kernel32, "VirtualAllocEx", {
-  onEnter(args) {
-    this.targetPid = processIdFromHandle(args[0]);
-    this.size = args[2].toString();
-    this.protection = protectionToString(args[4]);
-  },
-  onLeave(retval) {
-    if (!retval.isNull()) {
-      emit("allocate", "VirtualAllocEx", {
-        target_pid: this.targetPid,
-        address: retval.toString(),
-        size: this.size,
-        protection: this.protection,
-      });
+function processInformationPid(processInformation) {
+  if (!processInformation || processInformation.isNull()) {
+    return null;
+  }
+  try {
+    return Memory.readU32(processInformation.add(Process.pointerSize * 2));
+  } catch (_) {
+    return null;
+  }
+}
+
+function hookAtAddress(apiName, address, handlers) {
+  if (!address || address.isNull()) {
+    return false;
+  }
+  const key = address.toString();
+  if (hookedAddresses.has(key)) {
+    return false;
+  }
+  try {
+    Interceptor.attach(address, handlers);
+    hookedAddresses.add(key);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function hook(moduleName, exportName, handlers) {
+  const address = getExport(moduleName, exportName);
+  if (!address) {
+    return false;
+  }
+  return hookAtAddress(exportName, address, handlers);
+}
+
+function normalizeNtName(name) {
+  if (!name) {
+    return null;
+  }
+  if (name.indexOf("Zw") === 0) {
+    return "Nt" + name.substring(2);
+  }
+  return name;
+}
+
+function resolveApiName(name) {
+  const normalized = normalizeNtName(name);
+  if (!normalized || !DYNAMIC_INJECTION_APIS.has(normalized)) {
+    if (name && DYNAMIC_INJECTION_APIS.has(name)) {
+      return name;
     }
-  },
-});
+    return null;
+  }
+  return normalized;
+}
 
-hook(kernel32, "VirtualAllocExNuma", {
-  onEnter(args) {
-    this.targetPid = processIdFromHandle(args[0]);
-    this.size = args[2].toString();
-    this.protection = protectionToString(args[4]);
+function attachHandlersForApi(apiName) {
+  const handlers = API_HANDLERS[apiName];
+  if (!handlers) {
+    return false;
+  }
+  const address = getExport(ntdll, apiName);
+  if (!address) {
+    return false;
+  }
+  return hookAtAddress(apiName, address, handlers);
+}
+
+function trackResolvedApi(name, address, sourceApi) {
+  const apiName = resolveApiName(name);
+  if (!apiName || !address || address.isNull()) {
+    return;
+  }
+  emitApiResolve(apiName, address, sourceApi);
+  attachHandlersForApi(apiName);
+  if (address.toString() !== getExport(ntdll, apiName)?.toString()) {
+    hookAtAddress(apiName + "(dynamic)", address, API_HANDLERS[apiName]);
+  }
+}
+
+const API_HANDLERS = {
+  NtAllocateVirtualMemory: {
+    onEnter(args) {
+      this.targetPid = processIdFromHandle(args[0]);
+      this.baseAddressPointer = args[1];
+      this.sizePointer = args[3];
+      this.protection = protectionToString(args[5]);
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emit("allocate", "NtAllocateVirtualMemory", {
+          target_pid: this.targetPid,
+          address: readPointerSafe(this.baseAddressPointer).toString(),
+          size: readSizeSafe(this.sizePointer),
+          protection: this.protection,
+        });
+      }
+    },
   },
-  onLeave(retval) {
-    if (!retval.isNull()) {
-      emit("allocate", "VirtualAllocExNuma", {
-        target_pid: this.targetPid,
-        address: retval.toString(),
-        size: this.size,
-        protection: this.protection,
+  NtCreateSection: {
+    onEnter(args) {
+      this.sectionHandlePointer = args[0];
+      this.sizePointer = args[3];
+      this.protection = protectionToString(args[4]);
+      this.attributes = args[5].toString();
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emit("allocate", "NtCreateSection", {
+          target_pid: currentPid(),
+          address: null,
+          size: this.sizePointer.isNull() ? null : readSizeSafe(this.sizePointer),
+          section_handle: readPointerSafe(this.sectionHandlePointer).toString(),
+          protection: this.protection,
+          allocation_attributes: this.attributes,
+        });
+      }
+    },
+  },
+  NtMapViewOfSection: {
+    onEnter(args) {
+      this.sectionHandle = args[0].toString();
+      this.targetPid = processIdFromHandle(args[1]);
+      this.baseAddressPointer = args[2];
+      this.viewSizePointer = args[6];
+      this.protection = protectionToString(args[9]);
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emit("write", "NtMapViewOfSection", {
+          target_pid: this.targetPid,
+          address: readPointerSafe(this.baseAddressPointer).toString(),
+          size: readSizeSafe(this.viewSizePointer),
+          section_handle: this.sectionHandle,
+          protection: this.protection,
+          cross_process: this.targetPid !== currentPid(),
+        });
+      }
+    },
+  },
+  NtWriteVirtualMemory: {
+    onEnter(args) {
+      emit("write", "NtWriteVirtualMemory", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[1].toString(),
+        size: args[3].toString(),
       });
-    }
+    },
   },
-});
-
-hook(ntdll, "NtAllocateVirtualMemory", {
-  onEnter(args) {
-    this.targetPid = processIdFromHandle(args[0]);
-    this.baseAddressPointer = args[1];
-    this.sizePointer = args[3];
-    this.protection = protectionToString(args[5]);
+  NtProtectVirtualMemory: {
+    onEnter(args) {
+      this.targetPid = processIdFromHandle(args[0]);
+      this.baseAddressPointer = args[1];
+      this.sizePointer = args[2];
+      this.protection = protectionToString(args[3]);
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emit("allocate", "NtProtectVirtualMemory", {
+          target_pid: this.targetPid,
+          address: readPointerSafe(this.baseAddressPointer).toString(),
+          size: readSizeSafe(this.sizePointer),
+          protection: this.protection,
+        });
+      }
+    },
   },
-  onLeave(retval) {
-    if (retval.toInt32() === 0) {
-      emit("allocate", "NtAllocateVirtualMemory", {
-        target_pid: this.targetPid,
-        address: readPointerSafe(this.baseAddressPointer).toString(),
-        size: readSizeSafe(this.sizePointer),
-        protection: this.protection,
+  NtCreateThreadEx: {
+    onEnter(args) {
+      emit("execute", "NtCreateThreadEx", {
+        target_pid: processIdFromHandle(args[3]),
+        address: args[4].toString(),
+        size: "1",
+        thread_parameter: args[5].toString(),
+        create_flags: args[6].toString(),
       });
-    }
+    },
   },
+  RtlCreateUserThread: {
+    onEnter(args) {
+      emit("execute", "RtlCreateUserThread", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[4].toString(),
+        size: "1",
+        thread_parameter: args[5].toString(),
+        create_flags: args[6].toString(),
+      });
+    },
+  },
+  NtQueueApcThread: {
+    onEnter(args) {
+      emit("execute", "NtQueueApcThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: args[1].toString(),
+        size: "1",
+        thread_handle: args[0].toString(),
+      });
+    },
+  },
+  NtQueueApcThreadEx: {
+    onEnter(args) {
+      emit("execute", "NtQueueApcThreadEx", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: args[2].toString(),
+        size: "1",
+        thread_handle: args[0].toString(),
+      });
+    },
+  },
+  NtSetContextThread: {
+    onEnter(args) {
+      emit("execute", "NtSetContextThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: null,
+        size: null,
+        thread_handle: args[0].toString(),
+        context_pointer: args[1].toString(),
+      });
+    },
+  },
+  NtGetContextThread: {
+    onEnter(args) {
+      emit("execute", "NtGetContextThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: null,
+        size: null,
+        thread_handle: args[0].toString(),
+        context_pointer: args[1].toString(),
+        note: "context_read",
+      });
+    },
+  },
+  NtResumeThread: {
+    onEnter(args) {
+      emit("execute", "NtResumeThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: null,
+        size: null,
+        thread_handle: args[0].toString(),
+      });
+    },
+  },
+  NtAlertResumeThread: {
+    onEnter(args) {
+      emit("execute", "NtAlertResumeThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: null,
+        size: null,
+        thread_handle: args[0].toString(),
+      });
+    },
+  },
+  NtUnmapViewOfSection: {
+    onEnter(args) {
+      emit("write", "NtUnmapViewOfSection", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[1].toString(),
+        size: null,
+        note: "unmap_view",
+      });
+    },
+  },
+  NtReadVirtualMemory: {
+    onEnter(args) {
+      emit("write", "NtReadVirtualMemory", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[1].toString(),
+        size: args[3].toString(),
+        note: "read_remote",
+      });
+    },
+  },
+  NtCreateThread: {
+    onEnter(args) {
+      emit("execute", "NtCreateThread", {
+        target_pid: processIdFromHandle(args[2]),
+        address: args[3].toString(),
+        size: "1",
+        thread_parameter: args[4].toString(),
+      });
+    },
+  },
+  NtSuspendThread: {
+    onEnter(args) {
+      emitObservation("execute", "NtSuspendThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        thread_handle: args[0].toString(),
+      });
+    },
+  },
+  NtSuspendProcess: {
+    onEnter(args) {
+      emitObservation("execute", "NtSuspendProcess", {
+        target_pid: processIdFromHandle(args[0]),
+      });
+    },
+  },
+  NtResumeProcess: {
+    onEnter(args) {
+      emitObservation("execute", "NtResumeProcess", {
+        target_pid: processIdFromHandle(args[0]),
+      });
+    },
+  },
+  NtOpenProcess: {
+    onEnter(args) {
+      this.desiredAccess = args[1].toString();
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitObservation("access", "NtOpenProcess", {
+          desired_access: this.desiredAccess,
+        });
+      }
+    },
+  },
+  NtOpenThread: {
+    onEnter(args) {
+      this.desiredAccess = args[1].toString();
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitObservation("access", "NtOpenThread", {
+          desired_access: this.desiredAccess,
+        });
+      }
+    },
+  },
+  NtAddAtom: {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitObservation("execute", "NtAddAtom", {});
+      }
+    },
+  },
+};
+
+[
+  "ZwAllocateVirtualMemory",
+  "ZwCreateSection",
+  "ZwMapViewOfSection",
+  "ZwWriteVirtualMemory",
+  "ZwProtectVirtualMemory",
+  "ZwCreateThreadEx",
+  "ZwSetContextThread",
+  "ZwResumeThread",
+].forEach(function (zwApi) {
+  const ntApi = "Nt" + zwApi.substring(2);
+  if (API_HANDLERS[ntApi]) {
+    API_HANDLERS[zwApi] = API_HANDLERS[ntApi];
+  }
 });
 
-hook(kernel32, "WriteProcessMemory", {
-  onEnter(args) {
-    emit("write", "WriteProcessMemory", {
-      target_pid: processIdFromHandle(args[0]),
-      address: args[1].toString(),
-      size: args[3].toString(),
-    });
-  },
-});
+function installStaticHooks() {
+  hook(kernel32, "CreateProcessW", {
+    onEnter(args) {
+      this.image = readUtf16Safe(args[0]);
+      this.commandLine = readUtf16Safe(args[1]);
+      this.flags = creationFlags(args[5]);
+      this.processInformation = args[9];
+    },
+    onLeave(retval) {
+      if (!boolSuccess(retval)) {
+        return;
+      }
+      const image = this.image;
+      const commandLine = this.commandLine;
+      const flags = this.flags;
+      const processInformation = this.processInformation;
+      setImmediate(function () {
+        emitProcessCreate("CreateProcessW", {
+          pid: processInformationPid(processInformation),
+          image: image,
+          command_line: commandLine,
+          flags: flags,
+        });
+      });
+    },
+  });
 
-hook(ntdll, "NtWriteVirtualMemory", {
-  onEnter(args) {
-    emit("write", "NtWriteVirtualMemory", {
-      target_pid: processIdFromHandle(args[0]),
-      address: args[1].toString(),
-      size: args[3].toString(),
-    });
-  },
-});
+  hook(kernel32, "CreateProcessA", {
+    onEnter(args) {
+      this.image = readAnsiSafe(args[0]);
+      this.commandLine = readAnsiSafe(args[1]);
+      this.flags = creationFlags(args[5]);
+      this.processInformation = args[9];
+    },
+    onLeave(retval) {
+      if (!boolSuccess(retval)) {
+        return;
+      }
+      const image = this.image;
+      const commandLine = this.commandLine;
+      const flags = this.flags;
+      const processInformation = this.processInformation;
+      setImmediate(function () {
+        emitProcessCreate("CreateProcessA", {
+          pid: processInformationPid(processInformation),
+          image: image,
+          command_line: commandLine,
+          flags: flags,
+        });
+      });
+    },
+  });
 
-hook(ntdll, "NtCreateSection", {
-  onEnter(args) {
-    this.sectionHandlePointer = args[0];
-    this.sizePointer = args[3];
-    this.protection = protectionToString(args[4]);
-    this.attributes = args[5].toString();
-  },
-  onLeave(retval) {
-    if (retval.toInt32() === 0) {
-      emit("allocate", "NtCreateSection", {
+  hook(kernel32, "VirtualAllocEx", {
+    onEnter(args) {
+      this.targetPid = processIdFromHandle(args[0]);
+      this.size = args[2].toString();
+      this.protection = protectionToString(args[4]);
+    },
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("allocate", "VirtualAllocEx", {
+          target_pid: this.targetPid,
+          address: retval.toString(),
+          size: this.size,
+          protection: this.protection,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "VirtualAllocExNuma", {
+    onEnter(args) {
+      this.targetPid = processIdFromHandle(args[0]);
+      this.size = args[2].toString();
+      this.protection = protectionToString(args[4]);
+    },
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("allocate", "VirtualAllocExNuma", {
+          target_pid: this.targetPid,
+          address: retval.toString(),
+          size: this.size,
+          protection: this.protection,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "VirtualProtectEx", {
+    onEnter(args) {
+      this.targetPid = processIdFromHandle(args[0]);
+      this.address = args[1].toString();
+      this.size = args[2].toString();
+      this.protection = protectionToString(args[3]);
+    },
+    onLeave(retval) {
+      if (boolSuccess(retval)) {
+        emit("allocate", "VirtualProtectEx", {
+          target_pid: this.targetPid,
+          address: this.address,
+          size: this.size,
+          protection: this.protection,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "WriteProcessMemory", {
+    onEnter(args) {
+      emit("write", "WriteProcessMemory", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[1].toString(),
+        size: args[3].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "CreateRemoteThread", {
+    onEnter(args) {
+      emit("execute", "CreateRemoteThread", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[3].toString(),
+        size: "1",
+        thread_parameter: args[4].toString(),
+        create_flags: args[5].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "CreateRemoteThreadEx", {
+    onEnter(args) {
+      emit("execute", "CreateRemoteThreadEx", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[3].toString(),
+        size: "1",
+        thread_parameter: args[4].toString(),
+        create_flags: args[6].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "QueueUserAPC", {
+    onEnter(args) {
+      emit("execute", "QueueUserAPC", {
+        target_pid: processIdFromThreadHandle(args[1]),
+        address: args[0].toString(),
+        size: "1",
+        thread_handle: args[1].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "SetThreadContext", {
+    onEnter(args) {
+      emit("execute", "SetThreadContext", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: null,
+        size: null,
+        thread_handle: args[0].toString(),
+        context_pointer: args[1].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "GetThreadContext", {
+    onEnter(args) {
+      emit("execute", "GetThreadContext", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: null,
+        size: null,
+        thread_handle: args[0].toString(),
+        context_pointer: args[1].toString(),
+        note: "context_read",
+      });
+    },
+  });
+
+  hook(kernel32, "ResumeThread", {
+    onEnter(args) {
+      emit("execute", "ResumeThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        address: null,
+        size: null,
+        thread_handle: args[0].toString(),
+      });
+    },
+  });
+
+  hook(ntdll, "RtlCopyMemory", {
+    onEnter(args) {
+      this.size = args[2].toString();
+      if (parseInt(this.size, 10) >= 0x1000) {
+        emit("write", "RtlCopyMemory", {
+          target_pid: currentPid(),
+          address: args[0].toString(),
+          size: this.size,
+          source: args[1].toString(),
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "CopyMemory", {
+    onEnter(args) {
+      this.size = args[2].toString();
+      if (parseInt(this.size, 10) >= 0x1000) {
+        emit("write", "CopyMemory", {
+          target_pid: currentPid(),
+          address: args[0].toString(),
+          size: this.size,
+          source: args[1].toString(),
+        });
+      }
+    },
+  });
+
+  Object.keys(API_HANDLERS).forEach(function (apiName) {
+    attachHandlersForApi(apiName);
+  });
+}
+
+function installPaperExtendedHooks() {
+  hook(kernel32, "ReadProcessMemory", {
+    onEnter(args) {
+      emit("write", "ReadProcessMemory", {
+        target_pid: processIdFromHandle(args[0]),
+        address: args[1].toString(),
+        size: args[3].toString(),
+        note: "read_remote",
+      });
+    },
+  });
+
+  hook(kernel32, "OpenProcess", {
+    onEnter(args) {
+      emitObservation("access", "OpenProcess", {
+        desired_access: args[0].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "OpenThread", {
+    onEnter(args) {
+      emitObservation("access", "OpenThread", {
+        desired_access: args[0].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "CreateThread", {
+    onEnter(args) {
+      emit("execute", "CreateThread", {
+        target_pid: currentPid(),
+        address: args[2].toString(),
+        size: "1",
+        thread_parameter: args[3].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "SuspendThread", {
+    onEnter(args) {
+      emitObservation("execute", "SuspendThread", {
+        target_pid: processIdFromThreadHandle(args[0]),
+        thread_handle: args[0].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "CreateFileMappingA", {
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("allocate", "CreateFileMappingA", {
+          target_pid: currentPid(),
+          address: retval.toString(),
+          size: null,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "CreateFileMappingW", {
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("allocate", "CreateFileMappingW", {
+          target_pid: currentPid(),
+          address: retval.toString(),
+          size: null,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "MapViewOfFile", {
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("write", "MapViewOfFile", {
+          target_pid: currentPid(),
+          address: retval.toString(),
+          size: null,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "MapViewOfFileEx", {
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("write", "MapViewOfFileEx", {
+          target_pid: currentPid(),
+          address: retval.toString(),
+          size: null,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "VirtualAlloc", {
+    onEnter(args) {
+      this.size = args[1].toString();
+      this.protection = protectionToString(args[3]);
+    },
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("allocate", "VirtualAlloc", {
+          target_pid: currentPid(),
+          address: retval.toString(),
+          size: this.size,
+          protection: this.protection,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "LoadLibraryA", {
+    onEnter(args) {
+      emit("execute", "LoadLibraryA", {
         target_pid: currentPid(),
         address: null,
-        size: this.sizePointer.isNull() ? null : readSizeSafe(this.sizePointer),
-        section_handle: readPointerSafe(this.sectionHandlePointer).toString(),
-        protection: this.protection,
-        allocation_attributes: this.attributes,
+        size: null,
+        module: readAnsiSafe(args[0]),
       });
-    }
-  },
-});
+    },
+  });
 
-hook(ntdll, "NtMapViewOfSection", {
-  onEnter(args) {
-    this.sectionHandle = args[0].toString();
-    this.targetPid = processIdFromHandle(args[1]);
-    this.baseAddressPointer = args[2];
-    this.viewSizePointer = args[6];
-    this.protection = protectionToString(args[9]);
-  },
-  onLeave(retval) {
-    if (retval.toInt32() === 0) {
-      const targetPid = this.targetPid;
-      const primitive = targetPid === currentPid() ? "write" : "write";
-      emit(primitive, "NtMapViewOfSection", {
-        target_pid: targetPid,
-        address: readPointerSafe(this.baseAddressPointer).toString(),
-        size: readSizeSafe(this.viewSizePointer),
-        section_handle: this.sectionHandle,
-        protection: this.protection,
+  hook(kernel32, "LoadLibraryW", {
+    onEnter(args) {
+      emit("execute", "LoadLibraryW", {
+        target_pid: currentPid(),
+        address: null,
+        size: null,
+        module: readUtf16Safe(args[0]),
       });
-    }
-  },
-});
+    },
+  });
 
-hook(kernel32, "CreateRemoteThread", {
-  onEnter(args) {
-    emit("execute", "CreateRemoteThread", {
-      target_pid: processIdFromHandle(args[0]),
-      address: args[3].toString(),
-      size: "1",
-      thread_parameter: args[4].toString(),
-      create_flags: args[5].toString(),
-    });
-  },
-});
+  hook(kernel32, "LoadLibraryExA", {
+    onEnter(args) {
+      emit("execute", "LoadLibraryExA", {
+        target_pid: currentPid(),
+        address: null,
+        size: null,
+        module: readAnsiSafe(args[0]),
+      });
+    },
+  });
 
-hook(kernel32, "CreateRemoteThreadEx", {
-  onEnter(args) {
-    emit("execute", "CreateRemoteThreadEx", {
-      target_pid: processIdFromHandle(args[0]),
-      address: args[3].toString(),
-      size: "1",
-      thread_parameter: args[4].toString(),
-      create_flags: args[6].toString(),
-    });
-  },
-});
+  hook(kernel32, "LoadLibraryExW", {
+    onEnter(args) {
+      emit("execute", "LoadLibraryExW", {
+        target_pid: currentPid(),
+        address: null,
+        size: null,
+        module: readUtf16Safe(args[0]),
+      });
+    },
+  });
 
-hook(ntdll, "NtCreateThreadEx", {
-  onEnter(args) {
-    emit("execute", "NtCreateThreadEx", {
-      target_pid: processIdFromHandle(args[3]),
-      address: args[4].toString(),
-      size: "1",
-      thread_parameter: args[5].toString(),
-      create_flags: args[6].toString(),
-    });
-  },
-});
+  hook(kernel32, "WinExec", {
+    onEnter(args) {
+      emitProcessCreate("WinExec", {
+        pid: null,
+        image: readAnsiSafe(args[0]),
+        command_line: readAnsiSafe(args[0]),
+        flags: creationFlags(args[1]),
+      });
+    },
+  });
 
-hook(ntdll, "RtlCreateUserThread", {
-  onEnter(args) {
-    emit("execute", "RtlCreateUserThread", {
-      target_pid: processIdFromHandle(args[0]),
-      address: args[4].toString(),
-      size: "1",
-      thread_parameter: args[5].toString(),
-      create_flags: args[6].toString(),
-    });
-  },
-});
+  hook(ntdll, "LdrLoadDll", {
+    onEnter(args) {
+      this.modulePointer = args[2];
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emit("execute", "LdrLoadDll", {
+          target_pid: currentPid(),
+          address: null,
+          size: null,
+          module: readUtf16Safe(Memory.readPointer(this.modulePointer)),
+        });
+      }
+    },
+  });
 
-hook(kernel32, "QueueUserAPC", {
-  onEnter(args) {
-    emit("execute", "QueueUserAPC", {
-      target_pid: processIdFromThreadHandle(args[1]),
-      address: args[0].toString(),
-      size: "1",
-      thread_handle: args[1].toString(),
-    });
-  },
-});
+  hook(ntdll, "RtlCreateUserProcess", {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitProcessCreate("RtlCreateUserProcess", {
+          pid: null,
+          image: null,
+          command_line: null,
+          flags: [],
+        });
+      }
+    },
+  });
 
-hook(ntdll, "NtQueueApcThread", {
-  onEnter(args) {
-    emit("execute", "NtQueueApcThread", {
-      target_pid: processIdFromThreadHandle(args[0]),
-      address: args[1].toString(),
-      size: "1",
-      thread_handle: args[0].toString(),
-    });
-  },
-});
+  hook(ntdll, "NtCreateProcess", {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitProcessCreate("NtCreateProcess", { pid: null, image: null, flags: [] });
+      }
+    },
+  });
 
-hook(ntdll, "NtQueueApcThreadEx", {
-  onEnter(args) {
-    emit("execute", "NtQueueApcThreadEx", {
-      target_pid: processIdFromThreadHandle(args[0]),
-      address: args[2].toString(),
-      size: "1",
-      thread_handle: args[0].toString(),
-    });
-  },
-});
+  hook(ntdll, "NtCreateProcessEx", {
+    onEnter(args) {
+      this.flags = args[6].toString();
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitProcessCreate("NtCreateProcessEx", {
+          pid: null,
+          image: null,
+          flags: [this.flags],
+        });
+      }
+    },
+  });
 
-hook(kernel32, "SetThreadContext", {
-  onEnter(args) {
-    emit("execute", "SetThreadContext", {
-      target_pid: processIdFromThreadHandle(args[0]),
-      address: null,
-      size: null,
-      thread_handle: args[0].toString(),
-      context_pointer: args[1].toString(),
-    });
-  },
-});
+  hook(ntdll, "NtCreateUserProcess", {
+    onEnter(args) {
+      this.flags = args[6].toString();
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitProcessCreate("NtCreateUserProcess", {
+          pid: null,
+          image: null,
+          flags: [this.flags],
+        });
+      }
+    },
+  });
 
-hook(ntdll, "NtSetContextThread", {
-  onEnter(args) {
-    emit("execute", "NtSetContextThread", {
-      target_pid: processIdFromThreadHandle(args[0]),
-      address: null,
-      size: null,
-      thread_handle: args[0].toString(),
-      context_pointer: args[1].toString(),
-    });
-  },
-});
+  hook(advapi32, "CreateProcessWithTokenW", {
+    onEnter(args) {
+      this.flags = creationFlags(args[8]);
+    },
+    onLeave(retval) {
+      if (boolSuccess(retval)) {
+        emitProcessCreate("CreateProcessWithTokenW", {
+          pid: null,
+          image: null,
+          flags: this.flags,
+        });
+      }
+    },
+  });
 
-hook(kernel32, "ResumeThread", {
-  onEnter(args) {
-    emit("execute", "ResumeThread", {
-      target_pid: processIdFromThreadHandle(args[0]),
-      address: null,
-      size: null,
-      thread_handle: args[0].toString(),
-    });
-  },
-});
+  hook(shell32, "ShellExecuteA", {
+    onEnter(args) {
+      emitProcessCreate("ShellExecuteA", {
+        pid: null,
+        image: readAnsiSafe(args[2]),
+        command_line: readAnsiSafe(args[3]),
+        flags: [],
+      });
+    },
+  });
 
-hook(ntdll, "NtResumeThread", {
-  onEnter(args) {
-    emit("execute", "NtResumeThread", {
-      target_pid: processIdFromThreadHandle(args[0]),
-      address: null,
-      size: null,
-      thread_handle: args[0].toString(),
-    });
-  },
-});
+  hook(shell32, "ShellExecuteW", {
+    onEnter(args) {
+      emitProcessCreate("ShellExecuteW", {
+        pid: null,
+        image: readUtf16Safe(args[2]),
+        command_line: readUtf16Safe(args[3]),
+        flags: [],
+      });
+    },
+  });
 
-hook(ntdll, "NtAlertResumeThread", {
-  onEnter(args) {
-    emit("execute", "NtAlertResumeThread", {
-      target_pid: processIdFromThreadHandle(args[0]),
-      address: null,
-      size: null,
-      thread_handle: args[0].toString(),
+  hook(shell32, "ShellExecuteExA", {
+    onEnter(args) {
+      this.info = args[0];
+    },
+    onLeave(retval) {
+      if (boolSuccess(retval) && this.info && !this.info.isNull()) {
+        emitProcessCreate("ShellExecuteExA", {
+          pid: null,
+          image: readAnsiSafe(Memory.readPointer(this.info.add(Process.pointerSize * 3))),
+          command_line: readAnsiSafe(Memory.readPointer(this.info.add(Process.pointerSize * 4))),
+          flags: [],
+        });
+      }
+    },
+  });
+
+  hook(shell32, "ShellExecuteExW", {
+    onEnter(args) {
+      this.info = args[0];
+    },
+    onLeave(retval) {
+      if (boolSuccess(retval) && this.info && !this.info.isNull()) {
+        emitProcessCreate("ShellExecuteExW", {
+          pid: null,
+          image: readUtf16Safe(Memory.readPointer(this.info.add(Process.pointerSize * 3))),
+          command_line: readUtf16Safe(Memory.readPointer(this.info.add(Process.pointerSize * 4))),
+          flags: [],
+        });
+      }
+    },
+  });
+
+  hook(user32, "SetWindowsHookExA", {
+    onEnter(args) {
+      emit("execute", "SetWindowsHookExA", {
+        target_pid: currentPid(),
+        address: args[2].toString(),
+        size: "1",
+        hook_type: args[0].toString(),
+      });
+    },
+  });
+
+  hook(user32, "SetWindowsHookExW", {
+    onEnter(args) {
+      emit("execute", "SetWindowsHookExW", {
+        target_pid: currentPid(),
+        address: args[2].toString(),
+        size: "1",
+        hook_type: args[0].toString(),
+      });
+    },
+  });
+
+  hook(kernel32, "GlobalAddAtomA", {
+    onEnter(args) {
+      emitObservation("execute", "GlobalAddAtomA", {
+        atom: readAnsiSafe(args[0]),
+      });
+    },
+  });
+
+  hook(kernel32, "GlobalAddAtomW", {
+    onEnter(args) {
+      emitObservation("execute", "GlobalAddAtomW", {
+        atom: readUtf16Safe(args[0]),
+      });
+    },
+  });
+
+  hook(ntdll, "RtlMoveMemory", {
+    onEnter(args) {
+      this.size = args[2].toString();
+      if (parseInt(this.size, 10) >= 0x1000) {
+        emit("write", "RtlMoveMemory", {
+          target_pid: currentPid(),
+          address: args[0].toString(),
+          size: this.size,
+          source: args[1].toString(),
+        });
+      }
+    },
+  });
+
+  ["msvcrt", "ucrtbase", "ucrtbased"].forEach(function (moduleName) {
+    hook(moduleName, "memcpy", {
+      onEnter(args) {
+        this.size = args[2].toString();
+        if (parseInt(this.size, 10) >= 0x1000) {
+          emit("write", "memcpy", {
+            target_pid: currentPid(),
+            address: args[0].toString(),
+            size: this.size,
+            source: args[1].toString(),
+            module: moduleName,
+          });
+        }
+      },
     });
-  },
+  });
+}
+
+function installDynamicResolverHooks() {
+  hook(kernel32, "GetProcAddress", {
+    onEnter(args) {
+      this.procName = args[1].isNull() ? null : readAnsiSafe(args[1]);
+    },
+    onLeave(retval) {
+      trackResolvedApi(this.procName, retval, "GetProcAddress");
+    },
+  });
+
+  hook(ntdll, "LdrGetProcedureAddress", {
+    onEnter(args) {
+      this.procName = readAnsiStringStruct(args[1]);
+      this.procPointerOut = args[3];
+    },
+    onLeave(retval) {
+      if (!ntSuccess(retval) || !this.procPointerOut) {
+        return;
+      }
+      try {
+        const procPointer = Memory.readPointer(this.procPointerOut);
+        trackResolvedApi(this.procName, procPointer, "LdrGetProcedureAddress");
+      } catch (_) {}
+    },
+  });
+}
+
+installStaticHooks();
+installPaperExtendedHooks();
+installDynamicResolverHooks();
+
+send({
+  type: "hook_ready",
+  timestamp: new Date().toISOString(),
+  actor_pid: currentPid(),
+  actor_image: actorImage(),
+  hooked_exports: hookedAddresses.size,
 });
