@@ -69,8 +69,8 @@
         </div>
         <div class="toolbar-group toolbar-actions">
           <label class="toggle">
-            <input id="auto-refresh" type="checkbox" checked />
-            <span>Auto-refresh (5s)</span>
+            <input id="auto-refresh" type="checkbox" />
+            <span>Auto-refresh (1s)</span>
           </label>
           <button id="apply-filters-btn" type="button">Apply filters</button>
           <button id="clear-filters-btn" type="button" class="secondary">Clear</button>
@@ -82,6 +82,7 @@
         <button type="button" class="tab" data-tab="findings">Findings</button>
         <button type="button" class="tab" data-tab="network">Network</button>
         <button type="button" class="tab" data-tab="primitives">Primitives</button>
+        <button type="button" class="tab" data-tab="files">File drops</button>
         <button type="button" class="tab" data-tab="events">Event stream</button>
         <button type="button" class="tab" data-tab="sessions">Sessions</button>
       </nav>
@@ -202,6 +203,41 @@
                 </tr>
               </thead>
               <tbody id="primitives-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="files">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>File drops &amp; triage</h2>
+            <span class="chip" id="collector-status-chip">collector offline</span>
+          </div>
+          <div class="runtime-controls">
+            <label class="toggle">
+              <input id="file-drop-toggle" type="checkbox" checked />
+              <span>File drop watch + auto-triage</span>
+            </label>
+            <p id="runtime-hint" class="hint">
+              Requires an active <code>run</code> session. Copy a <strong>new</strong> .exe to a watched folder.
+            </p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Path</th>
+                  <th>Score</th>
+                  <th>PE</th>
+                  <th>Signed</th>
+                  <th>Entropy</th>
+                  <th>SHA256</th>
+                  <th>Reasons</th>
+                </tr>
+              </thead>
+              <tbody id="triage-body"></tbody>
             </table>
           </div>
         </article>

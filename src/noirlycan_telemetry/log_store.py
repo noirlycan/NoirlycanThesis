@@ -120,6 +120,7 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
     actor_counts: Counter[str] = Counter()
     timeline: Counter[str] = Counter()
     findings: list[dict[str, Any]] = []
+    triages: list[dict[str, Any]] = []
     processes: list[dict[str, Any]] = []
     networks_by_pid: dict[int, list[dict[str, Any]]] = {}
 
@@ -170,6 +171,12 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
             if pid is not None:
                 networks_by_pid.setdefault(int(pid), []).append(_normalize_network(value, timestamp))
 
+        if event_type == "triage":
+            triages.append(_normalize_triage(value, timestamp))
+
+        if event_type == "file" and value.get("sha256"):
+            triages.append(_normalize_file_triage(value, timestamp))
+
     deduped_findings = _dedupe_findings(findings)
     deduped_severity: Counter[str] = Counter()
     for finding in deduped_findings:
@@ -188,6 +195,8 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
             "sysmon": type_counts.get("sysmon", 0),
             "frida_raw": type_counts.get("frida_raw", 0),
             "network": type_counts.get("network", 0),
+            "triage": type_counts.get("triage", 0),
+            "files": type_counts.get("file", 0),
         },
         "event_types": dict(type_counts),
         "severity": dict(deduped_severity),
@@ -198,6 +207,7 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         "recent_findings": deduped_findings[:50],
         "recent_network": _recent_network_events(networks_by_pid),
         "recent_primitives": _extract_primitives(events, limit=50),
+        "recent_triages": _dedupe_triages(triages)[:30],
         "recent_processes": sorted(processes, key=lambda item: item.get("timestamp") or "", reverse=True)[:15],
     }
 
@@ -243,6 +253,7 @@ def session_detail(
         "stats": stats,
         "findings": _apply_finding_filters(stats["recent_findings"], severity, target_pid, query),
         "primitives": _extract_primitives(events, target_pid=target_pid, query=query, limit=limit),
+        "triages": stats["recent_triages"],
         "network": _apply_network_filters(stats["recent_network"], target_pid, query),
         "events": filtered_events,
     }
@@ -298,6 +309,47 @@ def _dedupe_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if current is None or (finding.get("score") or 0) >= (current.get("score") or 0):
             best[key] = finding
     return sorted(best.values(), key=lambda item: item.get("timestamp") or "", reverse=True)
+
+
+def _normalize_triage(value: dict[str, Any], timestamp: str | None) -> dict[str, Any]:
+    return {
+        "timestamp": timestamp,
+        "path": value.get("path"),
+        "score": value.get("score"),
+        "sha256": value.get("sha256"),
+        "pe": value.get("pe"),
+        "signed": value.get("signed"),
+        "entropy": value.get("entropy"),
+        "reasons": value.get("suspicious_reasons", []),
+    }
+
+
+def _normalize_file_triage(value: dict[str, Any], timestamp: str | None) -> dict[str, Any]:
+    ts = timestamp or _extract_timestamp(value)
+    return {
+        "timestamp": ts,
+        "path": value.get("path"),
+        "score": None,
+        "sha256": value.get("sha256"),
+        "pe": value.get("pe"),
+        "signed": value.get("signed"),
+        "entropy": value.get("entropy"),
+        "reasons": [],
+        "creator_image": value.get("creator_image"),
+        "creator_pid": value.get("creator_pid"),
+    }
+
+
+def _dedupe_triages(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        path = str(row.get("path") or "")
+        if not path:
+            continue
+        existing = seen.get(path.lower())
+        if existing is None or str(row.get("timestamp") or "") > str(existing.get("timestamp") or ""):
+            seen[path.lower()] = row
+    return sorted(seen.values(), key=lambda item: item.get("timestamp") or "", reverse=True)
 
 
 def _normalize_network(value: dict[str, Any], timestamp: str | None) -> dict[str, Any]:

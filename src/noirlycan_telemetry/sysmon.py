@@ -6,11 +6,16 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 
 from .models import FileEvent, NetworkConnectionEvent, ProcessEvent, TelemetryEvent, EventSource
+from .triage import is_interesting_path
 
 SYSMON_CHANNEL = "Microsoft-Windows-Sysmon/Operational"
 SYSMON_INSTALL_HINT = (
     "Install Sysmon first, for example: "
     ".\\Sysmon\\Sysmon64.exe -accepteula -i .\\configs\\sysmon-noirlycan.xml"
+)
+SYSMON_ACCESS_HINT = (
+    "Run PowerShell as Administrator to read Sysmon events, "
+    "or add your user to the local 'Event Log Readers' group."
 )
 
 
@@ -34,6 +39,15 @@ def _evt_query_error(exc: BaseException) -> SysmonUnavailable | None:
     if winerror == 15007:
         return SysmonUnavailable(
             f"Sysmon event log channel not found ({SYSMON_CHANNEL}). {SYSMON_INSTALL_HINT}"
+        )
+    if winerror == 5:
+        return SysmonUnavailable(
+            f"Access denied reading {SYSMON_CHANNEL}. {SYSMON_ACCESS_HINT}"
+        )
+    message = str(exc).lower()
+    if "access is denied" in message or "access denied" in message:
+        return SysmonUnavailable(
+            f"Access denied reading {SYSMON_CHANNEL}. {SYSMON_ACCESS_HINT}"
         )
     return None
 
@@ -76,10 +90,20 @@ def parse_sysmon_xml(
             parent_pid=_safe_int(data.get("ParentProcessId")),
             parent_image=data.get("ParentImage") or None,
         )
-    if event_id == 11:
+    if event_id in {11, 15}:
+        target = data.get("TargetFilename", "")
+        if event_id == 15 and not _is_interesting_file_target(target):
+            return TelemetryEvent(
+                source=EventSource.SYSMON,
+                kind=f"sysmon_eid_{event_id}",
+                timestamp=timestamp,
+                pid=_safe_int(data.get("ProcessId")),
+                process_image=data.get("Image"),
+                data=data,
+            )
         return FileEvent(
             timestamp=timestamp,
-            path=data.get("TargetFilename", ""),
+            path=target,
             creator_pid=_safe_int(data.get("ProcessId")),
             creator_image=data.get("Image") or None,
         )
@@ -95,7 +119,7 @@ def parse_sysmon_xml(
             destination_port=_safe_int(data.get("DestinationPort")),
             initiated=None if initiated is None else initiated.lower() == "true",
         )
-    if event_id in {7, 8, 10, 15, 22, 23, 26}:
+    if event_id in {7, 8, 10, 22, 23, 26}:
         return TelemetryEvent(
             source=EventSource.SYSMON,
             kind=f"sysmon_eid_{event_id}",
@@ -105,6 +129,15 @@ def parse_sysmon_xml(
             data=data,
         )
     return None
+
+
+def _is_interesting_file_target(path: str) -> bool:
+    if not path:
+        return False
+    filename = path.rsplit("\\", 1)[-1]
+    if ":" in filename:
+        return False
+    return is_interesting_path(path)
 
 
 def _safe_int(value: str | None) -> int | None:
@@ -137,6 +170,44 @@ class SysmonPoller:
 
     def poll_once(self) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent | NetworkConnectionEvent]:
         win32evtlog = _load_win32evtlog()
+        if self._last_record_id is None:
+            self._bootstrap_cursor(win32evtlog)
+            return
+
+        query = f"*[System/EventRecordID>{self._last_record_id}]"
+        flags = win32evtlog.EvtQueryChannelPath | win32evtlog.EvtQueryForwardDirection
+        try:
+            handle = win32evtlog.EvtQuery(self.channel, flags, query)
+        except Exception as exc:
+            mapped = _evt_query_error(exc)
+            if mapped is not None:
+                raise mapped from exc
+            raise
+
+        rendered: list[tuple[int, str]] = []
+        while True:
+            try:
+                batch = win32evtlog.EvtNext(handle, 256)
+            except Exception:
+                break
+            if not batch:
+                break
+            for event in batch:
+                xml = win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml)
+                record_id = self._record_id(xml)
+                if record_id <= (self._last_record_id or 0):
+                    continue
+                rendered.append((record_id, xml))
+
+        if not rendered:
+            return
+        self._last_record_id = max(record_id for record_id, _ in rendered)
+        for _, xml in sorted(rendered, key=lambda item: item[0]):
+            parsed = parse_sysmon_xml(xml)
+            if parsed is not None:
+                yield parsed
+
+    def _bootstrap_cursor(self, win32evtlog) -> None:
         flags = win32evtlog.EvtQueryChannelPath | win32evtlog.EvtQueryReverseDirection
         try:
             handle = win32evtlog.EvtQuery(self.channel, flags, self.query)
@@ -145,20 +216,14 @@ class SysmonPoller:
             if mapped is not None:
                 raise mapped from exc
             raise
-        batch = win32evtlog.EvtNext(handle, 128)
-        rendered: list[tuple[int, str]] = []
-        for event in batch:
-            xml = win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml)
-            record_id = self._record_id(xml)
-            if self._last_record_id is not None and record_id <= self._last_record_id:
-                continue
-            rendered.append((record_id, xml))
-        if rendered:
-            self._last_record_id = max(record_id for record_id, _ in rendered)
-        for _, xml in sorted(rendered, key=lambda item: item[0]):
-            parsed = parse_sysmon_xml(xml)
-            if parsed is not None:
-                yield parsed
+        try:
+            batch = win32evtlog.EvtNext(handle, 1)
+        except Exception:
+            return
+        if not batch:
+            return
+        xml = win32evtlog.EvtRender(batch[0], win32evtlog.EvtRenderEventXml)
+        self._last_record_id = self._record_id(xml)
 
     @staticmethod
     def _record_id(xml: str) -> int:

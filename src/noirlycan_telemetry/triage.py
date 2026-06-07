@@ -168,7 +168,7 @@ def authenticode_signed(path: str) -> bool | None:
     return output == "Valid"
 
 
-def triage_file(path: str) -> FileTriage:
+def triage_file(path: str, *, quick: bool = False) -> FileTriage:
     reasons: list[str] = []
     score = 0
     suffix = Path(path).suffix.lower()
@@ -196,7 +196,7 @@ def triage_file(path: str) -> FileTriage:
         reasons.append("imports_injection_apis:" + ",".join(imports[:8]))
         score += min(25, 5 * len(imports))
 
-    signed = authenticode_signed(path)
+    signed = None if quick else authenticode_signed(path)
     if signed is False and pe:
         reasons.append("unsigned_pe")
         score += 15

@@ -161,6 +161,36 @@ button:hover {
   padding: 0;
 }
 
+.runtime-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.runtime-controls .hint {
+  margin: 0;
+  flex: 1 1 280px;
+}
+
+#collector-status-chip.online {
+  color: var(--cyan);
+  border-color: rgba(61, 224, 197, 0.35);
+}
+
+#collector-status-chip.offline {
+  color: var(--muted);
+}
+
+#file-drop-toggle:disabled + span {
+  opacity: 0.55;
+}
+
 .tabs {
   display: flex;
   gap: 8px;
@@ -250,6 +280,10 @@ button:hover {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   margin-bottom: 16px;
+}
+
+canvas {
+  max-height: 280px;
 }
 
 .panel-head {
@@ -426,6 +460,7 @@ th {
   background: rgba(8, 17, 30, 0.96);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
+  color: var(--text);
 }
 
 .modal-head {
@@ -442,6 +477,7 @@ th {
   padding: 0;
   font-size: 1.4rem;
   line-height: 1;
+  color: var(--text);
 }
 
 .modal-grid {
@@ -464,6 +500,16 @@ th {
 .modal-block h3 {
   margin: 0 0 10px;
   font-size: 0.92rem;
+  color: var(--text);
+}
+
+.modal-card h2 {
+  color: var(--text);
+}
+
+.modal-block table th,
+.modal-block table td {
+  color: var(--text);
 }
 
 .detail-list {
@@ -485,6 +531,7 @@ th {
 
 .detail-list dd {
   margin: 0;
+  color: var(--text);
 }
 
 .tag-list {
@@ -511,6 +558,17 @@ th {
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.78rem;
   white-space: pre-wrap;
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media (max-width: 900px) {

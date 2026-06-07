@@ -174,7 +174,35 @@ Reload Sysmon config after pulling updates:
 C:\Windows\System32\sysmon.exe -c .\configs\sysmon-noirlycan.xml
 ```
 
-### 7. Static triage a file
+### 7. Watch for dropped files and auto-triage
+
+`run` polls watched folders **by default** (repo root, `D:\`, `D:\thesis`,
+Downloads, Desktop). Sysmon is optional but adds creator process metadata.
+
+```powershell
+python -m noirlycan_telemetry run
+# or with Sysmon (Admin PowerShell recommended):
+python -m noirlycan_telemetry run --watch-sysmon
+```
+
+Test with a **new filename** (files already on disk at startup are baselined):
+
+```powershell
+Copy-Item "D:\thesis\aes_decrypt_loader.exe" "D:\drop_test_$(Get-Random).exe"
+```
+
+You should see `[FILE:DROP] Detected ...` immediately, then a
+`===== FILE DROP DETECTED =====` banner when static triage finishes. Open the
+dashboard **File drops** tab for the active session.
+
+Disable folder polling with `--no-watch-files` (locks the dashboard toggle off).
+Add paths with `--watch-path C:\Lab`.
+
+While `run` is active, open the dashboard **File drops** tab and use the
+**File drop watch + auto-triage** toggle to pause or resume scanning without
+restarting the collector.
+
+### 8. Static triage a file
 
 ```powershell
 noirlycan-telemetry triage C:\Lab\loader.exe

@@ -5,6 +5,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request, send_file
 
 from ..log_store import aggregate_logs, resolve_log_path, resolve_logs_dir, session_detail
+from ..runtime_config import load_runtime_config, runtime_config_payload, save_runtime_config
 
 
 def create_app(logs_dir: Path | str | None = None) -> Flask:
@@ -29,6 +30,22 @@ def create_app(logs_dir: Path | str | None = None) -> Flask:
     @app.get("/api/health")
     def health():
         return jsonify({"status": "ok", "logs_dir": str(app.config["LOGS_DIR"])})
+
+    @app.get("/api/runtime")
+    def runtime_get():
+        config = load_runtime_config(app.config["LOGS_DIR"])
+        return jsonify(runtime_config_payload(config))
+
+    @app.post("/api/runtime")
+    def runtime_post():
+        payload = request.get_json(silent=True) or {}
+        config = load_runtime_config(app.config["LOGS_DIR"])
+        if config.file_drop_watch_locked:
+            return jsonify({"error": "file drop watch is locked by CLI (--no-watch-files)"}), 409
+        if "file_drop_watch_enabled" in payload:
+            config.file_drop_watch_enabled = bool(payload["file_drop_watch_enabled"])
+        save_runtime_config(config, app.config["LOGS_DIR"])
+        return jsonify(runtime_config_payload(config))
 
     @app.get("/api/session/<path:name>")
     def session(name: str):

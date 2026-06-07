@@ -137,3 +137,32 @@ def test_session_detail_filters_by_severity_and_pid(tmp_path: Path) -> None:
     assert detail["findings"][0]["target_pid"] == 2
     assert len(detail["network"]) == 1
     assert detail["network"][0]["beacon_candidate"] is True
+
+
+def test_aggregate_events_collects_triage_rows(tmp_path: Path) -> None:
+    log_path = tmp_path / "session.jsonl"
+    log_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "triage",
+                        "value": {
+                            "path": "D:\\thesis\\aes_decrypt_loader - Copy.exe",
+                            "score": 55,
+                            "sha256": "abc",
+                            "pe": True,
+                            "signed": False,
+                            "entropy": 6.5,
+                            "suspicious_reasons": ["unsigned_pe"],
+                        },
+                    }
+                )
+            ]
+        ),
+        encoding="utf-8",
+    )
+    events = read_jsonl(log_path)
+    stats = aggregate_events(events)
+    assert stats["totals"]["triage"] == 1
+    assert stats["recent_triages"][0]["path"].endswith("Copy.exe")
