@@ -119,6 +119,22 @@ early calls such as:
 - `SetThreadContext`
 - `ResumeThread`
 
+The first expected Frida line in JSONL is:
+
+```json
+{"type":"frida_raw","value":{"type":"agent_loaded", "...":"..."}}
+```
+
+If the script fails to load, the console and JSONL output include
+`frida_error` with the JavaScript stack trace.
+
+For initial hook debugging, run once without Sysmon to remove event-log noise:
+
+```powershell
+noirlycan-telemetry spawn --jsonl .\frida-only.jsonl -- C:\Lab\loader.exe
+Select-String -Path .\frida-only.jsonl -Pattern '"agent_loaded"|"frida_error"|"primitive"|"finding"'
+```
+
 ### 4. Attach to an already running process
 
 ```powershell

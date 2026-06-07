@@ -19,7 +19,7 @@ from .frida_manager import (
 )
 from .models import FileEvent, Finding, ProcessEvent, TelemetryEvent
 from .sysmon import SysmonPoller, SysmonUnavailable
-from .triage import is_interesting_path, triage_file
+from .triage import is_instrumentation_artifact, is_interesting_path, triage_file
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -78,6 +78,8 @@ def command_run(args: argparse.Namespace) -> int:
 
     try:
         while True:
+            if monitor is not None:
+                _drain_frida(monitor, correlator, writer)
             if sysmon is not None:
                 _process_sysmon_batch(
                     sysmon,
@@ -120,6 +122,7 @@ def command_spawn(args: argparse.Namespace) -> int:
     sysmon = SysmonPoller() if args.watch_sysmon else None
     try:
         while True:
+            _drain_frida(monitor, correlator, writer)
             if sysmon is not None:
                 _process_sysmon_batch(
                     sysmon,
@@ -181,6 +184,9 @@ def _handle_file_event(
     writer: "JsonlWriter",
 ) -> None:
     enriched = event
+    if event.path and is_instrumentation_artifact(event.path):
+        correlator.add_file(enriched)
+        return
     if event.path and is_interesting_path(event.path) and os.path.exists(event.path):
         triage = triage_file(event.path)
         writer.write("triage", triage)
@@ -208,6 +214,18 @@ def _drain_frida(
         except queue.Empty:
             return
         writer.write("frida_raw", runtime_event.payload)
+        if runtime_event.event_type == "frida_error":
+            print(f"[!] Frida script error: {runtime_event.payload.get('description')}", file=sys.stderr)
+            stack = runtime_event.payload.get("stack")
+            if stack:
+                print(stack, file=sys.stderr)
+            continue
+        if runtime_event.event_type == "agent_loaded":
+            print(
+                f"[+] Frida agent loaded in PID {runtime_event.payload.get('actor_pid')} "
+                f"({runtime_event.payload.get('actor_image')})"
+            )
+            continue
         process_event = runtime_event_to_process(runtime_event)
         if process_event is not None:
             writer.write("frida_process", process_event)

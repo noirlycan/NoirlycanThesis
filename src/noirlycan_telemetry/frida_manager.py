@@ -75,7 +75,19 @@ class FridaInjectionMonitor:
                 callback(primitive)
 
     def _on_message(self, message: dict[str, Any], data: bytes | None) -> None:
-        if message.get("type") != "send":
+        message_type = message.get("type")
+        if message_type == "error":
+            payload = {
+                "type": "frida_error",
+                "description": message.get("description"),
+                "stack": message.get("stack"),
+                "fileName": message.get("fileName"),
+                "lineNumber": message.get("lineNumber"),
+                "columnNumber": message.get("columnNumber"),
+            }
+            self._queue.put(FridaRuntimeEvent(event_type="frida_error", payload=payload))
+            return
+        if message_type != "send":
             return
         payload = message.get("payload")
         if isinstance(payload, str):

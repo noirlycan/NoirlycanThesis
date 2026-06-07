@@ -57,6 +57,15 @@ def is_interesting_path(path: str) -> bool:
     return Path(path).suffix.lower() in EXECUTABLE_SUFFIXES
 
 
+def is_instrumentation_artifact(path: str) -> bool:
+    lower_path = path.lower()
+    return (
+        "\\appdata\\local\\temp\\frida-" in lower_path
+        or "\\temp\\frida-" in lower_path
+        or lower_path.endswith("\\frida-agent.dll")
+    )
+
+
 def sha256_file(path: str) -> str | None:
     try:
         digest = hashlib.sha256()
@@ -196,7 +205,9 @@ def triage_file(path: str) -> FileTriage:
         reasons.append("imports_injection_apis:" + ",".join(imports[:8]))
         score += min(25, 5 * len(imports))
 
-    signed = authenticode_signed(path)
+    # Authenticode checks are comparatively expensive and spawn PowerShell in
+    # this prototype; reserve them for PE files to avoid polluting lab logs.
+    signed = authenticode_signed(path) if pe else None
     if signed is False and pe:
         reasons.append("unsigned_pe")
         score += 15

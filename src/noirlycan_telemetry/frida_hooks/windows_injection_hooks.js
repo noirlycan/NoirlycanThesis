@@ -3,6 +3,15 @@
 const kernel32 = "kernel32.dll";
 const ntdll = "ntdll.dll";
 
+send({
+  type: "agent_loaded",
+  timestamp: new Date().toISOString(),
+  actor_pid: Process.id,
+  actor_image: Process.enumerateModules()[0].path,
+  arch: Process.arch,
+  platform: Process.platform,
+});
+
 function ptrToString(value) {
   if (value === null || value === undefined) {
     return null;
