@@ -649,3 +649,111 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Demo mode — activated via ?demo=1 URL parameter.
+ * Tweaks for thesis screenshots: larger base font, watermark badge,
+ * disabled auto-refresh affordance, calmer toolbar.
+ * ------------------------------------------------------------------------ */
+.demo-mode {
+  font-size: 17px;
+}
+
+.demo-mode .shell {
+  width: min(1400px, calc(100% - 32px));
+}
+
+.demo-mode .toolbar .toolbar-actions {
+  /* Hide the auto-refresh toggle in demo mode — it is locked off via JS. */
+  opacity: 0.5;
+}
+
+.demo-mode::after {
+  content: "Noirlycan · Luận văn thạc sĩ · Phan Vinh Co";
+  position: fixed;
+  right: 16px;
+  bottom: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(7, 17, 31, 0.75);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+/* ---------------------------------------------------------------------------
+ * Print stylesheet — Cmd+P → Save as PDF for thesis appendix screenshots.
+ * Strips chrome, neutralises the dark gradient, prints only the active panel.
+ * ------------------------------------------------------------------------ */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0d1b2f !important;
+  }
+
+  .backdrop,
+  .toolbar,
+  .tabs,
+  .hero-actions,
+  .runtime-controls,
+  #refresh-btn,
+  #export-btn,
+  #apply-filters-btn,
+  #clear-filters-btn {
+    display: none !important;
+  }
+
+  .shell {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .panel {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    color: #0d1b2f !important;
+  }
+
+  .tab-panel {
+    display: none !important;
+  }
+
+  .tab-panel.active {
+    display: block !important;
+  }
+
+  h1, h2, h3, p, dt, dd, td, th {
+    color: #0d1b2f !important;
+  }
+
+  .muted,
+  .chip,
+  .eyebrow {
+    color: #475569 !important;
+  }
+
+  .severity.critical { color: #b91c1c !important; }
+  .severity.high     { color: #b45309 !important; }
+  .severity.medium   { color: #1d4ed8 !important; }
+  .severity.low      { color: #047857 !important; }
+
+  table, th, td {
+    border-color: #cbd5e1 !important;
+  }
+
+  .demo-mode::after {
+    display: none !important;
+  }
+
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}

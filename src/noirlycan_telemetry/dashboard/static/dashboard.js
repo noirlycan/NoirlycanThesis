@@ -2,6 +2,60 @@ const charts = {};
 const fingerprints = {};
 const REFRESH_MS = 1000;
 
+// ---------------------------------------------------------------------------
+// Demo mode — toggled via ?demo=1 URL parameter. Disables auto-refresh,
+// shows a watermark, and applies CSS tweaks for thesis screenshots.
+// ---------------------------------------------------------------------------
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const DEMO_MODE = URL_PARAMS.get("demo") === "1";
+
+// ---------------------------------------------------------------------------
+// URL hash state — deep-linkable filter + tab + selected finding.
+// Format: #tab=findings&log=session-xxx.jsonl&query=...&severity=high&pid=1337&type=primitive&finding=3
+// ---------------------------------------------------------------------------
+const HASH_KEYS = ["tab", "log", "query", "severity", "pid", "type", "finding"];
+let suppressHashWrite = false;
+
+function readHash() {
+  const raw = window.location.hash.replace(/^#/, "");
+  const params = new URLSearchParams(raw);
+  const result = {};
+  HASH_KEYS.forEach((key) => {
+    const value = params.get(key);
+    if (value !== null && value !== "") result[key] = value;
+  });
+  return result;
+}
+
+function writeHash(updates) {
+  if (suppressHashWrite) return;
+  const current = readHash();
+  const next = { ...current, ...updates };
+  const params = new URLSearchParams();
+  HASH_KEYS.forEach((key) => {
+    const value = next[key];
+    if (value !== undefined && value !== null && value !== "") {
+      params.set(key, String(value));
+    }
+  });
+  const serialized = params.toString();
+  const target = serialized ? `#${serialized}` : window.location.pathname + window.location.search;
+  if (target !== `#${window.location.hash.replace(/^#/, "")}` && target !== window.location.pathname + window.location.search) {
+    history.replaceState(null, "", target);
+  }
+}
+
+function debounce(fn, ms) {
+  let timer = null;
+  return function debounced(...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn.apply(this, args);
+    }, ms);
+  };
+}
+
 const state = {
   activeLog: "",
   activeTab: "overview",
@@ -636,6 +690,14 @@ function openFindingModal(finding) {
     : '<div class="empty">No related network activity.</div>';
 
   modal.showModal();
+  if (finding && finding._index !== undefined) {
+    writeHash({ finding: String(finding._index) });
+    modal.addEventListener(
+      "close",
+      () => writeHash({ finding: "" }),
+      { once: true },
+    );
+  }
 }
 
 async function loadOverview(selectedLog) {
@@ -816,6 +878,7 @@ async function loadDashboard(selectedLog, { force = false } = {}) {
 
 function switchTab(tabName) {
   state.activeTab = tabName;
+  writeHash({ tab: tabName === "overview" ? "" : tabName });
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.tab === tabName);
   });
@@ -861,6 +924,15 @@ function switchTab(tabName) {
 function applyFilters() {
   const selected = document.getElementById("log-select").value;
   Object.keys(fingerprints).forEach((key) => delete fingerprints[key]);
+  // Sync filter + log state to the URL hash so the view is deep-linkable.
+  const f = currentFilters();
+  writeHash({
+    log: selected || "",
+    query: f.query || "",
+    severity: f.severity || "",
+    pid: f.pid !== "" ? String(f.pid) : "",
+    type: f.type || "",
+  });
   loadDashboard(selected || undefined, { force: true });
 }
 
@@ -872,12 +944,19 @@ function clearFilters() {
   applyFilters();
 }
 
+// Debounced version for live-as-you-type filtering (input event).
+const applyFiltersDebounced = debounce(applyFilters, 220);
+
 function setupDelegatedClicks() {
   document.getElementById("findings-body").addEventListener("click", (event) => {
     const row = event.target.closest("[data-finding-index]");
     if (!row || !state.session) return;
     const index = Number(row.dataset.findingIndex);
-    openFindingModal((state.session.findings || [])[index]);
+    const finding = (state.session.findings || [])[index];
+    if (finding) {
+      finding._index = index; // tag for deep-link sync
+      openFindingModal(finding);
+    }
   });
 
   document.getElementById("network-body").addEventListener("click", (event) => {
@@ -914,6 +993,7 @@ document.getElementById("clear-filters-btn").addEventListener("click", clearFilt
 
 document.getElementById("log-select").addEventListener("change", (event) => {
   Object.keys(fingerprints).forEach((key) => delete fingerprints[key]);
+  writeHash({ log: event.target.value || "" });
   loadDashboard(event.target.value || undefined, { force: true });
 });
 
@@ -927,12 +1007,20 @@ document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => switchTab(tab.dataset.tab));
 });
 
-["filter-query", "filter-severity", "filter-pid", "filter-type"].forEach((id) => {
-  document.getElementById(id).addEventListener("keydown", (event) => {
+// Live filter — debounced for text inputs (so we don't refetch on every
+// keystroke); immediate for selects (single-action change).
+["filter-query", "filter-pid"].forEach((id) => {
+  const el = document.getElementById(id);
+  el.addEventListener("input", () => applyFiltersDebounced());
+  el.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
+      event.preventDefault();
       applyFilters();
     }
   });
+});
+["filter-severity", "filter-type"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", () => applyFilters());
 });
 
 let refreshTimer = null;
@@ -940,6 +1028,11 @@ function setupAutoRefresh() {
   if (refreshTimer) {
     clearInterval(refreshTimer);
     refreshTimer = null;
+  }
+  if (DEMO_MODE) {
+    // Demo / thesis-screenshot mode: never auto-refresh so the rendered view
+    // stays stable for screen capture.
+    return;
   }
   if (document.getElementById("auto-refresh").checked) {
     refreshTimer = setInterval(() => {
@@ -989,8 +1082,56 @@ async function requestFileAnalysis(path, button) {
 }
 
 setupDelegatedClicks();
-loadDashboard(undefined, { force: true }).catch((error) => {
-  console.error(error);
-  showLoadError("Could not load dashboard data");
+
+// ---------------------------------------------------------------------------
+// Bootstrap: apply demo mode + restore deep-link state from URL hash.
+// ---------------------------------------------------------------------------
+if (DEMO_MODE) {
+  document.body.classList.add("demo-mode");
+  const refreshToggle = document.getElementById("auto-refresh");
+  if (refreshToggle) {
+    refreshToggle.checked = false;
+    refreshToggle.disabled = true;
+  }
+}
+
+function restoreFromHash() {
+  const hash = readHash();
+  suppressHashWrite = true;
+  try {
+    if (hash.query) document.getElementById("filter-query").value = hash.query;
+    if (hash.severity) document.getElementById("filter-severity").value = hash.severity;
+    if (hash.pid) document.getElementById("filter-pid").value = hash.pid;
+    if (hash.type) document.getElementById("filter-type").value = hash.type;
+    if (hash.tab) switchTab(hash.tab);
+  } finally {
+    suppressHashWrite = false;
+  }
+  return hash;
+}
+
+const initialHash = restoreFromHash();
+const initialLog = initialHash.log || undefined;
+
+window.addEventListener("popstate", () => {
+  restoreFromHash();
+  applyFilters();
 });
+
+loadDashboard(initialLog, { force: true })
+  .then(() => {
+    // If the hash names a finding and it exists in the loaded session, open it.
+    if (initialHash.finding !== undefined && state.session) {
+      const idx = Number(initialHash.finding);
+      const finding = (state.session.findings || [])[idx];
+      if (finding) {
+        finding._index = idx;
+        openFindingModal(finding);
+      }
+    }
+  })
+  .catch((error) => {
+    console.error(error);
+    showLoadError("Could not load dashboard data");
+  });
 setupAutoRefresh();
