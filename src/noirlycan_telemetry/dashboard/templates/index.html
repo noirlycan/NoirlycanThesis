@@ -84,6 +84,7 @@
         <button type="button" class="tab" data-tab="primitives">Primitives</button>
         <button type="button" class="tab" data-tab="files">File drops</button>
         <button type="button" class="tab" data-tab="events">Event stream</button>
+        <button type="button" class="tab" data-tab="chains">Injection chains</button>
         <button type="button" class="tab" data-tab="sessions">Sessions</button>
       </nav>
 
@@ -131,6 +132,23 @@
             <div id="actor-list" class="rank-list"></div>
           </article>
         </section>
+
+        <section class="grid-two">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Injection techniques</h2>
+              <span class="chip">rule classifier</span>
+            </div>
+            <div id="technique-list" class="rank-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Evasion signals</h2>
+              <span class="chip" id="evasion-chip">0 signals</span>
+            </div>
+            <div id="evasion-summary" class="rank-list"></div>
+          </article>
+        </section>
       </section>
 
       <section class="tab-panel" data-panel="findings">
@@ -148,6 +166,7 @@
                   <th>Severity</th>
                   <th>Score</th>
                   <th>Injection target</th>
+                  <th>Technique</th>
                   <th>APIs</th>
                   <th>Network</th>
                   <th>Description</th>
@@ -265,6 +284,30 @@
                 </tr>
               </thead>
               <tbody id="events-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="chains">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Injection chains</h2>
+            <span class="chip" id="chain-count-chip">0 chains</span>
+          </div>
+          <p class="hint">Multi-hop actor→target paths, including recursive chains (paper ~2% prevalence).</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Depth</th>
+                  <th>Recursive</th>
+                  <th>PID path</th>
+                  <th>Images</th>
+                  <th>Techniques</th>
+                </tr>
+              </thead>
+              <tbody id="chains-body"></tbody>
             </table>
           </div>
         </article>

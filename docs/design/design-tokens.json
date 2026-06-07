@@ -1,0 +1,66 @@
+{
+  "name": "Noirlycan Telemetry",
+  "description": "Design tokens for Noirlycan dashboard and thesis pipeline documentation in Figma.",
+  "colors": {
+    "bg-0": "#07111F",
+    "bg-1": "#0D1B2F",
+    "bg-2": "#13253D",
+    "bg-gradient-end": "#040A14",
+    "line": "rgba(148, 197, 255, 0.14)",
+    "text": "#E7EEFC",
+    "muted": "#8EA6C7",
+    "cyan": "#3DE0C5",
+    "blue": "#4F8CFF",
+    "amber": "#FFB347",
+    "rose": "#FF6B8A",
+    "violet": "#9F7AEA",
+    "panel-fill": "rgba(10, 22, 38, 0.88)",
+    "button-gradient-start": "rgba(61, 224, 197, 0.18)",
+    "button-gradient-end": "rgba(79, 140, 255, 0.18)",
+    "shadow": "rgba(0, 0, 0, 0.35)"
+  },
+  "typography": {
+    "display": {
+      "family": "Space Grotesk",
+      "weights": [400, 500, 600, 700]
+    },
+    "mono": {
+      "family": "IBM Plex Mono",
+      "weights": [400, 500, 600]
+    },
+    "scale": {
+      "eyebrow": { "size": 11, "weight": 600, "letterSpacing": "0.18em", "transform": "uppercase" },
+      "h1": { "size": 51, "weight": 700, "lineHeight": 1 },
+      "h2": { "size": 20, "weight": 600 },
+      "h3": { "size": 14, "weight": 600 },
+      "body": { "size": 15, "weight": 400, "lineHeight": 1.5 },
+      "caption": { "size": 13, "weight": 400 },
+      "label": { "size": 13, "weight": 500 },
+      "mono-sm": { "size": 12, "weight": 400, "family": "IBM Plex Mono" }
+    }
+  },
+  "spacing": {
+    "shell-padding-x": 16,
+    "shell-padding-y": 32,
+    "panel-padding": 20,
+    "panel-radius": 22,
+    "input-radius": 14,
+    "chip-radius": 999,
+    "gap-sm": 8,
+    "gap-md": 12,
+    "gap-lg": 24,
+    "gap-xl": 28
+  },
+  "layout": {
+    "artboard-width": 1440,
+    "content-max-width": 1280,
+    "grid-columns": 12,
+    "grid-gutter": 24
+  },
+  "severity": {
+    "critical": { "bg": "rgba(255, 107, 138, 0.18)", "text": "#FF6B8A", "border": "rgba(255, 107, 138, 0.35)" },
+    "high": { "bg": "rgba(255, 179, 71, 0.18)", "text": "#FFB347", "border": "rgba(255, 179, 71, 0.35)" },
+    "medium": { "bg": "rgba(79, 140, 255, 0.18)", "text": "#4F8CFF", "border": "rgba(79, 140, 255, 0.35)" },
+    "low": { "bg": "rgba(61, 224, 197, 0.12)", "text": "#3DE0C5", "border": "rgba(61, 224, 197, 0.28)" }
+  }
+}

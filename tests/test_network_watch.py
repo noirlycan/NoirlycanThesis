@@ -26,13 +26,19 @@ def _primitive(kind: PrimitiveKind, api: str, offset_ms: int, address: int | Non
 def test_emits_only_highest_score_finding_per_chain() -> None:
     correlator = Correlator(minimum_score=50)
     correlator.add_primitive(_primitive(PrimitiveKind.ALLOCATE, "NtAllocateVirtualMemory", 0))
-    correlator.add_primitive(_primitive(PrimitiveKind.WRITE, "NtWriteVirtualMemory", 10))
-    first = correlator.add_primitive(_primitive(PrimitiveKind.EXECUTE, "GetThreadContext", 20, address=None))
-    second = correlator.add_primitive(_primitive(PrimitiveKind.EXECUTE, "ResumeThread", 30, address=None))
+    staging = correlator.add_primitive(_primitive(PrimitiveKind.WRITE, "NtMapViewOfSection", 10))
+    context_read = correlator.add_primitive(
+        _primitive(PrimitiveKind.CONTEXT_READ, "GetThreadContext", 20, address=None)
+    )
+    confirmed = correlator.add_primitive(_primitive(PrimitiveKind.EXECUTE, "ResumeThread", 30, address=None))
 
-    assert len(first) == 1
-    assert len(second) == 0
-    assert first[0].score >= NETWORK_WATCH_MIN_SCORE
+    assert len(staging) == 1
+    assert staging[0].evidence["execution_confirmed"] is False
+    assert len(context_read) == 1
+    assert context_read[0].evidence["execution_confirmed"] is False
+    assert len(confirmed) == 1
+    assert confirmed[0].score >= NETWORK_WATCH_MIN_SCORE
+    assert confirmed[0].evidence["execution_confirmed"] is True
 
 
 def test_network_watch_collects_connections_for_target_pid() -> None:

@@ -5,7 +5,10 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import PureWindowsPath
 
+from .execution_analysis import analyze_execution, operational_kind_count
+from .injection_graph import InjectionGraph
 from .process_resolve import image_for_pid as resolve_image_for_pid
+from .technique_classifier import apply_classification
 from .models import (
     FileEvent,
     Finding,
@@ -38,6 +41,7 @@ class Correlator:
         self._network_watch_until: dict[int, datetime] = {}
         self.network_connections: dict[int, list[NetworkConnectionEvent]] = defaultdict(list)
         self._pid_image_cache: dict[int, str] = {}
+        self._injection_graph = InjectionGraph()
 
     def add_file(self, event: FileEvent) -> None:
         if event.path:
@@ -82,7 +86,7 @@ class Correlator:
         findings: list[Finding] = []
         for (actor_pid, target_pid), primitives in grouped.items():
             kinds = {primitive.kind for primitive in primitives}
-            if len(kinds) < 2:
+            if operational_kind_count(kinds) < 2:
                 continue
             if not _has_temporal_consistency(primitives):
                 continue
@@ -100,7 +104,12 @@ class Correlator:
                 evidence["target_image"] = target_image
             if score < self.minimum_score:
                 continue
-            title = "Probable process injection chain"
+            execution_meta = analyze_execution(primitives)
+            title = (
+                "Probable process injection chain"
+                if execution_meta["execution_confirmed"]
+                else "Probable injection staging chain"
+            )
             chain_key = (actor_pid, target_pid)
             previous_score = self._reported_chain_scores.get(chain_key, 0)
             if score <= previous_score:
@@ -110,29 +119,30 @@ class Correlator:
                 self._network_watch_until[target_pid] = latest.timestamp + timedelta(
                     seconds=NETWORK_WATCH_SECONDS
                 )
-            findings.append(
-                Finding(
-                    timestamp=latest.timestamp,
-                    severity=_severity(score),
-                    title=title,
-                    description=_describe(
-                        primitives,
-                        related_process,
-                        related_file,
-                        actor_image=actor_image,
-                        target_image=target_image,
-                    ),
-                    actor_pid=actor_pid,
-                    target_pid=target_pid,
-                    primitives=tuple(sorted(primitives, key=lambda item: item.timestamp)),
-                    related_file=related_file,
-                    related_process=related_process,
+            finding = Finding(
+                timestamp=latest.timestamp,
+                severity=_severity(score),
+                title=title,
+                description=_describe(
+                    primitives,
+                    related_process,
+                    related_file,
                     actor_image=actor_image,
                     target_image=target_image,
-                    score=score,
-                    evidence=evidence,
-                )
+                ),
+                actor_pid=actor_pid,
+                target_pid=target_pid,
+                primitives=tuple(sorted(primitives, key=lambda item: item.timestamp)),
+                related_file=related_file,
+                related_process=related_process,
+                actor_image=actor_image,
+                target_image=target_image,
+                score=score,
+                evidence=evidence,
             )
+            finding = apply_classification(finding)
+            finding = self._injection_graph.add_finding(finding)
+            findings.append(finding)
         return findings
 
     def _active_network_watch_pids(self, now: datetime) -> set[int]:
@@ -210,14 +220,29 @@ class Correlator:
         kinds = {primitive.kind for primitive in primitives}
         apis = sorted({primitive.api for primitive in primitives})
         score = 0
-        evidence: dict[str, object] = {"apis": apis, "primitive_kinds": sorted(kinds)}
+        evidence: dict[str, object] = {
+            "apis": apis,
+            "primitive_kinds": sorted(kind.value for kind in kinds),
+        }
+        evidence.update(analyze_execution(primitives))
 
-        if PrimitiveKind.WRITE in kinds and PrimitiveKind.EXECUTE in kinds:
+        execution_confirmed = bool(evidence.get("execution_confirmed"))
+        if PrimitiveKind.WRITE in kinds and PrimitiveKind.EXECUTE in kinds and execution_confirmed:
             score += 45
-        elif len(kinds) >= 2:
+        elif operational_kind_count(kinds) >= 2:
             score += 35
-        if PrimitiveKind.ALLOCATE in kinds and PrimitiveKind.WRITE in kinds and PrimitiveKind.EXECUTE in kinds:
+        if (
+            PrimitiveKind.ALLOCATE in kinds
+            and PrimitiveKind.WRITE in kinds
+            and PrimitiveKind.EXECUTE in kinds
+            and execution_confirmed
+        ):
             score += 20
+        if PrimitiveKind.CONTEXT_READ in kinds and not execution_confirmed:
+            score += 5
+            evidence["hijack_prep"] = True
+        if evidence.get("missing_execution_transfer"):
+            score = min(score, 75)
         if any(primitive.target_pid and primitive.target_pid != primitive.actor_pid for primitive in primitives):
             score += 15
             evidence["cross_process"] = True
@@ -263,12 +288,15 @@ def _has_temporal_consistency(primitives: list[MemoryPrimitive]) -> bool:
     order = {
         PrimitiveKind.ALLOCATE: 0,
         PrimitiveKind.WRITE: 1,
-        PrimitiveKind.EXECUTE: 2,
+        PrimitiveKind.CONTEXT_READ: 2,
+        PrimitiveKind.EXECUTE: 3,
     }
     sorted_primitives = sorted(primitives, key=lambda item: item.timestamp)
     last_seen = -1
     for primitive in sorted_primitives:
-        current = order[primitive.kind]
+        current = order.get(primitive.kind)
+        if current is None:
+            continue
         if current < last_seen and primitive.kind == PrimitiveKind.ALLOCATE:
             return False
         last_seen = max(last_seen, current)

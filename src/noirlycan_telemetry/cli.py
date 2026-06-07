@@ -5,7 +5,6 @@ import atexit
 import dataclasses
 import json
 import os
-import queue
 import sys
 import threading
 import time
@@ -16,12 +15,7 @@ from typing import Any
 
 from .correlation import Correlator
 from .dashboard.app import run_dashboard
-from .frida_manager import (
-    FridaInjectionMonitor,
-    FridaUnavailable,
-    runtime_event_to_primitive,
-    runtime_event_to_process,
-)
+from .frida_manager import FridaInjectionMonitor
 from .file_watch import FileDropWatcher, default_watch_paths
 from .log_store import new_session_log_path
 from .runtime_config import (
@@ -31,9 +25,19 @@ from .runtime_config import (
     touch_collector_heartbeat,
 )
 from .analysis_queue import drain_analysis_queue, enqueue_analysis
-from .models import FileEvent, Finding, NetworkConnectionEvent, ProcessEvent, TelemetryEvent
-from .network import is_external_beacon_candidate
-from .sysmon import SYSMON_ACCESS_HINT, SYSMON_INSTALL_HINT, SysmonPoller, SysmonUnavailable
+from .batch_runner import run_batch, write_batch_report
+from .collector_runtime import (
+    JsonlWriter,
+    create_monitor_or_none as _create_monitor_or_none,
+    create_sysmon_or_none as _create_sysmon_or_none,
+    drain_frida as _drain_frida,
+    print_finding,
+    process_sysmon_batch as _process_sysmon_batch_core,
+    safe_attach as _safe_attach,
+)
+from .models import FileEvent, ProcessEvent
+from .sandbox_compare import default_vt_api_key, run_compare_batch
+from .sysmon import SysmonPoller
 from .triage import FileTriage, is_interesting_path, triage_file
 
 _SESSION_TRIAGED_PATHS: set[str] = set()
@@ -56,6 +60,10 @@ def main(argv: list[str] | None = None) -> int:
         return command_spawn(args)
     if args.command == "dashboard":
         return command_dashboard(args)
+    if args.command == "batch":
+        return command_batch(args)
+    if args.command == "compare":
+        return command_compare(args)
     parser.print_help()
     return 2
 
@@ -109,6 +117,29 @@ def build_parser() -> argparse.ArgumentParser:
     dashboard.add_argument("--host", default="127.0.0.1", help="Dashboard bind host")
     dashboard.add_argument("--port", type=int, default=8765, help="Dashboard bind port")
     dashboard.add_argument("--logs-dir", type=Path, help="Directory containing JSONL session logs")
+
+    batch = subparsers.add_parser("batch", help="Run a mini-corpus batch analysis over a folder of EXEs")
+    batch.add_argument("--input", type=Path, required=True, help="Directory containing sample EXEs")
+    batch.add_argument("--output", type=Path, required=True, help="JSON report output path")
+    batch.add_argument("--timeout", type=int, default=120, help="Seconds to observe each sample")
+    batch.add_argument("--limit", type=int, default=None, help="Maximum number of samples to run")
+    batch.add_argument("--minimum-score", type=int, default=50, help="Minimum finding score")
+    batch.add_argument("--watch-sysmon", action="store_true", help="Poll Sysmon during each sample run")
+    batch.add_argument("--sysmon-only", action="store_true", help="Ablation mode: Sysmon without Frida hooks")
+    batch.add_argument("--logs-dir", type=Path, help="Directory for per-sample JSONL sessions")
+
+    compare = subparsers.add_parser(
+        "compare",
+        help="Compare Noirlycan injection detection with Defender and optional VirusTotal",
+    )
+    compare.add_argument("--input", type=Path, required=True, help="Directory containing sample EXEs")
+    compare.add_argument("--output", type=Path, required=True, help="JSON comparison report path")
+    compare.add_argument("--timeout", type=int, default=120, help="Seconds to observe each sample")
+    compare.add_argument("--limit", type=int, default=None, help="Maximum number of samples to compare")
+    compare.add_argument("--defender", action="store_true", help="Run Windows Defender MpCmdRun scan")
+    compare.add_argument("--virustotal", action="store_true", help="Query VirusTotal (requires VT_API_KEY)")
+    compare.add_argument("--vt-delay", type=float, default=15.0, help="Delay between VT API calls")
+    compare.add_argument("--logs-dir", type=Path, help="Directory for per-sample JSONL sessions")
     return parser
 
 
@@ -120,6 +151,39 @@ def command_triage(args: argparse.Namespace) -> int:
 
 def command_dashboard(args: argparse.Namespace) -> int:
     run_dashboard(host=args.host, port=args.port, logs_dir=args.logs_dir)
+    return 0
+
+
+def command_batch(args: argparse.Namespace) -> int:
+    report = run_batch(
+        args.input,
+        timeout_seconds=args.timeout,
+        watch_sysmon=args.watch_sysmon,
+        minimum_score=args.minimum_score,
+        logs_dir=args.logs_dir,
+        use_frida=not args.sysmon_only,
+        limit=args.limit,
+    )
+    write_batch_report(report, args.output)
+    print(json.dumps(report, indent=2, sort_keys=True))
+    print(f"[+] Batch report written to {args.output}")
+    return 0
+
+
+def command_compare(args: argparse.Namespace) -> int:
+    report = run_compare_batch(
+        args.input,
+        timeout_seconds=args.timeout,
+        use_defender=args.defender,
+        use_virustotal=args.virustotal,
+        vt_api_key=default_vt_api_key(),
+        logs_dir=args.logs_dir,
+        limit=args.limit,
+        vt_delay_seconds=args.vt_delay,
+    )
+    write_batch_report(report, args.output)
+    print(json.dumps(report, indent=2, sort_keys=True))
+    print(f"[+] Comparison report written to {args.output}")
     return 0
 
 
@@ -476,72 +540,27 @@ def _schedule_file_triage(
     _get_triage_executor().submit(_triage_worker, event, correlator, writer)
 
 
-def _create_sysmon_or_none(watch_sysmon: bool) -> SysmonPoller | None:
-    if not watch_sysmon:
-        return None
-    sysmon = SysmonPoller()
-    try:
-        list(sysmon.poll_once())
-    except SysmonUnavailable as exc:
-        print(f"[!] Sysmon unavailable: {exc}", file=sys.stderr)
-        if "access denied" in str(exc).lower():
-            print(f"[!] {SYSMON_ACCESS_HINT}", file=sys.stderr)
-        else:
-            print(f"[!] {SYSMON_INSTALL_HINT}", file=sys.stderr)
-        print("[!] Continuing without Sysmon (Frida-only if attached).", file=sys.stderr)
-        return None
-    except Exception as exc:
-        print(f"[!] Sysmon unavailable: {exc}", file=sys.stderr)
-        print(f"[!] {SYSMON_ACCESS_HINT}", file=sys.stderr)
-        print("[!] Continuing without Sysmon (Frida-only if attached).", file=sys.stderr)
-        return None
-    return sysmon
-
-
-def _create_monitor_or_none() -> FridaInjectionMonitor | None:
-    try:
-        return FridaInjectionMonitor()
-    except FridaUnavailable as exc:
-        print(f"[!] Frida unavailable: {exc}", file=sys.stderr)
-        return None
-
-
-def _safe_attach(monitor: FridaInjectionMonitor, pid: int) -> None:
-    try:
-        monitor.attach(pid)
-        print(f"[+] Frida attached to PID {pid}")
-    except Exception as exc:
-        print(f"[!] Could not attach to PID {pid}: {exc}", file=sys.stderr)
-
-
 def _process_sysmon_batch(
     sysmon: SysmonPoller,
     correlator: Correlator,
-    writer: "JsonlWriter",
+    writer: JsonlWriter,
     monitor: FridaInjectionMonitor | None,
     auto_attach: bool,
     *,
     args: argparse.Namespace | None = None,
     logs_dir: Path | None = None,
 ) -> None:
-    try:
-        events = list(sysmon.poll_once())
-    except SysmonUnavailable as exc:
-        print(f"[!] Sysmon unavailable: {exc}", file=sys.stderr)
-        return
-    for event in events:
-        if isinstance(event, FileEvent):
-            _handle_file_event(event, correlator, writer, args=args, logs_dir=logs_dir)
-        elif isinstance(event, ProcessEvent):
-            writer.write("sysmon", event)
-            correlator.add_process(event)
-            if auto_attach and monitor is not None and _should_auto_attach(event):
-                _safe_attach(monitor, event.pid)
-        elif isinstance(event, NetworkConnectionEvent):
-            writer.write("sysmon", event)
-            _handle_network_event(event, correlator, writer)
-        elif isinstance(event, TelemetryEvent):
-            writer.write("sysmon", event)
+    def file_handler(event: FileEvent, corr: Correlator, out: JsonlWriter) -> None:
+        _handle_file_event(event, corr, out, args=args, logs_dir=logs_dir)
+
+    _process_sysmon_batch_core(
+        sysmon,
+        correlator,
+        writer,
+        monitor,
+        auto_attach,
+        file_handler=file_handler,
+    )
 
 
 def _is_frida_lab_noise(path: str) -> bool:
@@ -792,115 +811,6 @@ def _is_process_triage_noise(event: ProcessEvent) -> bool:
     if "__psscriptpolicytest_" in lower:
         return True
     return False
-
-
-def _drain_frida(
-    monitor: FridaInjectionMonitor,
-    correlator: Correlator,
-    writer: "JsonlWriter",
-    auto_attach: bool = False,
-) -> None:
-    while True:
-        try:
-            runtime_event = monitor.events().get_nowait()
-        except queue.Empty:
-            return
-        writer.write("frida_raw", runtime_event.payload)
-        process_event = runtime_event_to_process(runtime_event)
-        if process_event is not None:
-            writer.write("frida_process", process_event)
-            correlator.add_process(process_event)
-            if auto_attach and _should_auto_attach(process_event):
-                _safe_attach(monitor, process_event.pid)
-            continue
-        primitive = runtime_event_to_primitive(runtime_event)
-        if primitive is None:
-            continue
-        writer.write("primitive", primitive)
-        for finding in correlator.add_primitive(primitive):
-            writer.write("finding", finding)
-            print_finding(finding)
-
-
-def _should_auto_attach(event: ProcessEvent) -> bool:
-    if not event.image:
-        return False
-    suffix = Path(event.image).suffix.lower()
-    if suffix not in {".exe", ".dll", ".scr", ".com"}:
-        return False
-    image = event.image.lower()
-    if "\\windows\\system32\\" in image and not event.parent_image:
-        return False
-    return True
-
-
-def _handle_network_event(
-    event: NetworkConnectionEvent,
-    correlator: Correlator,
-    writer: "JsonlWriter",
-) -> None:
-    watched = correlator.add_network_connection(event)
-    if watched is None:
-        return
-    writer.write("network", watched)
-    if is_external_beacon_candidate(watched.destination_ip, watched.destination_hostname):
-        print(
-            f"[NETWORK:BEACON?] PID {watched.pid} "
-            f"({watched.image or 'unknown'}) -> {watched.endpoint} "
-            f"via {watched.protocol or 'unknown'}"
-        )
-    else:
-        print(
-            f"[NETWORK] PID {watched.pid} "
-            f"({watched.image or 'unknown'}) -> {watched.endpoint}"
-        )
-
-
-def print_finding(finding: Finding) -> None:
-    print(
-        f"[{finding.severity.value.upper()}:{finding.score}] "
-        f"{finding.title}: {finding.description}"
-    )
-    if finding.target_image or finding.target_pid is not None:
-        target_label = finding.target_image or "unknown image"
-        pid_label = finding.target_pid if finding.target_pid is not None else "-"
-        print(f"  Injection target: {target_label} (pid={pid_label})")
-    print("  APIs:", ", ".join(sorted({primitive.api for primitive in finding.primitives})))
-    if finding.related_file:
-        print(f"  Related file: {finding.related_file.path}")
-    if finding.score >= 70 and finding.target_pid is not None:
-        print(
-            f"  Network watch enabled for PID {finding.target_pid} "
-            f"(5 min, outbound Sysmon EID 3)"
-        )
-
-
-class JsonlWriter:
-    def __init__(self, path: Path | None) -> None:
-        self.path = path
-        self._handle = path.open("a", encoding="utf-8") if path else None
-
-    def write(self, event_type: str, value: Any) -> None:
-        if self._handle is None:
-            return
-        payload = {
-            "type": event_type,
-            "value": _jsonable(value),
-        }
-        self._handle.write(json.dumps(payload, sort_keys=True) + "\n")
-        self._handle.flush()
-
-
-def _jsonable(value: Any) -> Any:
-    if dataclasses.is_dataclass(value):
-        return _jsonable(dataclasses.asdict(value))
-    if isinstance(value, dict):
-        return {str(key): _jsonable(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_jsonable(item) for item in value]
-    if hasattr(value, "isoformat"):
-        return value.isoformat()
-    return value
 
 
 if __name__ == "__main__":

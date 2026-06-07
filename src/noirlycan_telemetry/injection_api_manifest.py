@@ -61,8 +61,6 @@ PAPER_API_CLASSES: tuple[ApiClass, ...] = (
             "NtQueueApcThreadEx",
             "SetThreadContext",
             "NtSetContextThread",
-            "GetThreadContext",
-            "NtGetContextThread",
             "ResumeThread",
             "NtResumeThread",
             "NtAlertResumeThread",
@@ -118,6 +116,14 @@ PAPER_API_CLASSES: tuple[ApiClass, ...] = (
         (
             "GetProcAddress",
             "LdrGetProcedureAddress",
+        ),
+    ),
+    ApiClass(
+        "context_read",
+        "context_read",
+        (
+            "GetThreadContext",
+            "NtGetContextThread",
         ),
     ),
 )

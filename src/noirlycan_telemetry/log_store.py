@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .evasion import summarize_evasion_signals
+from .injection_graph import chains_from_findings
 from .network import is_external_beacon_candidate
 from .process_resolve import image_for_pid as resolve_image_for_pid
 
@@ -123,6 +125,8 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
     triages: list[dict[str, Any]] = []
     processes: list[dict[str, Any]] = []
+    evasion_signals: list[dict[str, Any]] = []
+    technique_counts: Counter[str] = Counter()
     networks_by_pid: dict[int, list[dict[str, Any]]] = {}
 
     for event in events:
@@ -139,7 +143,11 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         if event_type == "finding":
             severity = str(value.get("severity", "unknown")).lower()
             severity_counts[severity] += 1
-            findings.append(_normalize_finding(value, timestamp))
+            normalized = _normalize_finding(value, timestamp)
+            findings.append(normalized)
+            technique = normalized.get("technique")
+            if technique:
+                technique_counts[str(technique)] += 1
             for primitive in value.get("primitives", []):
                 if isinstance(primitive, dict):
                     api = primitive.get("api")
@@ -178,6 +186,9 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         if event_type == "file" and value.get("sha256"):
             triages.append(_normalize_file_triage(value, timestamp))
 
+        if event_type == "evasion":
+            evasion_signals.append(value)
+
     _merge_triage_scores(triages)
     process_images = _build_process_image_index(events)
     _enrich_findings_with_process_images(findings, process_images)
@@ -190,6 +201,8 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         severity = str(finding.get("severity", "unknown")).lower()
         deduped_severity[severity] += 1
 
+    injection_chains = chains_from_findings(deduped_findings)
+    recursive_chains = [chain for chain in injection_chains if chain.get("is_recursive")]
     return {
         "totals": {
             "events": len(events),
@@ -204,6 +217,10 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "event_types": dict(type_counts),
         "severity": dict(deduped_severity),
+        "techniques": dict(technique_counts),
+        "injection_chains": injection_chains[:20],
+        "recursive_chain_count": len(recursive_chains),
+        "evasion": summarize_evasion_signals(evasion_signals),
         "primitive_kinds": dict(primitive_kind_counts),
         "top_apis": api_counts.most_common(12),
         "top_actors": actor_counts.most_common(8),
@@ -656,6 +673,15 @@ def _normalize_finding(value: dict[str, Any], timestamp: str | None) -> dict[str
         "actor_image": actor_image,
         "target_pid": value.get("target_pid"),
         "target_image": target_image,
+        "technique": value.get("technique") or evidence.get("technique"),
+        "technique_confidence": value.get("technique_confidence") or evidence.get("technique_confidence"),
+        "execution_confirmed": evidence.get("execution_confirmed"),
+        "execution_evidence": evidence.get("execution_evidence") or [],
+        "context_read_evidence": evidence.get("context_read_evidence") or [],
+        "missing_execution_transfer": evidence.get("missing_execution_transfer"),
+        "chain_depth": value.get("chain_depth") or evidence.get("chain_depth") or 0,
+        "is_recursive": bool(value.get("is_recursive") or evidence.get("is_recursive")),
+        "injection_chain": value.get("injection_chain") or evidence.get("injection_chain_pids"),
         "apis": apis,
         "evidence": evidence,
         "primitives": primitives,

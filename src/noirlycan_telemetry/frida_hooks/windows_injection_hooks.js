@@ -609,7 +609,7 @@ const API_HANDLERS = {
   },
   NtGetContextThread: {
     onEnter(args) {
-      emit("execute", "NtGetContextThread", {
+      emit("context_read", "NtGetContextThread", {
         target_pid: processIdFromThreadHandle(args[0]),
         address: null,
         size: null,
@@ -905,13 +905,12 @@ function installStaticHooks() {
 
   hook(kernel32, "GetThreadContext", {
     onEnter(args) {
-      emit("execute", "GetThreadContext", {
+      emit("context_read", "GetThreadContext", {
         target_pid: processIdFromThreadHandle(args[0]),
         address: null,
         size: null,
         thread_handle: args[0].toString(),
         context_pointer: args[1].toString(),
-        note: "context_read",
       });
     },
   });
@@ -1361,9 +1360,111 @@ function installDynamicResolverHooks() {
   });
 }
 
+function emitEvasion(kind, api, fields) {
+  send({
+    type: "evasion_signal",
+    kind: kind,
+    api: api,
+    pid: currentPid(),
+    image: actorImage(),
+    timestamp: new Date().toISOString(),
+    ...fields,
+  });
+}
+
+function installEvasionHooks() {
+  hook(kernel32, "IsDebuggerPresent", {
+    onLeave(retval) {
+      emitEvasion("debugger_check", "IsDebuggerPresent", {
+        result: boolSuccess(retval),
+      });
+    },
+  });
+
+  hook(kernel32, "CheckRemoteDebuggerPresent", {
+    onEnter(args) {
+      this.outPtr = args[1];
+    },
+    onLeave(retval) {
+      let remote = null;
+      try {
+        if (this.outPtr) {
+          remote = Memory.readU32(this.outPtr) !== 0;
+        }
+      } catch (_) {}
+      emitEvasion("remote_debugger", "CheckRemoteDebuggerPresent", {
+        success: boolSuccess(retval),
+        remote_debugger: remote,
+      });
+    },
+  });
+
+  hook(kernel32, "GetTickCount", {
+    onLeave(retval) {
+      emitEvasion("timing_probe", "GetTickCount", {
+        tick: ptrToNumber(retval),
+      });
+    },
+  });
+
+  hook(kernel32, "GetTickCount64", {
+    onLeave(retval) {
+      emitEvasion("timing_probe", "GetTickCount64", {
+        tick: ptrToString(retval),
+      });
+    },
+  });
+
+  hook(kernel32, "QueryPerformanceCounter", {
+    onEnter(args) {
+      this.counterPtr = args[0];
+    },
+    onLeave(retval) {
+      emitEvasion("timing_probe", "QueryPerformanceCounter", {
+        success: boolSuccess(retval),
+      });
+    },
+  });
+
+  hook(ntdll, "NtQueryInformationProcess", {
+    onEnter(args) {
+      this.infoClass = ptrToNumber(args[1]);
+    },
+    onLeave(retval) {
+      if (this.infoClass === 7 || this.infoClass === 30 || this.infoClass === 31) {
+        emitEvasion("debug_port_query", "NtQueryInformationProcess", {
+          info_class: this.infoClass,
+          status: ptrToNumber(retval),
+        });
+      }
+    },
+  });
+
+  const regOpenKey = getExport(advapi32, "RegOpenKeyExW");
+  if (regOpenKey) {
+    hook(advapi32, "RegOpenKeyExW", {
+      onEnter(args) {
+        this.subKey = readUtf16Safe(args[1]);
+      },
+      onLeave(retval) {
+        const key = (this.subKey || "").toLowerCase();
+        if (
+          key.indexOf("vmware") >= 0 ||
+          key.indexOf("vbox") >= 0 ||
+          key.indexOf("virtualbox") >= 0 ||
+          key.indexOf("qemu") >= 0
+        ) {
+          emitEvasion("vm_artifact", "RegOpenKeyExW", { sub_key: this.subKey });
+        }
+      },
+    });
+  }
+}
+
 installStaticHooks();
 installPaperExtendedHooks();
 installDynamicResolverHooks();
+installEvasionHooks();
 
 send({
   type: "hook_ready",

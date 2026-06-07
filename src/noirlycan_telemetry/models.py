@@ -17,6 +17,7 @@ class PrimitiveKind(str, Enum):
     ALLOCATE = "allocate"
     WRITE = "write"
     EXECUTE = "execute"
+    CONTEXT_READ = "context_read"
 
 
 class Severity(str, Enum):
@@ -104,6 +105,16 @@ class NetworkConnectionEvent:
 
 
 @dataclass(frozen=True)
+class EvasionSignalEvent:
+    timestamp: datetime
+    kind: str
+    api: str
+    pid: int | None = None
+    image: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class Finding:
     timestamp: datetime
     severity: Severity
@@ -118,3 +129,8 @@ class Finding:
     target_image: str | None = None
     score: int = 0
     evidence: dict[str, Any] = field(default_factory=dict)
+    technique: str | None = None
+    technique_confidence: str | None = None
+    injection_chain: tuple[int, ...] | None = None
+    chain_depth: int = 0
+    is_recursive: bool = False

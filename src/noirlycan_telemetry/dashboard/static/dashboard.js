@@ -274,6 +274,13 @@ function renderRankList(elementId, rows) {
     .join("");
 }
 
+function formatTechnique(row) {
+  const technique = row.technique || "unclassified";
+  const confidence = row.technique_confidence ? ` (${row.technique_confidence})` : "";
+  const recursive = row.is_recursive ? " ↻" : "";
+  return `${technique}${confidence}${recursive}`;
+}
+
 function formatInjectionTarget(row) {
   const image = row.target_image;
   const pid = row.target_pid;
@@ -304,7 +311,7 @@ function renderFindings(rows) {
   }
   const body = document.getElementById("findings-body");
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="7" class="empty">No findings in this session yet.</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="empty">No findings in this session yet.</td></tr>';
     return;
   }
   body.innerHTML = rows
@@ -316,6 +323,7 @@ function renderFindings(rows) {
         <td><span class="severity ${severity}">${severity}</span></td>
         <td>${row.score ?? "-"}</td>
         <td>${formatInjectionTarget(row)}</td>
+        <td class="mono">${formatTechnique(row)}</td>
         <td class="mono">${(row.apis || []).join(", ")}</td>
         <td class="mono">${renderNetworkSummary(row.network)}</td>
         <td>${row.description || row.title || "-"}</td>
@@ -576,6 +584,9 @@ function openFindingModal(finding) {
     <div class="detail-row"><dt>Score</dt><dd>${finding.score ?? "-"}</dd></div>
     <div class="detail-row"><dt>Actor</dt><dd class="mono">${finding.actor_image || `pid ${finding.actor_pid ?? "-"}`}</dd></div>
     <div class="detail-row"><dt>Injection target</dt><dd class="mono">${targetLabel}</dd></div>
+    <div class="detail-row"><dt>Execution confirmed</dt><dd>${finding.execution_confirmed === false ? "no" : finding.execution_confirmed ? "yes" : "unknown"}</dd></div>
+    <div class="detail-row"><dt>Execution evidence</dt><dd class="mono">${(finding.execution_evidence || []).join(", ") || "-"}</dd></div>
+    <div class="detail-row"><dt>Context read</dt><dd class="mono">${(finding.context_read_evidence || []).join(", ") || "-"}</dd></div>
     <div class="detail-row"><dt>Time</dt><dd>${formatTime(finding.timestamp)}</dd></div>
   `;
   document.getElementById("modal-apis").innerHTML = (finding.apis || [])
