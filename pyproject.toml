@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noirlycan-telemetry"
+version = "0.1.0"
+description = "Windows file-to-memory telemetry prototype using Sysmon and Frida"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "frida",
+    "pefile",
+    "pywin32; platform_system == 'Windows'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[project.scripts]
+noirlycan-telemetry = "noirlycan_telemetry.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+noirlycan_telemetry = ["frida_hooks/*.js"]
