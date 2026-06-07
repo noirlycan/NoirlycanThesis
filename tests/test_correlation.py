@@ -174,3 +174,106 @@ def test_resolves_target_image_from_child_process() -> None:
     assert findings[0].target_image is not None
     assert findings[0].target_image.endswith("msedge.exe")
     assert "msedge.exe" in findings[0].description
+
+
+def test_rejects_write_after_execute_temporal_order() -> None:
+    """Paper §3.4 requires allocate → write → execute order.
+
+    A WRITE primitive observed *after* an EXECUTE primitive on the same target
+    is a clear ordering violation and must not be reported as a chain. This
+    test guards the D3 fix in audit-and-threat-model.md.
+    """
+    now = datetime.now(timezone.utc)
+    correlator = Correlator(minimum_score=1)
+    correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now,
+            kind=PrimitiveKind.EXECUTE,
+            actor_pid=10,
+            actor_image="a.exe",
+            target_pid=20,
+            target_image="b.exe",
+            address=0x4000,
+            size=1,
+            api="CreateRemoteThread",
+        )
+    )
+    findings = correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now + timedelta(milliseconds=5),
+            kind=PrimitiveKind.WRITE,
+            actor_pid=10,
+            actor_image="a.exe",
+            target_pid=20,
+            target_image="b.exe",
+            address=0x4000,
+            size=0x100,
+            api="WriteProcessMemory",
+        )
+    )
+
+    assert findings == []
+
+
+def test_set_thread_context_with_rip_overlaps_write_buffer() -> None:
+    """D1 fix: SetThreadContext now carries the new Rip as `address`.
+
+    When the redirect target lands inside the buffer just written, memory
+    congruence should connect the WRITE and EXECUTE primitives — this is the
+    canonical Process Hollowing signature in the paper.
+    """
+    now = datetime.now(timezone.utc)
+    correlator = Correlator(minimum_score=40)
+    correlator.add_process(
+        ProcessEvent(
+            timestamp=now,
+            pid=4242,
+            image=r"C:\Program Files\victim.exe",
+            parent_pid=1337,
+            parent_image=r"C:\Lab\loader.exe",
+            flags=["CREATE_SUSPENDED"],
+        )
+    )
+    correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now + timedelta(milliseconds=10),
+            kind=PrimitiveKind.WRITE,
+            actor_pid=1337,
+            actor_image=r"C:\Lab\loader.exe",
+            target_pid=4242,
+            target_image=r"C:\Program Files\victim.exe",
+            address=0x400000,
+            size=0x2000,
+            api="WriteProcessMemory",
+        )
+    )
+    findings = correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now + timedelta(milliseconds=20),
+            kind=PrimitiveKind.EXECUTE,
+            actor_pid=1337,
+            actor_image=r"C:\Lab\loader.exe",
+            target_pid=4242,
+            target_image=r"C:\Program Files\victim.exe",
+            address=0x400100,  # Rip lands inside the written buffer.
+            size=1,
+            api="SetThreadContext",
+        )
+    )
+
+    assert len(findings) == 1
+    assert "SetThreadContext" in findings[0].evidence["apis"]
+
+
+def test_read_only_apis_do_not_satisfy_two_of_three() -> None:
+    """D2 fix: NtReadVirtualMemory must not count as a write primitive.
+
+    Before the fix, an actor that allocates + remote-reads (a perfectly normal
+    debugger or AV pattern) would already match 2-of-3. After the fix, READ
+    is an observation, not a primitive, so this combination is not a chain.
+    """
+    from noirlycan_telemetry.injection_api_manifest import PAPER_API_CLASSES
+
+    write_class = next(c for c in PAPER_API_CLASSES if c.name == "write")
+    assert "NtReadVirtualMemory" not in write_class.apis
+    assert "ReadProcessMemory" not in write_class.apis

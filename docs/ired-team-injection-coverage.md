@@ -39,9 +39,24 @@ This document maps iRed.team injection labs to Noirlycan hooks, correlator rules
 | Atom bombing | `GlobalAddAtom*`, `NtQueueApcThread` | `atom_injection` | partial | Atom table chain not rebuilt |
 | Extra window memory | `SetWindowLongPtr*`, `SendMessage*` | `extra_window_memory_injection` | partial | No GWLP index validation |
 | Process doppelganging | `NtCreateTransaction`, `RtlCreateProcessReflection` | `process_doppelganging` | partial | TxF flags in evidence; no transacted file graph |
-| Process ghosting / herpaderping | Section + delete-pending file spawn | — | planned | Overlaps section mapping only |
-| .NET unmanaged injection | CLR hosting APIs | — | none | CLR APIs not instrumented |
-| IAT hooking | `WriteProcessMemory` on IAT | — | planned | Generic write+execute only |
+| **Process ghosting** | `NtSetInformationFile` (delete-pending) + section + spawn | `process_ghosting` | **full** | Detected via `process_ghosting_precursor` note |
+| **Process herpaderping** | `NtCreateSection` + `WriteFile` overwrite + spawn | `process_herpaderping` | full | Section captured, file overwritten before process create |
+| **Phantom DLL hollowing** | TxF + `CreateFileTransacted` + section map | `phantom_dll_hollowing` | partial | TxF + section evidence; transacted content not parsed |
+| **IAT hooking** | `VirtualProtectEx` + small remote `WriteProcessMemory` | `iat_hooking` | full | Size ≤ 16 B pointer-overwrite heuristic |
+| **PROPagate** | `SetPropA/W` + `SendNotifyMessageA/W` | `propagate_injection` | full | Window property pointer triggered via SendNotifyMessage |
+| **Manual PE mapping** | `VirtualAllocEx` + multi-write + `VirtualProtectEx` + thread | `manual_mapping` | full | ≥ 3 remote writes + protect + no LoadLibrary |
+| **EnumXxx callback** | `EnumSystemLocalesA/W`, `EnumWindows`, `EnumChildWindows`, `EnumDateFormatsA/W`, `EnumUILanguagesW`, `EnumResourceTypesA/W`, `EnumDesktopWindows`, `EnumThreadWindows` | `enum_callback_injection` | full | Callback ptr to fresh exec buffer |
+| **InstrumentationCallback** | `NtSetInformationProcess` w/ `ProcessInstrumentationCallback` | `instrumentation_callback` | full | Class 40; callback addr extracted from info struct |
+| **KernelCallbackTable** | `NtQueryInformationProcess` + remote PEB write | `kernel_callback_table` | partial | No PEB-offset reasoning yet |
+| **ETW patching** | local `VirtualProtect` + write to ntdll | `etw_patching` | partial | No module-range tracking yet |
+| **AMSI patching** | local `VirtualProtect` + write to amsi.dll | `amsi_patching` | partial | Same caveat as ETW |
+| **Mockingjay** | `NtMapViewOfSection` of existing RWX DLL | `mockingjay` | partial | No allocate primitive; needs DLL RWX-section scanner |
+| **PoolParty** | `TpAllocWork`, `TpPostWork`, `NtSetInformationWorkerFactory`, `RtlQueueWorkItem` | `poolparty` | partial | 8 SafeBreach variants overlap |
+| **Threadless inject** | Remote `VirtualProtectEx` + `WriteProcessMemory` w/o thread API | `threadless_inject` | full | No remote thread = trampoline pattern |
+| **GhostWriting** | `OpenThread` + `SetThreadContext` (no remote write) | `thread_hijack` | full | Now detectable via D1 Rip extraction |
+| .NET unmanaged injection | CLR hosting APIs | `dotnet_clr_hosting` | none | CLR APIs not instrumented |
+| AppInit_DLLs / IFEO / COM hijack | Registry-based | — | none | Out of API-hook scope; requires registry telemetry |
+| DLL Search Order Hijacking | File-drop + LoadLibrary | — | partial | File watcher catches planted DLL; no path-precedence reasoning |
 
 ---
 
@@ -62,18 +77,28 @@ Static triage (`triage.py`) supplies PE, entropy, signature — combined at corr
 
 ---
 
-## 4. New Frida hooks (`installIredTeamHooks`)
+## 4. New Frida hooks
 
-Added in `frida_hooks/windows_injection_hooks.js`:
+`installIredTeamHooks()` in `frida_hooks/windows_injection_hooks.js`:
 
 - **Fibers:** `ConvertThreadToFiber`, `CreateFiber`, `SwitchToFiber`
-- **Threadpool:** `CreateThreadpoolWait`, `SetThreadpoolWait`, `SubmitThreadpoolWait`, `CreateThreadpoolWork`, `SubmitThreadpoolWork`
+- **Threadpool wait:** `CreateThreadpoolWait`, `SetThreadpoolWait`, `SubmitThreadpoolWait`, `CreateThreadpoolWork`, `SubmitThreadpoolWork`
 - **Alertable local APC:** `NtTestAlert`, alertable `SleepEx` (observation)
 - **Window memory:** `SetWindowLongPtr*`, `SetWindowLong*`, `SendMessage*`, `SendMessageCallback*`
 - **TxF / doppelganging:** `NtCreateTransaction`, `NtCommitTransaction`, `NtRollbackTransaction`, `RtlCreateProcessReflection`
 - **Local protect:** `VirtualProtect`
 
-API manifest: `IRED_TEAM_API_CLASSES` in `injection_api_manifest.py`.
+`installAdvancedInjectionHooks()` (new):
+
+- **Process Ghosting / Herpaderping:** `NtSetInformationFile` (FileDispositionInformation / Ex) → emits `process_ghosting_precursor` note
+- **InstrumentationCallback:** `NtSetInformationProcess` (ProcessInstrumentationCallback class) → extracts callback address
+- **PROPagate:** `SetPropA/W`, `SendNotifyMessageA/W`
+- **EnumXxx callback family:** `EnumSystemLocalesA/W`, `EnumDateFormatsA/W`, `EnumUILanguagesW`, `EnumResourceTypesA/W`, `EnumWindows`, `EnumChildWindows`, `EnumDesktopWindows`, `EnumThreadWindows`
+- **PoolParty:** `TpAllocWork`, `TpPostWork`, `RtlQueueWorkItem`, `NtSetInformationWorkerFactory`
+
+API manifest: `PAPER_API_CLASSES` (core) + `IRED_TEAM_API_CLASSES` (iRed.team + advanced) in `injection_api_manifest.py`.
+
+Verification: `tests/test_api_coverage.py` enforces that **every** API listed in `REPO_REQUIRED_APIS` has a corresponding hook entry. As of this version that union has **121 APIs** all hooked.
 
 ---
 
@@ -81,12 +106,14 @@ API manifest: `IRED_TEAM_API_CLASSES` in `injection_api_manifest.py`.
 
 | iRed / offensive topic | Why not full coverage |
 |------------------------|----------------------|
-| Direct syscalls / unhooked ntdll | Frida hooks exports; stub syscall may bypass |
-| Manual shellcode encoders / PE resource loading | No bytecode / resource section analysis |
-| Kernel callback table injection | User-mode only |
-| ThreadlessInject, list planting, mockingjay | No dedicated rules yet |
+| Direct syscalls / unhooked ntdll | Frida hooks exports; stub syscall may bypass — see [audit O1](audit-and-threat-model.md) |
+| Manual shellcode encoders / PE resource loading | No bytecode / resource-section analysis |
+| Kernel callback table injection | User-mode reads PEB but no PEB-offset bookkeeping |
+| Mockingjay (existing RWX DLL) | Needs scanner of legit DLL RWX sections — not implemented |
+| .NET CLR hosting injection | CLR APIs (`CLRCreateInstance`, `CorBindToRuntime`) not hooked |
+| Registry-based persistence (AppInit_DLLs, IFEO, COM hijack) | Requires registry telemetry — out of API hook scope |
 | Full handle / object manager graph | Paper-level depth not replicated |
-| BluePill / Pin style anti-evasion | Frida-based lab; see `evasion.py` for lightweight signals |
+| Anti-evasion bypass (timing checks, debugger detection) | Frida-based lab; signals only via `evasion.py` |
 
 ---
 

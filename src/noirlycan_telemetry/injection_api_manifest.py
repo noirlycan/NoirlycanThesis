@@ -42,10 +42,20 @@ PAPER_API_CLASSES: tuple[ApiClass, ...] = (
             "NtWriteVirtualMemory",
             "NtMapViewOfSection",
             "NtUnmapViewOfSection",
-            "ReadProcessMemory",
-            "NtReadVirtualMemory",
             "RtlCopyMemory",
             "CopyMemory",
+        ),
+    ),
+    # Read APIs are observation-only — paper §3 does not classify ReadProcessMemory /
+    # NtReadVirtualMemory as a write primitive. Kept as a separate class so hooks
+    # can still emit them, but they are excluded from the 2-of-3 primitive count.
+    ApiClass(
+        "remote_read",
+        "observation",
+        (
+            "ReadProcessMemory",
+            "NtReadVirtualMemory",
+            "ZwReadVirtualMemory",
         ),
     ),
     ApiClass(
@@ -192,6 +202,67 @@ IRED_TEAM_API_CLASSES: tuple[ApiClass, ...] = (
         "allocate",
         (
             "VirtualProtect",
+        ),
+    ),
+    # ---- Advanced techniques (Process Ghosting, PROPagate, EnumXxx callback,
+    # InstrumentationCallback, PoolParty). These extend coverage beyond the
+    # ASIA CCS 2025 paper but reuse the same allocate/write/execute primitive
+    # framework.
+    ApiClass(
+        "ghosting_disposition",
+        "observation",
+        (
+            "NtSetInformationFile",
+        ),
+    ),
+    ApiClass(
+        "instrumentation_callback",
+        "execute",
+        (
+            "NtSetInformationProcess",
+        ),
+    ),
+    ApiClass(
+        "propagate_write",
+        "write",
+        (
+            "SetPropA",
+            "SetPropW",
+        ),
+    ),
+    ApiClass(
+        "propagate_trigger",
+        "execute",
+        (
+            "SendNotifyMessageA",
+            "SendNotifyMessageW",
+        ),
+    ),
+    ApiClass(
+        "enum_callback_execute",
+        "execute",
+        (
+            "EnumSystemLocalesA",
+            "EnumSystemLocalesW",
+            "EnumDateFormatsA",
+            "EnumDateFormatsW",
+            "EnumUILanguagesW",
+            "EnumResourceTypesA",
+            "EnumResourceTypesW",
+            "EnumWindows",
+            "EnumChildWindows",
+            "EnumDesktopWindows",
+            "EnumThreadWindows",
+        ),
+    ),
+    ApiClass(
+        "poolparty_execute",
+        "execute",
+        (
+            "TpAllocWork",
+            "TpPostWork",
+            "RtlQueueWorkItem",
+            "NtSetInformationWorkerFactory",
         ),
     ),
 )

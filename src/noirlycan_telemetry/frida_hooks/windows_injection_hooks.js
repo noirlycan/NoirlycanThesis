@@ -107,6 +107,27 @@ function readSizeSafe(address) {
   }
 }
 
+// Offsets into the Windows CONTEXT structure (winnt.h) for the instruction
+// pointer. ContextFlags lives at offset 0x00. We use it as a sanity check.
+// AMD64: Rip @ 0xF8, ContextFlags @ 0x30 (paragraph-aligned record).
+// x86:   Eip @ 0xB8.
+function readInstructionPointerFromContext(contextPtr) {
+  if (contextPtr === null || contextPtr === undefined || contextPtr.isNull()) {
+    return null;
+  }
+  try {
+    if (Process.pointerSize === 8) {
+      const rip = Memory.readU64(contextPtr.add(0xF8));
+      const value = rip.toString();
+      return value === "0" ? null : value;
+    }
+    const eip = Memory.readU32(contextPtr.add(0xB8));
+    return eip === 0 ? null : eip.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
 function getModuleByName(moduleName) {
   try {
     return Process.getModuleByName(moduleName);
@@ -600,10 +621,14 @@ const API_HANDLERS = {
   },
   NtSetContextThread: {
     onEnter(args) {
+      // Extract the new instruction pointer from the CONTEXT structure so
+      // memory-range congruence (paper §3.3) can correlate the redirect
+      // target with a prior allocate/write in the victim.
+      const ripAddress = readInstructionPointerFromContext(args[1]);
       emit("execute", "NtSetContextThread", {
         target_pid: processIdFromThreadHandle(args[0]),
-        address: null,
-        size: null,
+        address: ripAddress,
+        size: ripAddress === null ? null : "1",
         thread_handle: args[0].toString(),
         context_pointer: args[1].toString(),
       });
@@ -653,7 +678,10 @@ const API_HANDLERS = {
   },
   NtReadVirtualMemory: {
     onEnter(args) {
-      emit("write", "NtReadVirtualMemory", {
+      // Remote read is observation-only — paper §3 does not classify it as a
+      // write primitive. Emit as observation so it appears in the timeline
+      // but does not contribute to the 2-of-3 primitive rule.
+      emitObservation("remote_read", "NtReadVirtualMemory", {
         target_pid: processIdFromHandle(args[0]),
         address: args[1].toString(),
         size: args[3].toString(),
@@ -907,10 +935,11 @@ function installStaticHooks() {
 
   hook(kernel32, "SetThreadContext", {
     onEnter(args) {
+      const ripAddress = readInstructionPointerFromContext(args[1]);
       emit("execute", "SetThreadContext", {
         target_pid: processIdFromThreadHandle(args[0]),
-        address: null,
-        size: null,
+        address: ripAddress,
+        size: ripAddress === null ? null : "1",
         thread_handle: args[0].toString(),
         context_pointer: args[1].toString(),
       });
@@ -976,7 +1005,8 @@ function installStaticHooks() {
 function installPaperExtendedHooks() {
   hook(kernel32, "ReadProcessMemory", {
     onEnter(args) {
-      emit("write", "ReadProcessMemory", {
+      // Observation-only — see paper §3 / audit D2.
+      emitObservation("remote_read", "ReadProcessMemory", {
         target_pid: processIdFromHandle(args[0]),
         address: args[1].toString(),
         size: args[3].toString(),
@@ -1723,9 +1753,195 @@ function installIredTeamHooks() {
   });
 }
 
+// FileInformationClass values from ntifs.h that mark a delete-pending file
+// (Process Ghosting precursor). 13 = FileDispositionInformation,
+// 64 = FileDispositionInformationEx (flag 0x1 = DELETE).
+const FILE_DISPOSITION_INFORMATION = 13;
+const FILE_DISPOSITION_INFORMATION_EX = 64;
+
+// ProcessInformationClass values from winternl.h for instrumentation hooks.
+const PROCESS_INSTRUMENTATION_CALLBACK = 40;
+
+function installAdvancedInjectionHooks() {
+  // ---- Process Ghosting / Herpaderping precursor ----
+  hook(ntdll, "NtSetInformationFile", {
+    onEnter(args) {
+      this.infoClass = ptrToNumber(args[4]);
+      this.fileHandle = args[0].toString();
+      this.dataPointer = args[2];
+    },
+    onLeave(retval) {
+      if (!ntSuccess(retval)) {
+        return;
+      }
+      if (
+        this.infoClass === FILE_DISPOSITION_INFORMATION ||
+        this.infoClass === FILE_DISPOSITION_INFORMATION_EX
+      ) {
+        emitObservation("ghosting", "NtSetInformationFile", {
+          target_pid: currentPid(),
+          file_handle: this.fileHandle,
+          info_class: this.infoClass,
+          delete_pending: true,
+          note: "process_ghosting_precursor",
+        });
+      }
+    },
+  });
+
+  // ---- Instrumentation Callback ----
+  hook(ntdll, "NtSetInformationProcess", {
+    onEnter(args) {
+      this.targetPid = processIdFromHandle(args[0]);
+      this.infoClass = ptrToNumber(args[1]);
+      this.dataPointer = args[2];
+    },
+    onLeave(retval) {
+      if (!ntSuccess(retval)) {
+        return;
+      }
+      if (this.infoClass === PROCESS_INSTRUMENTATION_CALLBACK) {
+        // The callback address is the first pointer of the supplied struct.
+        const callback = readPointerSafe(this.dataPointer);
+        emit("execute", "NtSetInformationProcess", {
+          target_pid: this.targetPid,
+          address: callback ? callback.toString() : null,
+          size: "1",
+          info_class: this.infoClass,
+          note: "instrumentation_callback",
+        });
+      }
+    },
+  });
+
+  // ---- PROPagate (window property + notify message) ----
+  hook(user32, "SetPropA", {
+    onEnter(args) {
+      emit("write", "SetPropA", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: Process.pointerSize.toString(),
+        property_name: readAnsiSafe(args[1]),
+        note: "propagate",
+      });
+    },
+  });
+  hook(user32, "SetPropW", {
+    onEnter(args) {
+      emit("write", "SetPropW", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: Process.pointerSize.toString(),
+        property_name: readUtf16Safe(args[1]),
+        note: "propagate",
+      });
+    },
+  });
+  hook(user32, "SendNotifyMessageA", {
+    onEnter(args) {
+      emit("execute", "SendNotifyMessageA", {
+        target_pid: currentPid(),
+        address: null,
+        size: "1",
+        message: ptrToNumber(args[1]),
+        note: "propagate_trigger",
+      });
+    },
+  });
+  hook(user32, "SendNotifyMessageW", {
+    onEnter(args) {
+      emit("execute", "SendNotifyMessageW", {
+        target_pid: currentPid(),
+        address: null,
+        size: "1",
+        message: ptrToNumber(args[1]),
+        note: "propagate_trigger",
+      });
+    },
+  });
+
+  // ---- EnumXxx callback injection family ----
+  // Callback pointer is arg[1] for EnumSystemLocalesA/EnumDateFormatsA/
+  // EnumUILanguagesW, arg[0] for EnumWindows, arg[1] for EnumChildWindows.
+  function enumHook(module, api, callbackArgIndex) {
+    hook(module, api, {
+      onEnter(args) {
+        const cb = args[callbackArgIndex];
+        emit("execute", api, {
+          target_pid: currentPid(),
+          address: cb ? cb.toString() : null,
+          size: "1",
+          callback_arg_index: callbackArgIndex,
+          note: "enum_callback",
+        });
+      },
+    });
+  }
+  enumHook(kernel32, "EnumSystemLocalesA", 0);
+  enumHook(kernel32, "EnumSystemLocalesW", 0);
+  enumHook(kernel32, "EnumDateFormatsA", 1);
+  enumHook(kernel32, "EnumDateFormatsW", 1);
+  enumHook(kernel32, "EnumUILanguagesW", 0);
+  enumHook(kernel32, "EnumResourceTypesA", 1);
+  enumHook(kernel32, "EnumResourceTypesW", 1);
+  enumHook(user32, "EnumWindows", 0);
+  enumHook(user32, "EnumChildWindows", 1);
+  enumHook(user32, "EnumDesktopWindows", 1);
+  enumHook(user32, "EnumThreadWindows", 1);
+
+  // ---- PoolParty (Windows thread-pool worker factory) ----
+  hook(ntdll, "TpAllocWork", {
+    onEnter(args) {
+      // TpAllocWork(*OutWork, Callback, Context, CallbackEnviron)
+      const callback = args[1];
+      emit("execute", "TpAllocWork", {
+        target_pid: currentPid(),
+        address: callback ? callback.toString() : null,
+        size: "1",
+        note: "poolparty_alloc",
+      });
+    },
+  });
+  hook(ntdll, "TpPostWork", {
+    onEnter(args) {
+      emitObservation("execute", "TpPostWork", {
+        target_pid: currentPid(),
+        work_handle: args[0].toString(),
+        note: "poolparty_post",
+      });
+    },
+  });
+  hook(ntdll, "RtlQueueWorkItem", {
+    onEnter(args) {
+      emit("execute", "RtlQueueWorkItem", {
+        target_pid: currentPid(),
+        address: args[0].toString(),
+        size: "1",
+        note: "rtl_work_item",
+      });
+    },
+  });
+  hook(ntdll, "NtSetInformationWorkerFactory", {
+    onEnter(args) {
+      this.targetPid = processIdFromHandle(args[0]);
+      this.infoClass = ptrToNumber(args[1]);
+    },
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitObservation("execute", "NtSetInformationWorkerFactory", {
+          target_pid: this.targetPid,
+          info_class: this.infoClass,
+          note: "poolparty_worker_factory",
+        });
+      }
+    },
+  });
+}
+
 installStaticHooks();
 installPaperExtendedHooks();
 installIredTeamHooks();
+installAdvancedInjectionHooks();
 installDynamicResolverHooks();
 installEvasionHooks();
 

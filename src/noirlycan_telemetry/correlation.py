@@ -289,21 +289,34 @@ class Correlator:
 
 
 def _has_temporal_consistency(primitives: list[MemoryPrimitive]) -> bool:
+    """Enforce the paper's allocate → write → execute order.
+
+    The paper (ASIA CCS '25 §3.4) requires that, ignoring repeated allocations
+    and observation-only events, the operational primitives appear in the
+    canonical order. We therefore reject any sequence where an ALLOCATE or
+    WRITE primitive appears *after* a primitive of a strictly higher rank.
+    CONTEXT_READ is informational and never causes rejection.
+    """
     order = {
         PrimitiveKind.ALLOCATE: 0,
         PrimitiveKind.WRITE: 1,
         PrimitiveKind.CONTEXT_READ: 2,
         PrimitiveKind.EXECUTE: 3,
     }
+    paper_kinds = {PrimitiveKind.ALLOCATE, PrimitiveKind.WRITE, PrimitiveKind.EXECUTE}
     sorted_primitives = sorted(primitives, key=lambda item: item.timestamp)
-    last_seen = -1
+    last_paper_rank = -1
     for primitive in sorted_primitives:
         current = order.get(primitive.kind)
         if current is None:
             continue
-        if current < last_seen and primitive.kind == PrimitiveKind.ALLOCATE:
-            return False
-        last_seen = max(last_seen, current)
+        if primitive.kind in paper_kinds:
+            if current < last_paper_rank and primitive.kind in {
+                PrimitiveKind.ALLOCATE,
+                PrimitiveKind.WRITE,
+            }:
+                return False
+            last_paper_rank = max(last_paper_rank, current)
     return True
 
 

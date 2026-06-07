@@ -6,7 +6,17 @@ from noirlycan_telemetry.models import FileEvent, Finding, MemoryPrimitive, Prim
 from noirlycan_telemetry.technique_classifier import InjectionTechnique, classify_finding
 
 
-def _primitive(kind: PrimitiveKind, api: str, *, target_pid: int = 2000) -> MemoryPrimitive:
+def _primitive(
+    kind: PrimitiveKind,
+    api: str,
+    *,
+    target_pid: int = 2000,
+    size: int = 0x1000,
+    note: str | None = None,
+) -> MemoryPrimitive:
+    details: dict[str, object] = {}
+    if note is not None:
+        details["note"] = note
     return MemoryPrimitive(
         timestamp=datetime.now(timezone.utc),
         kind=kind,
@@ -15,9 +25,9 @@ def _primitive(kind: PrimitiveKind, api: str, *, target_pid: int = 2000) -> Memo
         target_pid=target_pid,
         target_image="C:\\Windows\\explorer.exe",
         address=0x10000,
-        size=0x1000,
+        size=size,
         api=api,
-        details={},
+        details=details,
     )
 
 
@@ -91,10 +101,14 @@ def test_threadpool_wait_classification() -> None:
 
 
 def test_reflective_dll_classification() -> None:
+    # Reflective DLL specifically uses memcpy / RtlMoveMemory to copy PE
+    # sections locally before mapping — not the WriteProcessMemory trinity,
+    # which is canonical shellcode injection. This separation matches
+    # iRed.team's distinction between the two techniques.
     result = classify_finding(
         _finding(
-            _primitive(PrimitiveKind.ALLOCATE, "VirtualAllocEx"),
-            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory"),
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualAlloc"),
+            _primitive(PrimitiveKind.WRITE, "RtlMoveMemory"),
             _primitive(PrimitiveKind.EXECUTE, "NtCreateThreadEx"),
             cross_process=True,
             execution_confirmed=True,
@@ -166,3 +180,117 @@ def test_pe_injection_with_related_file() -> None:
     )
     result = classify_finding(finding)
     assert result.technique == InjectionTechnique.PE_INJECTION
+
+
+# ---------------------------------------------------------------------------
+# Extended technique coverage (Process Ghosting, PROPagate, Enum callback,
+# Instrumentation Callback, PoolParty, IAT hooking, Threadless inject,
+# Manual mapping). These guard the iRed.team / advanced-techniques expansion.
+# ---------------------------------------------------------------------------
+
+
+def test_process_ghosting_classification() -> None:
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.WRITE, "NtSetInformationFile", note="process_ghosting_precursor"),
+            _primitive(PrimitiveKind.ALLOCATE, "NtCreateSection"),
+            _primitive(PrimitiveKind.WRITE, "NtCreateProcessEx"),
+        )
+    )
+    assert result.technique == InjectionTechnique.PROCESS_GHOSTING
+
+
+def test_propagate_classification() -> None:
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.WRITE, "SetPropW", target_pid=1000, note="propagate"),
+            _primitive(PrimitiveKind.EXECUTE, "SendNotifyMessageW", target_pid=1000, note="propagate_trigger"),
+        )
+    )
+    assert result.technique == InjectionTechnique.PROPAGATE_INJECTION
+
+
+def test_enum_callback_injection_classification() -> None:
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualAlloc", target_pid=1000),
+            _primitive(PrimitiveKind.WRITE, "memcpy", target_pid=1000),
+            _primitive(PrimitiveKind.EXECUTE, "EnumSystemLocalesA", target_pid=1000, note="enum_callback"),
+        )
+    )
+    assert result.technique == InjectionTechnique.ENUM_CALLBACK_INJECTION
+
+
+def test_instrumentation_callback_classification() -> None:
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.WRITE, "NtWriteVirtualMemory"),
+            _primitive(PrimitiveKind.EXECUTE, "NtSetInformationProcess", note="instrumentation_callback"),
+        )
+    )
+    assert result.technique == InjectionTechnique.INSTRUMENTATION_CALLBACK
+
+
+def test_poolparty_classification() -> None:
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualAllocEx"),
+            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory"),
+            _primitive(PrimitiveKind.EXECUTE, "TpAllocWork", note="poolparty_alloc"),
+        )
+    )
+    assert result.technique == InjectionTechnique.POOLPARTY
+
+
+def test_iat_hooking_classification() -> None:
+    # No allocate, only remote protect + small (pointer-sized) write.
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualProtectEx"),
+            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory", size=8),
+        )
+    )
+    assert result.technique == InjectionTechnique.IAT_HOOKING
+
+
+def test_threadless_inject_classification() -> None:
+    # No alloc, no thread API, larger trampoline write.
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualProtectEx"),
+            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory", size=128),
+        )
+    )
+    assert result.technique == InjectionTechnique.THREADLESS_INJECT
+
+
+def test_manual_mapping_classification() -> None:
+    # Three writes (PE sections) + protect + thread, no LoadLibrary.
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualAllocEx"),
+            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory"),
+            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory"),
+            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory"),
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualProtectEx"),
+            _primitive(PrimitiveKind.EXECUTE, "RtlCreateUserThread"),
+            cross_process=True,
+            execution_confirmed=True,
+        )
+    )
+    assert result.technique == InjectionTechnique.MANUAL_MAPPING
+
+
+def test_classic_shellcode_not_misclassified_as_reflective() -> None:
+    """Regression: VirtualAllocEx + WriteProcessMemory + CreateRemoteThread
+    must classify as SHELLCODE_INJECTION, not REFLECTIVE_DLL (reflective is
+    the fallback for the same primitives *without* the canonical trinity)."""
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "VirtualAllocEx"),
+            _primitive(PrimitiveKind.WRITE, "WriteProcessMemory"),
+            _primitive(PrimitiveKind.EXECUTE, "CreateRemoteThread"),
+            cross_process=True,
+        )
+    )
+    assert result.technique == InjectionTechnique.SHELLCODE_INJECTION

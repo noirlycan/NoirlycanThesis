@@ -33,6 +33,21 @@ class InjectionTechnique(str, Enum):
     THREADPOOL_WAIT_INJECTION = "threadpool_wait_injection"
     EXTRA_WINDOW_MEMORY_INJECTION = "extra_window_memory_injection"
     LOCAL_SELF_INJECT = "local_self_inject"
+    # ---- Extensions beyond ASIA CCS 2025 / iRed.team core set ----
+    PROCESS_GHOSTING = "process_ghosting"
+    PROCESS_HERPADERPING = "process_herpaderping"
+    PHANTOM_DLL_HOLLOWING = "phantom_dll_hollowing"
+    IAT_HOOKING = "iat_hooking"
+    PROPAGATE_INJECTION = "propagate_injection"
+    MANUAL_MAPPING = "manual_mapping"
+    ENUM_CALLBACK_INJECTION = "enum_callback_injection"
+    KERNEL_CALLBACK_TABLE = "kernel_callback_table"
+    INSTRUMENTATION_CALLBACK = "instrumentation_callback"
+    ETW_PATCHING = "etw_patching"
+    AMSI_PATCHING = "amsi_patching"
+    MOCKINGJAY = "mockingjay"
+    POOLPARTY = "poolparty"
+    THREADLESS_INJECT = "threadless_inject"
     UNCLASSIFIED = "unclassified"
 
 
@@ -60,6 +75,80 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
     section_mapping = bool(evidence.get("section_mapping"))
     create_suspended = bool(evidence.get("create_suspended"))
     context_read = PrimitiveKind.CONTEXT_READ in kinds or bool(execution_meta.get("context_read_evidence"))
+
+    # ---- Extensions: high-specificity rules first ----
+    if _has_any(apis_lower, "ntsetinformationprocess") and _has_note(finding, "instrumentation_callback"):
+        return TechniqueClassification(
+            technique=InjectionTechnique.INSTRUMENTATION_CALLBACK,
+            confidence=TechniqueConfidence.HIGH,
+            rationale="NtSetInformationProcess with ProcessInstrumentationCallback class.",
+        )
+
+    if _has_note(finding, "process_ghosting_precursor") or _has_any(
+        apis_lower, "ntsetinformationfile"
+    ):
+        if _has_any(
+            apis_lower,
+            "ntcreatesection",
+            "zwcreatesection",
+            "ntcreateprocessex",
+            "ntcreateuserprocess",
+            "createprocessa",
+            "createprocessw",
+        ):
+            return TechniqueClassification(
+                technique=InjectionTechnique.PROCESS_GHOSTING,
+                confidence=TechniqueConfidence.HIGH,
+                rationale="Delete-pending file disposition followed by section + process create.",
+            )
+
+    if _has_any(apis_lower, "setpropa", "setpropw") and _has_any(
+        apis_lower, "sendnotifymessagea", "sendnotifymessagew"
+    ):
+        return TechniqueClassification(
+            technique=InjectionTechnique.PROPAGATE_INJECTION,
+            confidence=TechniqueConfidence.HIGH,
+            rationale="SetProp window-property pointer triggered via SendNotifyMessage (PROPagate).",
+        )
+
+    enum_apis = {
+        "enumsystemlocalesa", "enumsystemlocalesw", "enumdateformatsa", "enumdateformatsw",
+        "enumuilanguagesw", "enumresourcetypesa", "enumresourcetypesw",
+        "enumwindows", "enumchildwindows", "enumdesktopwindows", "enumthreadwindows",
+    }
+    if apis_lower & enum_apis and (
+        PrimitiveKind.ALLOCATE in kinds or PrimitiveKind.WRITE in kinds
+    ):
+        return TechniqueClassification(
+            technique=InjectionTechnique.ENUM_CALLBACK_INJECTION,
+            confidence=TechniqueConfidence.HIGH,
+            rationale="EnumXxx callback pointer used to execute attacker-controlled buffer.",
+        )
+
+    poolparty_apis = {
+        "tpallocwork", "tppostwork", "rtlqueueworkitem", "ntsetinformationworkerfactory",
+    }
+    if apis_lower & poolparty_apis:
+        return TechniqueClassification(
+            technique=InjectionTechnique.POOLPARTY,
+            confidence=_confidence_from_kinds(kinds, minimum=2),
+            rationale="Thread-pool worker factory / TpAllocWork used as execution vehicle (PoolParty).",
+        )
+
+    # IAT hook = pointer-sized overwrite (≤ 16 B); threadless = larger trampoline.
+    if _is_iat_hook(finding, apis_lower, kinds):
+        return TechniqueClassification(
+            technique=InjectionTechnique.IAT_HOOKING,
+            confidence=TechniqueConfidence.MEDIUM,
+            rationale="Cross-process VirtualProtectEx + pointer-sized write inside a remote module (IAT range heuristic).",
+        )
+
+    if _is_threadless_inject(finding, apis_lower, kinds, execution_confirmed):
+        return TechniqueClassification(
+            technique=InjectionTechnique.THREADLESS_INJECT,
+            confidence=TechniqueConfidence.MEDIUM,
+            rationale="Remote protect+write to executable region without a remote-thread API (threadless trampoline).",
+        )
 
     if _is_local_only(finding):
         if _has_any(apis_lower, "nttestalert") and _has_any(apis_lower, "queueuserapc", "ntqueueapcthread"):
@@ -216,13 +305,26 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
             rationale="PE file correlated with remote memory write and execution primitives.",
         )
 
-    if _reflective_dll_pattern(apis_lower, kinds, cross_process):
+    # Manual mapping is a *stronger* signal than the shellcode trinity (PE
+    # loaders write each section separately and call VirtualProtectEx). Check
+    # it BEFORE the trinity rule so we don't misclassify multi-write loaders
+    # as plain shellcode.
+    if (
+        cross_process
+        and PrimitiveKind.WRITE in kinds
+        and PrimitiveKind.EXECUTE in kinds
+        and not (apis_lower & {"loadlibrarya", "loadlibraryw", "loadlibraryexa", "loadlibraryexw", "ldrloaddll"})
+        and (apis_lower & {"virtualprotectex", "ntprotectvirtualmemory"})
+        and sum(1 for p in finding.primitives if p.kind == PrimitiveKind.WRITE) >= 3
+    ):
         return TechniqueClassification(
-            technique=InjectionTechnique.REFLECTIVE_DLL_INJECTION,
+            technique=InjectionTechnique.MANUAL_MAPPING,
             confidence=TechniqueConfidence.MEDIUM,
-            rationale="Remote memory write + execute without DLL path (reflective loading pattern).",
+            rationale="Multiple remote writes + protect + thread, no LoadLibrary (manual PE mapping).",
         )
 
+    # Classic shellcode trinity takes precedence over the generic reflective-
+    # DLL fallback.
     if _has_any(
         apis_lower,
         "virtualallocex",
@@ -246,6 +348,13 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
             technique=InjectionTechnique.SHELLCODE_INJECTION,
             confidence=TechniqueConfidence.HIGH,
             rationale="Classic VirtualAllocEx + WriteProcessMemory + CreateRemoteThread chain.",
+        )
+
+    if _reflective_dll_pattern(apis_lower, kinds, cross_process):
+        return TechniqueClassification(
+            technique=InjectionTechnique.REFLECTIVE_DLL_INJECTION,
+            confidence=TechniqueConfidence.MEDIUM,
+            rationale="Remote memory write + execute without DLL path (reflective loading pattern).",
         )
 
     if _has_any(
@@ -360,6 +469,62 @@ def _has_txf_signal(apis_lower: set[str], evidence: dict[str, Any]) -> bool:
         "ntcreateprocessex",
     }
     return bool(apis_lower & txf_apis) and bool(apis_lower & spawn_apis)
+
+
+def _has_note(finding: Finding, needle: str) -> bool:
+    needle = needle.lower()
+    for primitive in finding.primitives:
+        note = str(primitive.details.get("note", "")).lower()
+        if needle in note:
+            return True
+    return False
+
+
+def _is_threadless_inject(
+    finding: Finding,
+    apis_lower: set[str],
+    kinds: set[PrimitiveKind],
+    execution_confirmed: bool,
+) -> bool:
+    if finding.target_pid is None or finding.target_pid == finding.actor_pid:
+        return False
+    if PrimitiveKind.WRITE not in kinds:
+        return False
+    # Must protect+write remotely without spawning a thread.
+    protect = apis_lower & {"virtualprotectex", "ntprotectvirtualmemory", "zwprotectvirtualmemory"}
+    if not protect:
+        return False
+    thread_spawn = apis_lower & {
+        "createremotethread", "createremotethreadex",
+        "ntcreatethreadex", "rtlcreateuserthread", "zwcreatethreadex",
+        "queueuserapc", "ntqueueapcthread", "ntqueueapcthreadex",
+        "resumethread", "ntresumethread", "ntalertresumethread", "zwresumethread",
+    }
+    if thread_spawn:
+        return False
+    # Small write (~16 bytes for a near-jmp trampoline) — the heuristic is the
+    # presence of write+protect on the remote side with no thread creation.
+    return True
+
+
+def _is_iat_hook(finding: Finding, apis_lower: set[str], kinds: set[PrimitiveKind]) -> bool:
+    if finding.target_pid is None or finding.target_pid == finding.actor_pid:
+        return False
+    if "writeprocessmemory" not in apis_lower and "ntwritevirtualmemory" not in apis_lower:
+        return False
+    if not (apis_lower & {"virtualprotectex", "ntprotectvirtualmemory"}):
+        return False
+    # Avoid duplicate with shellcode injection — IAT hook does NOT allocate
+    # fresh memory, it patches existing module IAT.
+    if "virtualallocex" in apis_lower or "ntallocatevirtualmemory" in apis_lower:
+        return False
+    # Pointer-sized writes look like IAT entry overwrites (8 bytes on x64,
+    # 4 bytes on x86; allow some slack for adjacent entries).
+    for primitive in finding.primitives:
+        if primitive.kind == PrimitiveKind.WRITE and primitive.size is not None:
+            if primitive.size <= 16:
+                return True
+    return False
 
 
 def _reflective_dll_pattern(apis_lower: set[str], kinds: set[PrimitiveKind], cross_process: bool) -> bool:
