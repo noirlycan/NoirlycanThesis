@@ -1,4 +1,4 @@
-"""Rule-based injection technique classifier (ASIA CCS 2025 Appendix A subset)."""
+"""Rule-based injection technique classifier (ASIA CCS 2025 + iRed.team subset)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ from enum import Enum
 from typing import Any
 
 from .execution_analysis import analyze_execution
-from .models import Finding, MemoryPrimitive, PrimitiveKind, ProcessEvent
+from .models import Finding, PrimitiveKind, ProcessEvent
+from .payload_classifier import payload_metadata
 
 
 class InjectionTechnique(str, Enum):
@@ -16,12 +17,21 @@ class InjectionTechnique(str, Enum):
     PROCESS_HOLLOWING_CLASSIC = "process_hollowing_classic"
     SHELLCODE_INJECTION = "shellcode_injection"
     APC_INJECTION = "apc_injection"
+    EARLY_BIRD_APC_INJECTION = "early_bird_apc_injection"
+    LOCAL_APC_INJECTION = "local_apc_injection"
     THREAD_HIJACK = "thread_hijack"
     DLL_INJECTION = "dll_injection"
+    REFLECTIVE_DLL_INJECTION = "reflective_dll_injection"
+    PE_INJECTION = "pe_injection"
+    ENTRYPOINT_PATCHING = "entrypoint_patching"
     PROCESS_SPAWN_INJECT = "process_spawn_inject"
+    PROCESS_DOPPELGANGING = "process_doppelganging"
     MODULE_STOMPING = "module_stomping"
     ATOM_INJECTION = "atom_injection"
     HOOK_INJECTION = "hook_injection"
+    FIBER_INJECTION = "fiber_injection"
+    THREADPOOL_WAIT_INJECTION = "threadpool_wait_injection"
+    EXTRA_WINDOW_MEMORY_INJECTION = "extra_window_memory_injection"
     LOCAL_SELF_INJECT = "local_self_inject"
     UNCLASSIFIED = "unclassified"
 
@@ -52,10 +62,42 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
     context_read = PrimitiveKind.CONTEXT_READ in kinds or bool(execution_meta.get("context_read_evidence"))
 
     if _is_local_only(finding):
+        if _has_any(apis_lower, "nttestalert") and _has_any(apis_lower, "queueuserapc", "ntqueueapcthread"):
+            return TechniqueClassification(
+                technique=InjectionTechnique.LOCAL_APC_INJECTION,
+                confidence=TechniqueConfidence.MEDIUM,
+                rationale="Local APC queued then alertable wake (NtTestAlert / SleepEx pattern).",
+            )
+        if _has_any(apis_lower, "switchtofiber", "createfiber", "convertthreadtofiber"):
+            return TechniqueClassification(
+                technique=InjectionTechnique.FIBER_INJECTION,
+                confidence=_confidence_from_kinds(kinds, minimum=2),
+                rationale="Fiber APIs used to redirect execution in the local process.",
+            )
         return TechniqueClassification(
             technique=InjectionTechnique.LOCAL_SELF_INJECT,
             confidence=_confidence_from_kinds(kinds, minimum=2),
             rationale="Primitives target the same process (self-injection / local staging).",
+        )
+
+    if _has_txf_signal(apis_lower, evidence):
+        return TechniqueClassification(
+            technique=InjectionTechnique.PROCESS_DOPPELGANGING,
+            confidence=TechniqueConfidence.MEDIUM,
+            rationale="Transactional NTFS (TxF) APIs observed with process creation/spawn.",
+        )
+
+    if _has_any(
+        apis_lower,
+        "setwindowlongptra",
+        "setwindowlongptrw",
+        "setwindowlonga",
+        "setwindowlongw",
+    ) and _has_any(apis_lower, "sendmessagea", "sendmessagew", "sendmessagecallbacka", "sendmessagecallbackw"):
+        return TechniqueClassification(
+            technique=InjectionTechnique.EXTRA_WINDOW_MEMORY_INJECTION,
+            confidence=TechniqueConfidence.MEDIUM,
+            rationale="Window extra-bytes memory manipulated then triggered via SendMessage.",
         )
 
     if _has_any(apis_lower, "setwindowshookexa", "setwindowshookexw"):
@@ -79,6 +121,34 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
                 confidence=TechniqueConfidence.HIGH if PrimitiveKind.EXECUTE in kinds else TechniqueConfidence.MEDIUM,
                 rationale="Remote DLL load primitive observed.",
             )
+
+    if _has_any(apis_lower, "ntqueueapcthreadex") and create_suspended:
+        return TechniqueClassification(
+            technique=InjectionTechnique.EARLY_BIRD_APC_INJECTION,
+            confidence=TechniqueConfidence.HIGH,
+            rationale="APC queued via NtQueueApcThreadEx into a CREATE_SUSPENDED victim (early bird).",
+        )
+
+    if _has_any(apis_lower, "switchtofiber", "createfiber") and cross_process:
+        return TechniqueClassification(
+            technique=InjectionTechnique.FIBER_INJECTION,
+            confidence=_confidence_from_kinds(kinds, minimum=2),
+            rationale="Fiber execution transfer observed with cross-process memory primitives.",
+        )
+
+    if _has_any(
+        apis_lower,
+        "createthreadpoolwait",
+        "setthreadpoolwait",
+        "submitthreadpoolwait",
+        "createthreadpoolwork",
+        "submitthreadpoolwork",
+    ):
+        return TechniqueClassification(
+            technique=InjectionTechnique.THREADPOOL_WAIT_INJECTION,
+            confidence=_confidence_from_kinds(kinds, minimum=2),
+            rationale="Threadpool wait/work callback used as execution vehicle.",
+        )
 
     if _has_any(apis_lower, "ntqueueapcthread", "ntqueueapcthreadex", "queueuserapc"):
         return TechniqueClassification(
@@ -131,6 +201,26 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
             technique=InjectionTechnique.PROCESS_SPAWN_INJECT,
             confidence=_confidence_from_kinds(kinds, minimum=2),
             rationale="Victim created suspended then injection primitives observed.",
+        )
+
+    if finding.related_file and finding.related_file.pe and cross_process and PrimitiveKind.WRITE in kinds:
+        if _has_any(apis_lower, "virtualprotectex", "ntprotectvirtualmemory", "zwprotectvirtualmemory"):
+            return TechniqueClassification(
+                technique=InjectionTechnique.ENTRYPOINT_PATCHING,
+                confidence=TechniqueConfidence.MEDIUM,
+                rationale="PE sample with remote protect/write (entrypoint or image patch pattern).",
+            )
+        return TechniqueClassification(
+            technique=InjectionTechnique.PE_INJECTION,
+            confidence=_confidence_from_kinds(kinds, minimum=2),
+            rationale="PE file correlated with remote memory write and execution primitives.",
+        )
+
+    if _reflective_dll_pattern(apis_lower, kinds, cross_process):
+        return TechniqueClassification(
+            technique=InjectionTechnique.REFLECTIVE_DLL_INJECTION,
+            confidence=TechniqueConfidence.MEDIUM,
+            rationale="Remote memory write + execute without DLL path (reflective loading pattern).",
         )
 
     if _has_any(
@@ -189,6 +279,7 @@ def apply_classification(finding: Finding) -> Finding:
     evidence = dict(finding.evidence)
     execution_meta = analyze_execution(list(finding.primitives))
     evidence.update(execution_meta)
+    evidence.update(payload_metadata(finding))
     evidence["technique"] = result.technique.value
     evidence["technique_confidence"] = result.confidence.value
     evidence["technique_rationale"] = result.rationale
@@ -250,6 +341,43 @@ def _is_local_only(finding: Finding) -> bool:
 
 def _target_differs_from_actor(finding: Finding) -> bool:
     return finding.target_pid is not None and finding.target_pid != finding.actor_pid
+
+
+def _has_txf_signal(apis_lower: set[str], evidence: dict[str, Any]) -> bool:
+    if evidence.get("txf_transaction") or evidence.get("process_reflection"):
+        return True
+    txf_apis = {
+        "ntcreatetransaction",
+        "ntcommittransaction",
+        "ntrollbacktransaction",
+        "rtlcreateprocessreflection",
+    }
+    spawn_apis = {
+        "createprocessa",
+        "createprocessw",
+        "ntcreateuserprocess",
+        "rtlcreateuserprocess",
+        "ntcreateprocessex",
+    }
+    return bool(apis_lower & txf_apis) and bool(apis_lower & spawn_apis)
+
+
+def _reflective_dll_pattern(apis_lower: set[str], kinds: set[PrimitiveKind], cross_process: bool) -> bool:
+    if not cross_process or PrimitiveKind.WRITE not in kinds or PrimitiveKind.EXECUTE not in kinds:
+        return False
+    if apis_lower & {"loadlibrarya", "loadlibraryw", "loadlibraryexa", "loadlibraryexw", "ldrloaddll"}:
+        return False
+    return bool(
+        apis_lower
+        & {
+            "memcpy",
+            "rtlmovememory",
+            "virtualalloc",
+            "ntallocatevirtualmemory",
+            "writeprocessmemory",
+            "ntwritevirtualmemory",
+        }
+    )
 
 
 def process_flags_hint(process: ProcessEvent | None) -> list[str]:

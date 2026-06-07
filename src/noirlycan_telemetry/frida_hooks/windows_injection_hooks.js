@@ -33,6 +33,8 @@ const DYNAMIC_INJECTION_APIS = new Set([
   "NtOpenProcess",
   "NtOpenThread",
   "NtAddAtom",
+  "NtTestAlert",
+  "RtlCreateProcessReflection",
   "RtlCreateUserThread",
   "RtlCreateUserProcess",
   "LdrLoadDll",
@@ -719,6 +721,18 @@ const API_HANDLERS = {
     onLeave(retval) {
       if (ntSuccess(retval)) {
         emitObservation("execute", "NtAddAtom", {});
+      }
+    },
+  },
+  NtTestAlert: {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emit("execute", "NtTestAlert", {
+          target_pid: currentPid(),
+          address: null,
+          size: "1",
+          note: "alertable_wake",
+        });
       }
     },
   },
@@ -1461,8 +1475,257 @@ function installEvasionHooks() {
   }
 }
 
+function installIredTeamHooks() {
+  hook(kernel32, "ConvertThreadToFiber", {
+    onEnter(args) {
+      emit("execute", "ConvertThreadToFiber", {
+        target_pid: currentPid(),
+        address: args[0] ? args[0].toString() : null,
+        size: "1",
+      });
+    },
+  });
+
+  hook(kernel32, "CreateFiber", {
+    onEnter(args) {
+      emit("execute", "CreateFiber", {
+        target_pid: currentPid(),
+        address: args[0] ? args[0].toString() : null,
+        size: args[1] ? args[1].toString() : null,
+      });
+    },
+  });
+
+  hook(kernel32, "SwitchToFiber", {
+    onEnter(args) {
+      emit("execute", "SwitchToFiber", {
+        target_pid: currentPid(),
+        address: args[0] ? args[0].toString() : null,
+        size: "1",
+      });
+    },
+  });
+
+  hook(kernel32, "CreateThreadpoolWait", {
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("execute", "CreateThreadpoolWait", {
+          target_pid: currentPid(),
+          address: retval.toString(),
+          size: "1",
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "SetThreadpoolWait", {
+    onEnter(args) {
+      emit("execute", "SetThreadpoolWait", {
+        target_pid: currentPid(),
+        address: args[1] ? args[1].toString() : null,
+        size: "1",
+        wait_handle: args[0] ? args[0].toString() : null,
+      });
+    },
+  });
+
+  hook(kernel32, "SubmitThreadpoolWait", {
+    onEnter(args) {
+      emit("execute", "SubmitThreadpoolWait", {
+        target_pid: currentPid(),
+        address: args[0] ? args[0].toString() : null,
+        size: "1",
+      });
+    },
+  });
+
+  hook(kernel32, "CreateThreadpoolWork", {
+    onLeave(retval) {
+      if (!retval.isNull()) {
+        emit("execute", "CreateThreadpoolWork", {
+          target_pid: currentPid(),
+          address: retval.toString(),
+          size: "1",
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "SubmitThreadpoolWork", {
+    onEnter(args) {
+      emit("execute", "SubmitThreadpoolWork", {
+        target_pid: currentPid(),
+        address: args[0] ? args[0].toString() : null,
+        size: "1",
+      });
+    },
+  });
+
+  hook(kernel32, "VirtualProtect", {
+    onEnter(args) {
+      this.address = args[0].toString();
+      this.size = args[1].toString();
+      this.protection = protectionToString(args[2]);
+    },
+    onLeave(retval) {
+      if (boolSuccess(retval)) {
+        emit("allocate", "VirtualProtect", {
+          target_pid: currentPid(),
+          address: this.address,
+          size: this.size,
+          protection: this.protection,
+        });
+      }
+    },
+  });
+
+  hook(kernel32, "SleepEx", {
+    onEnter(args) {
+      const alertable = ptrToNumber(args[1]) !== 0;
+      if (alertable) {
+        emitObservation("execute", "SleepEx", {
+          target_pid: currentPid(),
+          alertable: true,
+          milliseconds: ptrToNumber(args[0]),
+        });
+      }
+    },
+  });
+
+  hook(user32, "SetWindowLongPtrA", {
+    onEnter(args) {
+      emit("write", "SetWindowLongPtrA", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: Process.pointerSize.toString(),
+        index: ptrToNumber(args[1]),
+      });
+    },
+  });
+
+  hook(user32, "SetWindowLongPtrW", {
+    onEnter(args) {
+      emit("write", "SetWindowLongPtrW", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: Process.pointerSize.toString(),
+        index: ptrToNumber(args[1]),
+      });
+    },
+  });
+
+  hook(user32, "SendMessageA", {
+    onEnter(args) {
+      emit("execute", "SendMessageA", {
+        target_pid: currentPid(),
+        address: args[1] ? args[1].toString() : null,
+        size: "1",
+        message: ptrToNumber(args[1]),
+      });
+    },
+  });
+
+  hook(user32, "SendMessageW", {
+    onEnter(args) {
+      emit("execute", "SendMessageW", {
+        target_pid: currentPid(),
+        address: args[1] ? args[1].toString() : null,
+        size: "1",
+        message: ptrToNumber(args[1]),
+      });
+    },
+  });
+
+  hook(user32, "SendMessageCallbackA", {
+    onEnter(args) {
+      emit("execute", "SendMessageCallbackA", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: "1",
+      });
+    },
+  });
+
+  hook(user32, "SendMessageCallbackW", {
+    onEnter(args) {
+      emit("execute", "SendMessageCallbackW", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: "1",
+      });
+    },
+  });
+
+  hook(user32, "SetWindowLongA", {
+    onEnter(args) {
+      emit("write", "SetWindowLongA", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: Process.pointerSize.toString(),
+        index: ptrToNumber(args[1]),
+      });
+    },
+  });
+
+  hook(user32, "SetWindowLongW", {
+    onEnter(args) {
+      emit("write", "SetWindowLongW", {
+        target_pid: currentPid(),
+        address: args[2] ? args[2].toString() : null,
+        size: Process.pointerSize.toString(),
+        index: ptrToNumber(args[1]),
+      });
+    },
+  });
+
+  hook(ntdll, "NtCreateTransaction", {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emit("allocate", "NtCreateTransaction", {
+          target_pid: currentPid(),
+          address: null,
+          size: null,
+          txf: true,
+        });
+      }
+    },
+  });
+
+  hook(ntdll, "NtCommitTransaction", {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitObservation("txf", "NtCommitTransaction", { txf: true });
+      }
+    },
+  });
+
+  hook(ntdll, "NtRollbackTransaction", {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitObservation("txf", "NtRollbackTransaction", { txf: true });
+      }
+    },
+  });
+
+  hook(ntdll, "RtlCreateProcessReflection", {
+    onLeave(retval) {
+      if (ntSuccess(retval)) {
+        emitProcessCreate("RtlCreateProcessReflection", {
+          pid: null,
+          image: null,
+          flags: ["PROCESS_REFLECTION"],
+        });
+        emitObservation("txf", "RtlCreateProcessReflection", {
+          process_reflection: true,
+        });
+      }
+    },
+  });
+}
+
 installStaticHooks();
 installPaperExtendedHooks();
+installIredTeamHooks();
 installDynamicResolverHooks();
 installEvasionHooks();
 

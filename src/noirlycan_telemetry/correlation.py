@@ -249,6 +249,10 @@ class Correlator:
         if any("section" in primitive.api.lower() for primitive in primitives):
             score += 10
             evidence["section_mapping"] = True
+        if any(primitive.details.get("txf") for primitive in primitives):
+            evidence["txf_transaction"] = True
+        if any(primitive.details.get("process_reflection") for primitive in primitives):
+            evidence["process_reflection"] = True
         if any(primitive.details.get("protection", "").upper().find("EXECUTE") >= 0 for primitive in primitives):
             score += 10
             evidence["executable_protection"] = True

@@ -675,6 +675,8 @@ def _normalize_finding(value: dict[str, Any], timestamp: str | None) -> dict[str
         "target_image": target_image,
         "technique": value.get("technique") or evidence.get("technique"),
         "technique_confidence": value.get("technique_confidence") or evidence.get("technique_confidence"),
+        "payload_kind": evidence.get("payload_kind"),
+        "payload_rationale": evidence.get("payload_rationale"),
         "execution_confirmed": evidence.get("execution_confirmed"),
         "execution_evidence": evidence.get("execution_evidence") or [],
         "context_read_evidence": evidence.get("context_read_evidence") or [],

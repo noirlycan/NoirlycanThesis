@@ -36,6 +36,16 @@ EXECUTION_TRANSFER_APIS: frozenset[str] = frozenset(
         "GlobalAddAtomW",
         "NtAddAtom",
         "CreateThread",
+        "NtTestAlert",
+        "SwitchToFiber",
+        "CreateFiber",
+        "SetThreadpoolWait",
+        "SubmitThreadpoolWait",
+        "SubmitThreadpoolWork",
+        "SendMessageA",
+        "SendMessageW",
+        "SendMessageCallbackA",
+        "SendMessageCallbackW",
     }
 )
 

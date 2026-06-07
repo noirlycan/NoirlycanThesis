@@ -128,8 +128,80 @@ PAPER_API_CLASSES: tuple[ApiClass, ...] = (
     ),
 )
 
+# iRed.team injection labs — https://www.ired.team/offensive-security/code-injection-process-injection
+IRED_TEAM_API_CLASSES: tuple[ApiClass, ...] = (
+    ApiClass(
+        "fiber_execute",
+        "execute",
+        (
+            "ConvertThreadToFiber",
+            "CreateFiber",
+            "SwitchToFiber",
+        ),
+    ),
+    ApiClass(
+        "threadpool_execute",
+        "execute",
+        (
+            "CreateThreadpoolWait",
+            "SetThreadpoolWait",
+            "SubmitThreadpoolWait",
+            "CreateThreadpoolWork",
+            "SubmitThreadpoolWork",
+        ),
+    ),
+    ApiClass(
+        "alertable_execute",
+        "execute",
+        (
+            "NtTestAlert",
+        ),
+    ),
+    ApiClass(
+        "window_execute",
+        "execute",
+        (
+            "SendMessageA",
+            "SendMessageW",
+            "SendMessageCallbackA",
+            "SendMessageCallbackW",
+        ),
+    ),
+    ApiClass(
+        "window_memory",
+        "write",
+        (
+            "SetWindowLongPtrA",
+            "SetWindowLongPtrW",
+            "SetWindowLongA",
+            "SetWindowLongW",
+        ),
+    ),
+    ApiClass(
+        "txf_spawn",
+        "process",
+        (
+            "NtCreateTransaction",
+            "NtCommitTransaction",
+            "NtRollbackTransaction",
+            "RtlCreateProcessReflection",
+        ),
+    ),
+    ApiClass(
+        "local_protect",
+        "allocate",
+        (
+            "VirtualProtect",
+        ),
+    ),
+)
+
 PAPER_INJECTION_APIS: frozenset[str] = frozenset(
     api for api_class in PAPER_API_CLASSES for api in api_class.apis
+)
+
+IRED_TEAM_APIS: frozenset[str] = frozenset(
+    api for api_class in IRED_TEAM_API_CLASSES for api in api_class.apis
 )
 
 # Extra hooks beyond the paper implementation (Frida lab extensions).
@@ -149,4 +221,4 @@ REPO_EXTRA_APIS: frozenset[str] = frozenset(
     }
 )
 
-REPO_REQUIRED_APIS: frozenset[str] = PAPER_INJECTION_APIS | REPO_EXTRA_APIS
+REPO_REQUIRED_APIS: frozenset[str] = PAPER_INJECTION_APIS | IRED_TEAM_APIS | REPO_EXTRA_APIS

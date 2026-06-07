@@ -68,6 +68,8 @@ def print_finding(finding: Finding) -> None:
             f"({finding.technique_confidence or 'unknown'} confidence)"
         )
     evidence = finding.evidence or {}
+    if evidence.get("payload_kind"):
+        print(f"  Payload: {evidence['payload_kind']}")
     if evidence.get("execution_confirmed") is False:
         print("  Execution confirmed: no")
         if evidence.get("context_read_evidence"):

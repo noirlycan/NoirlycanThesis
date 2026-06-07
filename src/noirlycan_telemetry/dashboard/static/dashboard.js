@@ -584,6 +584,8 @@ function openFindingModal(finding) {
     <div class="detail-row"><dt>Score</dt><dd>${finding.score ?? "-"}</dd></div>
     <div class="detail-row"><dt>Actor</dt><dd class="mono">${finding.actor_image || `pid ${finding.actor_pid ?? "-"}`}</dd></div>
     <div class="detail-row"><dt>Injection target</dt><dd class="mono">${targetLabel}</dd></div>
+    <div class="detail-row"><dt>Technique</dt><dd class="mono">${finding.technique || "unclassified"}${finding.technique_confidence ? ` (${finding.technique_confidence})` : ""}</dd></div>
+    <div class="detail-row"><dt>Payload</dt><dd class="mono">${finding.payload_kind || "unknown"}</dd></div>
     <div class="detail-row"><dt>Execution confirmed</dt><dd>${finding.execution_confirmed === false ? "no" : finding.execution_confirmed ? "yes" : "unknown"}</dd></div>
     <div class="detail-row"><dt>Execution evidence</dt><dd class="mono">${(finding.execution_evidence || []).join(", ") || "-"}</dd></div>
     <div class="detail-row"><dt>Context read</dt><dd class="mono">${(finding.context_read_evidence || []).join(", ") || "-"}</dd></div>
