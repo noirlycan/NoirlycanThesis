@@ -234,3 +234,29 @@ def test_findings_enriched_with_target_image_from_process_events(tmp_path: Path)
     )
     stats = aggregate_events(read_jsonl(log_path))
     assert stats["recent_findings"][0]["target_image"].endswith("msedge.exe")
+
+
+def test_aggregate_logs_falls_back_when_selected_log_missing(tmp_path: Path) -> None:
+    """Regression: stale URL hash (#log=deleted.jsonl) used to return the
+    requested name as active_log even though the file did not exist, which
+    broke the dashboard dropdown. Now we fall back to the newest existing
+    log so the UI always lands on something loadable."""
+    real = tmp_path / "session-real.jsonl"
+    real.write_text(
+        json.dumps({"type": "finding", "value": {"severity": "low"}}) + "\n",
+        encoding="utf-8",
+    )
+    from noirlycan_telemetry.log_store import aggregate_logs
+
+    result = aggregate_logs(tmp_path, selected="session-deleted.jsonl")
+    assert result["active_log"] == "session-real.jsonl"
+
+
+def test_aggregate_logs_empty_dir_with_stale_selection_returns_none(
+    tmp_path: Path,
+) -> None:
+    from noirlycan_telemetry.log_store import aggregate_logs
+
+    result = aggregate_logs(tmp_path, selected="anything.jsonl")
+    assert result["active_log"] is None
+    assert result["files"] == []

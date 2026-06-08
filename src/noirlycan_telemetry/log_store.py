@@ -297,8 +297,19 @@ def aggregate_logs(logs_dir: Path | str | None = None, selected: str | None = No
         target = directory / selected
         if not target.exists():
             target = Path(selected)
-        events = read_jsonl(target) if target.exists() else []
-        active = target.name if target.exists() else selected
+        if target.exists():
+            events = read_jsonl(target)
+            active = target.name
+        elif files:
+            # Requested log no longer exists (deleted / renamed / stale
+            # deep-link). Fall back to the most recent session so the
+            # dashboard still shows something useful instead of an empty
+            # dropdown.
+            events = read_jsonl(files[0])
+            active = files[0].name
+        else:
+            events = []
+            active = None
     elif files:
         events = read_jsonl(files[0])
         active = files[0].name

@@ -1120,6 +1120,16 @@ window.addEventListener("popstate", () => {
 
 loadDashboard(initialLog, { force: true })
   .then(() => {
+    // Defensive: if the URL hash named a log that no longer exists, clear it
+    // so the next applyFilters/refresh doesn't re-request the stale name.
+    if (initialLog && state.overview) {
+      const known = (state.overview.files || []).some(
+        (file) => file.name === initialLog,
+      );
+      if (!known) {
+        writeHash({ log: state.activeLog || "" });
+      }
+    }
     // If the hash names a finding and it exists in the loaded session, open it.
     if (initialHash.finding !== undefined && state.session) {
       const idx = Number(initialHash.finding);
