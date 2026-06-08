@@ -315,16 +315,34 @@ function renderRankList(elementId, rows) {
     root.innerHTML = '<div class="empty">No data yet.</div>';
     return;
   }
-  const max = Math.max(...rows.map(([, count]) => count));
-  root.innerHTML = rows
-    .map(
-      ([name, count]) => `
-      <div class="rank-item">
-        <div class="name" title="${name}">${shortPath(name)}</div>
-        <div>${count}</div>
-        <div class="bar"><span style="width:${(count / max) * 100}%"></span></div>
-      </div>`
-    )
+  // Normalise: rows can be either Counter-style tuples [name, count] or
+  // enriched actor objects {image, count, apis: [[api, n], ...]}.
+  const normalised = rows.map((row) => {
+    if (Array.isArray(row)) {
+      return { name: String(row[0] ?? ""), count: Number(row[1] ?? 0), apis: [] };
+    }
+    return {
+      name: String(row.image ?? row.name ?? ""),
+      count: Number(row.count ?? 0),
+      apis: Array.isArray(row.apis) ? row.apis : [],
+    };
+  });
+  const max = Math.max(...normalised.map((row) => row.count)) || 1;
+  root.innerHTML = normalised
+    .map((row) => {
+      const apiTags = row.apis
+        .map(([api, n]) => `<span class="api-chip" title="${api} (${n})">${api}<small>·${n}</small></span>`)
+        .join("");
+      return `
+      <div class="rank-item ${row.apis.length ? "rank-item-rich" : ""}">
+        <div class="rank-head">
+          <div class="name" title="${row.name}">${shortPath(row.name)}</div>
+          <div class="count">${row.count}</div>
+        </div>
+        <div class="bar"><span style="width:${(row.count / max) * 100}%"></span></div>
+        ${apiTags ? `<div class="api-chip-row">${apiTags}</div>` : ""}
+      </div>`;
+    })
     .join("");
 }
 
@@ -365,7 +383,24 @@ function renderFindings(rows) {
   }
   const body = document.getElementById("findings-body");
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="8" class="empty">No findings in this session yet.</td></tr>';
+    // Diagnostic: if primitives were captured but the 2/3 rule did not fire,
+    // surface the most likely cause (late attach) instead of a generic message.
+    const overview = state.overview && state.overview.stats;
+    const primitives = overview ? Number(overview.totals?.primitives ?? 0) : 0;
+    const kinds = overview ? Object.keys(overview.primitive_kinds || {}) : [];
+    let hint = "No findings in this session yet.";
+    if (primitives > 0 && kinds.length < 2) {
+      hint = `
+        <strong>No injection chain matched yet.</strong><br>
+        Captured ${primitives} primitive(s), but only one kind
+        (<code>${kinds.join(", ") || "—"}</code>) — the 2-of-3 rule needs
+        at least two distinct kinds on the same (actor, target).<br>
+        Most common cause: <em>late attach</em>. Use
+        <code>noirlycan-telemetry spawn -- &lt;loader.exe&gt; &lt;args&gt;</code>
+        so Frida hooks load before the loader's first injection API.
+      `;
+    }
+    body.innerHTML = `<tr><td colspan="8" class="empty">${hint}</td></tr>`;
     return;
   }
   body.innerHTML = rows

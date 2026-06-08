@@ -121,6 +121,7 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
     primitive_kind_counts: Counter[str] = Counter()
     api_counts: Counter[str] = Counter()
     actor_counts: Counter[str] = Counter()
+    actor_api_counts: dict[str, Counter[str]] = {}
     timeline: Counter[str] = Counter()
     findings: list[dict[str, Any]] = []
     triages: list[dict[str, Any]] = []
@@ -163,6 +164,8 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
             actor = value.get("actor_image")
             if actor:
                 actor_counts[str(actor)] += 1
+                if api:
+                    actor_api_counts.setdefault(str(actor), Counter())[str(api)] += 1
 
         if event_type in {"frida_process", "sysmon"} and value.get("pid") and value.get("image"):
             processes.append(
@@ -223,7 +226,14 @@ def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         "evasion": summarize_evasion_signals(evasion_signals),
         "primitive_kinds": dict(primitive_kind_counts),
         "top_apis": api_counts.most_common(12),
-        "top_actors": actor_counts.most_common(8),
+        "top_actors": [
+            {
+                "image": image,
+                "count": count,
+                "apis": actor_api_counts.get(image, Counter()).most_common(6),
+            }
+            for image, count in actor_counts.most_common(8)
+        ],
         "timeline": sorted(timeline.items()),
         "recent_findings": deduped_findings[:50],
         "recent_network": _recent_network_events(networks_by_pid),

@@ -374,6 +374,48 @@ canvas {
   background: linear-gradient(90deg, var(--cyan), var(--blue));
 }
 
+.rank-item-rich {
+  grid-template-columns: 1fr;
+}
+
+.rank-item .rank-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.rank-item .rank-head .count {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.api-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.api-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(79, 140, 255, 0.10);
+  border: 1px solid rgba(79, 140, 255, 0.22);
+  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+}
+
+.api-chip small {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
 .table-wrap {
   overflow: auto;
 }
