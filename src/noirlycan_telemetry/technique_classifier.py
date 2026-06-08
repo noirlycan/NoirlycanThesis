@@ -64,7 +64,26 @@ class TechniqueClassification:
     rationale: str
 
 
-def classify_finding(finding: Finding) -> TechniqueClassification:
+def classifier_rule_catalog() -> list[dict[str, Any]]:
+    from .builtin_rule_catalog import classifier_rule_catalog as _catalog
+
+    return _catalog()
+
+
+def classify_finding(
+    finding: Finding,
+    *,
+    rules_config: "ClassifierRulesConfig | None" = None,
+) -> TechniqueClassification:
+    from .classifier_config import (
+        ClassifierRulesConfig,
+        confidence_override,
+        load_classifier_config,
+        passes_rule_gates,
+    )
+
+    config = rules_config or load_classifier_config()
+
     apis = {primitive.api for primitive in finding.primitives}
     apis_lower = {api.lower() for api in apis}
     kinds = {primitive.kind for primitive in finding.primitives}
@@ -76,16 +95,54 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
     create_suspended = bool(evidence.get("create_suspended"))
     context_read = PrimitiveKind.CONTEXT_READ in kinds or bool(execution_meta.get("context_read_evidence"))
 
+    def _gate(rule_id: str) -> bool:
+        return passes_rule_gates(
+            rule_id,
+            finding,
+            kinds,
+            config,
+            execution_confirmed=execution_confirmed,
+            cross_process=cross_process,
+        )
+
+    def _finish(rule_id: str, result: TechniqueClassification) -> TechniqueClassification:
+        override = confidence_override(rule_id, config)
+        if override:
+            return TechniqueClassification(
+                technique=result.technique,
+                confidence=TechniqueConfidence(override),
+                rationale=result.rationale,
+            )
+        return result
+
+    from .custom_rule_engine import evaluate_custom_rules
+
+    custom_match = evaluate_custom_rules(
+        config.custom_rules,
+        finding,
+        kinds=kinds,
+        apis_lower=apis_lower,
+        evidence=evidence,
+        execution_confirmed=execution_confirmed,
+        cross_process=cross_process,
+        context_read=context_read,
+        phase="before_builtin",
+    )
+    if custom_match is not None:
+        return custom_match
+
     # ---- Extensions: high-specificity rules first ----
-    if _has_any(apis_lower, "ntsetinformationprocess") and _has_note(finding, "instrumentation_callback"):
+    if _gate("instrumentation_callback") and _has_any(apis_lower, "ntsetinformationprocess") and _has_note(finding, "instrumentation_callback"):
         return TechniqueClassification(
             technique=InjectionTechnique.INSTRUMENTATION_CALLBACK,
             confidence=TechniqueConfidence.HIGH,
             rationale="NtSetInformationProcess with ProcessInstrumentationCallback class.",
         )
 
-    if _has_note(finding, "process_ghosting_precursor") or _has_any(
+    if _gate("process_ghosting") and (
+        _has_note(finding, "process_ghosting_precursor") or _has_any(
         apis_lower, "ntsetinformationfile"
+    )
     ):
         if _has_any(
             apis_lower,
@@ -102,7 +159,7 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
                 rationale="Delete-pending file disposition followed by section + process create.",
             )
 
-    if _has_any(apis_lower, "setpropa", "setpropw") and _has_any(
+    if _gate("propagate_injection") and _has_any(apis_lower, "setpropa", "setpropw") and _has_any(
         apis_lower, "sendnotifymessagea", "sendnotifymessagew"
     ):
         return TechniqueClassification(
@@ -116,7 +173,7 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
         "enumuilanguagesw", "enumresourcetypesa", "enumresourcetypesw",
         "enumwindows", "enumchildwindows", "enumdesktopwindows", "enumthreadwindows",
     }
-    if apis_lower & enum_apis and (
+    if _gate("enum_callback_injection") and apis_lower & enum_apis and (
         PrimitiveKind.ALLOCATE in kinds or PrimitiveKind.WRITE in kinds
     ):
         return TechniqueClassification(
@@ -128,7 +185,7 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
     poolparty_apis = {
         "tpallocwork", "tppostwork", "rtlqueueworkitem", "ntsetinformationworkerfactory",
     }
-    if apis_lower & poolparty_apis:
+    if _gate("poolparty") and apis_lower & poolparty_apis:
         return TechniqueClassification(
             technique=InjectionTechnique.POOLPARTY,
             confidence=_confidence_from_kinds(kinds, minimum=2),
@@ -136,47 +193,67 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
         )
 
     # IAT hook = pointer-sized overwrite (≤ 16 B); threadless = larger trampoline.
-    if _is_iat_hook(finding, apis_lower, kinds):
+    if _gate("iat_hooking") and _is_iat_hook(finding, apis_lower, kinds):
         return TechniqueClassification(
             technique=InjectionTechnique.IAT_HOOKING,
             confidence=TechniqueConfidence.MEDIUM,
             rationale="Cross-process VirtualProtectEx + pointer-sized write inside a remote module (IAT range heuristic).",
         )
 
-    if _is_threadless_inject(finding, apis_lower, kinds, execution_confirmed):
+    if _gate("threadless_inject") and _is_threadless_inject(finding, apis_lower, kinds, execution_confirmed):
         return TechniqueClassification(
             technique=InjectionTechnique.THREADLESS_INJECT,
             confidence=TechniqueConfidence.MEDIUM,
             rationale="Remote protect+write to executable region without a remote-thread API (threadless trampoline).",
         )
 
-    if _is_local_only(finding):
-        if _has_any(apis_lower, "nttestalert") and _has_any(apis_lower, "queueuserapc", "ntqueueapcthread"):
-            return TechniqueClassification(
+    if _gate("local_alertable_wake") and _is_local_only(finding) and _has_any(apis_lower, "nttestalert") and PrimitiveKind.ALLOCATE in kinds:
+        return _finish(
+            "local_alertable_wake",
+            TechniqueClassification(
                 technique=InjectionTechnique.LOCAL_APC_INJECTION,
                 confidence=TechniqueConfidence.MEDIUM,
-                rationale="Local APC queued then alertable wake (NtTestAlert / SleepEx pattern).",
-            )
-        if _has_any(apis_lower, "switchtofiber", "createfiber", "convertthreadtofiber"):
-            return TechniqueClassification(
-                technique=InjectionTechnique.FIBER_INJECTION,
-                confidence=_confidence_from_kinds(kinds, minimum=2),
-                rationale="Fiber APIs used to redirect execution in the local process.",
-            )
-        return TechniqueClassification(
-            technique=InjectionTechnique.LOCAL_SELF_INJECT,
-            confidence=_confidence_from_kinds(kinds, minimum=2),
-            rationale="Primitives target the same process (self-injection / local staging).",
+                rationale="Local memory allocation followed by NtTestAlert (alertable wake / local shellcode).",
+            ),
         )
 
-    if _has_txf_signal(apis_lower, evidence):
+    if _is_local_only(finding):
+        if _gate("local_apc_injection") and _has_any(apis_lower, "nttestalert") and _has_any(apis_lower, "queueuserapc", "ntqueueapcthread"):
+            return _finish(
+                "local_apc_injection",
+                TechniqueClassification(
+                    technique=InjectionTechnique.LOCAL_APC_INJECTION,
+                    confidence=TechniqueConfidence.MEDIUM,
+                    rationale="Local APC queued then alertable wake (NtTestAlert / SleepEx pattern).",
+                ),
+            )
+        if _gate("local_fiber_injection") and _has_any(apis_lower, "switchtofiber", "createfiber", "convertthreadtofiber"):
+            return _finish(
+                "local_fiber_injection",
+                TechniqueClassification(
+                    technique=InjectionTechnique.FIBER_INJECTION,
+                    confidence=_confidence_from_kinds(kinds, minimum=2),
+                    rationale="Fiber APIs used to redirect execution in the local process.",
+                ),
+            )
+        if _gate("local_self_inject"):
+            return _finish(
+                "local_self_inject",
+                TechniqueClassification(
+                    technique=InjectionTechnique.LOCAL_SELF_INJECT,
+                    confidence=_confidence_from_kinds(kinds, minimum=2),
+                    rationale="Primitives target the same process (self-injection / local staging).",
+                ),
+            )
+
+    if _gate("process_doppelganging") and _has_txf_signal(apis_lower, evidence):
         return TechniqueClassification(
             technique=InjectionTechnique.PROCESS_DOPPELGANGING,
             confidence=TechniqueConfidence.MEDIUM,
             rationale="Transactional NTFS (TxF) APIs observed with process creation/spawn.",
         )
 
-    if _has_any(
+    if _gate("extra_window_memory_injection") and _has_any(
         apis_lower,
         "setwindowlongptra",
         "setwindowlongptrw",
@@ -189,21 +266,21 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
             rationale="Window extra-bytes memory manipulated then triggered via SendMessage.",
         )
 
-    if _has_any(apis_lower, "setwindowshookexa", "setwindowshookexw"):
+    if _gate("hook_injection") and _has_any(apis_lower, "setwindowshookexa", "setwindowshookexw"):
         return TechniqueClassification(
             technique=InjectionTechnique.HOOK_INJECTION,
             confidence=TechniqueConfidence.HIGH,
             rationale="SetWindowsHookEx used to schedule code in another process.",
         )
 
-    if _has_any(apis_lower, "ntaddatom", "globaladdatoma", "globaladdatomw"):
+    if _gate("atom_injection") and _has_any(apis_lower, "ntaddatom", "globaladdatoma", "globaladdatomw"):
         return TechniqueClassification(
             technique=InjectionTechnique.ATOM_INJECTION,
             confidence=TechniqueConfidence.MEDIUM,
             rationale="Global/NT atom APIs observed in execute stage.",
         )
 
-    if _has_any(apis_lower, "ldrloaddll", "loadlibrarya", "loadlibraryw", "loadlibraryexa", "loadlibraryexw"):
+    if _gate("dll_injection_loadlibrary") and _has_any(apis_lower, "ldrloaddll", "loadlibrarya", "loadlibraryw", "loadlibraryexa", "loadlibraryexw"):
         if cross_process or _target_differs_from_actor(finding):
             return TechniqueClassification(
                 technique=InjectionTechnique.DLL_INJECTION,
@@ -211,21 +288,21 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
                 rationale="Remote DLL load primitive observed.",
             )
 
-    if _has_any(apis_lower, "ntqueueapcthreadex") and create_suspended:
+    if _gate("early_bird_apc_injection") and _has_any(apis_lower, "ntqueueapcthreadex") and create_suspended:
         return TechniqueClassification(
             technique=InjectionTechnique.EARLY_BIRD_APC_INJECTION,
             confidence=TechniqueConfidence.HIGH,
             rationale="APC queued via NtQueueApcThreadEx into a CREATE_SUSPENDED victim (early bird).",
         )
 
-    if _has_any(apis_lower, "switchtofiber", "createfiber") and cross_process:
+    if _gate("fiber_injection_cross") and _has_any(apis_lower, "switchtofiber", "createfiber") and cross_process:
         return TechniqueClassification(
             technique=InjectionTechnique.FIBER_INJECTION,
             confidence=_confidence_from_kinds(kinds, minimum=2),
             rationale="Fiber execution transfer observed with cross-process memory primitives.",
         )
 
-    if _has_any(
+    if _gate("threadpool_wait_injection") and _has_any(
         apis_lower,
         "createthreadpoolwait",
         "setthreadpoolwait",
@@ -239,14 +316,15 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
             rationale="Threadpool wait/work callback used as execution vehicle.",
         )
 
-    if _has_any(apis_lower, "ntqueueapcthread", "ntqueueapcthreadex", "queueuserapc"):
+    if _gate("apc_injection") and _has_any(apis_lower, "ntqueueapcthread", "ntqueueapcthreadex", "queueuserapc"):
         return TechniqueClassification(
             technique=InjectionTechnique.APC_INJECTION,
             confidence=_confidence_from_kinds(kinds, minimum=2),
             rationale="APC queue API used to trigger execution in a remote thread.",
         )
 
-    if section_mapping or _has_any(
+    if _gate("section_mapping_no_exec") and (
+        section_mapping or _has_any(
         apis_lower,
         "ntcreatesection",
         "ntmapviewofsection",
@@ -254,6 +332,7 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
         "zwmapviewofsection",
         "createfilemappinga",
         "createfilemappingw",
+    )
     ):
         if not execution_confirmed:
             rationale = "Remote allocation/write/section mapping"
@@ -266,34 +345,37 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
                 confidence=TechniqueConfidence.HIGH if context_read else TechniqueConfidence.MEDIUM,
                 rationale=rationale,
             )
-        if create_suspended or _has_any(apis_lower, "ntunmapviewofsection", "zwunmapviewofsection"):
+        if _gate("process_hollowing_section") and (
+            create_suspended or _has_any(apis_lower, "ntunmapviewofsection", "zwunmapviewofsection")
+        ):
             return TechniqueClassification(
                 technique=InjectionTechnique.PROCESS_HOLLOWING_SECTION,
                 confidence=TechniqueConfidence.HIGH,
                 rationale="Suspended/spawned victim with section mapping and confirmed execution transfer.",
             )
-        return TechniqueClassification(
-            technique=InjectionTechnique.PROCESS_HOLLOWING_SECTION,
-            confidence=TechniqueConfidence.HIGH,
-            rationale="Section mapping with confirmed execution transfer.",
-        )
+        if _gate("section_mapping_exec"):
+            return TechniqueClassification(
+                technique=InjectionTechnique.PROCESS_HOLLOWING_SECTION,
+                confidence=TechniqueConfidence.HIGH,
+                rationale="Section mapping with confirmed execution transfer.",
+            )
 
-    if _has_any(apis_lower, "ntunmapviewofsection") and PrimitiveKind.WRITE in kinds:
+    if _gate("module_stomping") and _has_any(apis_lower, "ntunmapviewofsection") and PrimitiveKind.WRITE in kinds:
         return TechniqueClassification(
             technique=InjectionTechnique.MODULE_STOMPING,
             confidence=TechniqueConfidence.MEDIUM,
             rationale="Remote unmap followed by write primitive (module stomping pattern).",
         )
 
-    if create_suspended and cross_process:
+    if _gate("process_spawn_inject") and create_suspended and cross_process:
         return TechniqueClassification(
             technique=InjectionTechnique.PROCESS_SPAWN_INJECT,
             confidence=_confidence_from_kinds(kinds, minimum=2),
             rationale="Victim created suspended then injection primitives observed.",
         )
 
-    if finding.related_file and finding.related_file.pe and cross_process and PrimitiveKind.WRITE in kinds:
-        if _has_any(apis_lower, "virtualprotectex", "ntprotectvirtualmemory", "zwprotectvirtualmemory"):
+    if _gate("pe_injection") and finding.related_file and finding.related_file.pe and cross_process and PrimitiveKind.WRITE in kinds:
+        if _gate("entrypoint_patching") and _has_any(apis_lower, "virtualprotectex", "ntprotectvirtualmemory", "zwprotectvirtualmemory"):
             return TechniqueClassification(
                 technique=InjectionTechnique.ENTRYPOINT_PATCHING,
                 confidence=TechniqueConfidence.MEDIUM,
@@ -309,7 +391,7 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
     # loaders write each section separately and call VirtualProtectEx). Check
     # it BEFORE the trinity rule so we don't misclassify multi-write loaders
     # as plain shellcode.
-    if (
+    if _gate("manual_mapping") and (
         cross_process
         and PrimitiveKind.WRITE in kinds
         and PrimitiveKind.EXECUTE in kinds
@@ -323,9 +405,21 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
             rationale="Multiple remote writes + protect + thread, no LoadLibrary (manual PE mapping).",
         )
 
+    # Classic DLL injection: remote thread entry is LoadLibrary* but the thread
+    # parameter points at the path buffer written by WriteProcessMemory.
+    if _gate("classic_dll_injection") and _classic_dll_injection_pattern(finding, apis_lower, cross_process):
+        return TechniqueClassification(
+            technique=InjectionTechnique.DLL_INJECTION,
+            confidence=TechniqueConfidence.HIGH,
+            rationale=(
+                "VirtualAllocEx + WriteProcessMemory + CreateRemoteThread with "
+                "thread parameter at the remote DLL path buffer."
+            ),
+        )
+
     # Classic shellcode trinity takes precedence over the generic reflective-
     # DLL fallback.
-    if _has_any(
+    if _gate("shellcode_trinity") and _has_any(
         apis_lower,
         "virtualallocex",
         "virtualallocexnuma",
@@ -350,7 +444,29 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
             rationale="Classic VirtualAllocEx + WriteProcessMemory + CreateRemoteThread chain.",
         )
 
-    if _reflective_dll_pattern(apis_lower, kinds, cross_process):
+    execute_apis_lower = _execute_apis_lower(finding)
+    if (
+        _gate("process_hollowing_classic")
+        and cross_process
+        and PrimitiveKind.WRITE in kinds
+        and _resume_only_execution(execute_apis_lower)
+        and not _has_any(apis_lower, "setthreadcontext", "ntsetcontextthread", "zwsetcontextthread")
+    ):
+        return TechniqueClassification(
+            technique=InjectionTechnique.PROCESS_HOLLOWING_CLASSIC,
+            confidence=TechniqueConfidence.MEDIUM,
+            rationale=(
+                "Remote memory write followed by thread resume "
+                "(suspended-child / installer pattern, not reflective DLL)."
+            ),
+        )
+
+    if _gate("reflective_dll_injection") and _reflective_dll_pattern(
+        apis_lower,
+        kinds,
+        cross_process,
+        execute_apis_lower=execute_apis_lower,
+    ):
         return TechniqueClassification(
             technique=InjectionTechnique.REFLECTIVE_DLL_INJECTION,
             confidence=TechniqueConfidence.MEDIUM,
@@ -363,18 +479,51 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
         "ntsetcontextthread",
         "zwsetcontextthread",
     ) or _has_any(apis_lower, "resumethread", "ntresumethread", "ntalertresumethread", "zwresumethread"):
-        if _has_any(apis_lower, "setthreadcontext", "ntsetcontextthread", "zwsetcontextthread"):
+        if _gate("thread_hijack") and _has_any(apis_lower, "setthreadcontext", "ntsetcontextthread", "zwsetcontextthread"):
             return TechniqueClassification(
                 technique=InjectionTechnique.THREAD_HIJACK,
                 confidence=_confidence_from_kinds(kinds, minimum=2),
                 rationale="Thread context manipulation used to redirect execution.",
             )
-        if create_suspended:
+        if _gate("process_hollowing_classic") and create_suspended:
             return TechniqueClassification(
                 technique=InjectionTechnique.PROCESS_HOLLOWING_CLASSIC,
                 confidence=_confidence_from_kinds(kinds, minimum=2),
                 rationale="Suspended process resumed after remote memory manipulation.",
             )
+
+    if (
+        _gate("cross_process_staging")
+        and cross_process
+        and PrimitiveKind.ALLOCATE in kinds
+        and PrimitiveKind.WRITE in kinds
+        and not execution_confirmed
+    ):
+        return _finish(
+            "cross_process_staging",
+            TechniqueClassification(
+                technique=InjectionTechnique.SECTION_MAPPING_INJECTION,
+                confidence=TechniqueConfidence.MEDIUM,
+                rationale=(
+                    "Cross-process remote allocate + write without confirmed "
+                    "execution transfer (injection staging)."
+                ),
+            ),
+        )
+
+    custom_after = evaluate_custom_rules(
+        config.custom_rules,
+        finding,
+        kinds=kinds,
+        apis_lower=apis_lower,
+        evidence=evidence,
+        execution_confirmed=execution_confirmed,
+        cross_process=cross_process,
+        context_read=context_read,
+        phase="after_builtin",
+    )
+    if custom_after is not None:
+        return custom_after
 
     return TechniqueClassification(
         technique=InjectionTechnique.UNCLASSIFIED,
@@ -383,8 +532,17 @@ def classify_finding(finding: Finding) -> TechniqueClassification:
     )
 
 
-def apply_classification(finding: Finding) -> Finding:
-    result = classify_finding(finding)
+def apply_classification(
+    finding: Finding,
+    *,
+    logs_dir: str | Path | None = None,
+) -> Finding:
+    from .classifier_config import load_classifier_config
+
+    config = load_classifier_config(logs_dir)
+    if not config.classification_enabled:
+        return finding
+    result = classify_finding(finding, rules_config=config)
     evidence = dict(finding.evidence)
     execution_meta = analyze_execution(list(finding.primitives))
     evidence.update(execution_meta)
@@ -527,22 +685,132 @@ def _is_iat_hook(finding: Finding, apis_lower: set[str], kinds: set[PrimitiveKin
     return False
 
 
-def _reflective_dll_pattern(apis_lower: set[str], kinds: set[PrimitiveKind], cross_process: bool) -> bool:
+def _classic_dll_injection_pattern(
+    finding: Finding,
+    apis_lower: set[str],
+    cross_process: bool,
+) -> bool:
+    if not cross_process:
+        return False
+    if not _has_any(
+        apis_lower,
+        "virtualallocex",
+        "virtualallocexnuma",
+        "ntallocatevirtualmemory",
+        "zwallocatevirtualmemory",
+    ):
+        return False
+    if not _has_any(
+        apis_lower,
+        "writeprocessmemory",
+        "ntwritevirtualmemory",
+        "zwwritevirtualmemory",
+    ):
+        return False
+    if not _has_any(
+        apis_lower,
+        "createremotethread",
+        "createremotethreadex",
+        "ntcreatethreadex",
+        "rtlcreateuserthread",
+        "zwcreatethreadex",
+    ):
+        return False
+    execute_primitives = [p for p in finding.primitives if p.kind == PrimitiveKind.EXECUTE]
+    write_primitives = [p for p in finding.primitives if p.kind == PrimitiveKind.WRITE]
+    for execute in execute_primitives:
+        parameter = _detail_int(execute.details.get("thread_parameter"))
+        if parameter is None:
+            continue
+        for write in write_primitives:
+            if write.address is None or write.address == 0:
+                continue
+            write_size = write.size if write.size is not None and write.size > 0 else 1
+            if write.address <= parameter < write.address + write_size:
+                return True
+    return False
+
+
+def _detail_int(value: object) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value if value != 0 else None
+    if isinstance(value, str):
+        try:
+            parsed = int(value, 0)
+        except ValueError:
+            return None
+        return parsed if parsed != 0 else None
+    return None
+
+
+_RESUME_THREAD_APIS = frozenset(
+    {
+        "resumethread",
+        "ntresumethread",
+        "ntalertresumethread",
+        "zwresumethread",
+    }
+)
+_REFLECTIVE_THREAD_CREATE_APIS = frozenset(
+    {
+        "createremotethread",
+        "createremotethreadex",
+        "ntcreatethreadex",
+        "rtlcreateuserthread",
+        "zwcreatethreadex",
+        "ntcreatethread",
+        "queueuserapc",
+        "ntqueueapcthread",
+        "ntqueueapcthreadex",
+    }
+)
+
+
+def _execute_apis_lower(finding: Finding) -> set[str]:
+    return {primitive.api.lower() for primitive in finding.primitives if primitive.kind == PrimitiveKind.EXECUTE}
+
+
+def _resume_only_execution(execute_apis_lower: set[str]) -> bool:
+    return bool(execute_apis_lower) and execute_apis_lower <= _RESUME_THREAD_APIS
+
+
+def _reflective_dll_pattern(
+    apis_lower: set[str],
+    kinds: set[PrimitiveKind],
+    cross_process: bool,
+    *,
+    execute_apis_lower: set[str],
+) -> bool:
     if not cross_process or PrimitiveKind.WRITE not in kinds or PrimitiveKind.EXECUTE not in kinds:
         return False
     if apis_lower & {"loadlibrarya", "loadlibraryw", "loadlibraryexa", "loadlibraryexw", "ldrloaddll"}:
         return False
-    return bool(
+    # Allocate + WriteProcessMemory + ResumeThread is classic suspended-process
+    # transfer (installers, hollowing), not reflective DLL loading.
+    if _resume_only_execution(execute_apis_lower):
+        return False
+    has_local_copy = bool(apis_lower & {"memcpy", "rtlmovememory"})
+    has_remote_write = bool(
         apis_lower
         & {
-            "memcpy",
-            "rtlmovememory",
-            "virtualalloc",
-            "ntallocatevirtualmemory",
             "writeprocessmemory",
             "ntwritevirtualmemory",
+            "zwwritevirtualmemory",
         }
     )
+    has_thread_create = bool(apis_lower & _REFLECTIVE_THREAD_CREATE_APIS)
+    if has_local_copy:
+        return bool(
+            apis_lower
+            & {
+                "virtualalloc",
+                "ntallocatevirtualmemory",
+                "zwallocatevirtualmemory",
+            }
+        )
+    return has_remote_write and has_thread_create
 
 
 def process_flags_hint(process: ProcessEvent | None) -> list[str]:

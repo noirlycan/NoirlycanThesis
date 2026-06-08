@@ -87,9 +87,17 @@ def infer_payload_kind(
     if file_event and file_event.pe and has_remote_write:
         return PayloadKind.PE_IMAGE, "PE sample correlated with remote memory write."
 
+    execute_apis_lower = {primitive.api.lower() for primitive in finding.primitives if primitive.kind == PrimitiveKind.EXECUTE}
+    resume_only = bool(execute_apis_lower) and execute_apis_lower <= {
+        "resumethread",
+        "ntresumethread",
+        "ntalertresumethread",
+        "zwresumethread",
+    }
     reflective_signals = (
         has_remote_write
         and has_execute
+        and not resume_only
         and not (apis_lower & _DLL_LOAD_APIS)
         and any(
             primitive.details.get("module") is None
@@ -97,10 +105,27 @@ def infer_payload_kind(
             if primitive.kind == PrimitiveKind.EXECUTE
         )
     )
-    if reflective_signals and any(
-        api in apis_lower for api in ("memcpy", "rtlmovememory", "virtualalloc", "ntallocatevirtualmemory")
+    has_thread_create = bool(
+        apis_lower
+        & {
+            "createremotethread",
+            "createremotethreadex",
+            "ntcreatethreadex",
+            "rtlcreateuserthread",
+            "zwcreatethreadex",
+            "ntcreatethread",
+            "queueuserapc",
+            "ntqueueapcthread",
+            "ntqueueapcthreadex",
+        }
+    )
+    if reflective_signals and (
+        apis_lower & {"memcpy", "rtlmovememory"}
+        or has_thread_create
     ):
         return PayloadKind.REFLECTIVE_DLL, "Remote write + thread/APC execute without DLL path (reflective pattern)."
+    if has_remote_write and has_execute and resume_only:
+        return PayloadKind.PE_IMAGE, "Remote write + thread resume (suspended-process / installer pattern)."
 
     if section_mapping and not file_event:
         return PayloadKind.SHELLCODE, "Section mapping chain without on-disk PE correlation."

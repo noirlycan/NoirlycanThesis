@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .correlation import Correlator
-from .dashboard.app import run_dashboard
+from .dashboard.server import run_dashboard
 from .frida_manager import FridaInjectionMonitor
 from .file_watch import FileDropWatcher, default_watch_paths
 from .log_store import new_session_log_path
@@ -24,7 +24,9 @@ from .runtime_config import (
     save_runtime_config,
     touch_collector_heartbeat,
 )
+from .analysis_db import AnalysisDatabase
 from .analysis_queue import drain_analysis_queue, enqueue_analysis
+from .collector_launcher import clear_collector_pid, register_collector_pid
 from .batch_runner import run_batch, write_batch_report
 from .collector_runtime import (
     JsonlWriter,
@@ -43,7 +45,7 @@ from .triage import FileTriage, is_interesting_path, triage_file
 _SESSION_TRIAGED_PATHS: set[str] = set()
 _SESSION_TRIAGED_SHA: dict[str, str] = {}
 _SESSION_API_SCHEDULED: set[str] = set()
-_SESSION_API_SPAWNED: set[str] = set()
+_SESSION_API_SPAWNED: set[tuple[str, tuple[str, ...]]] = set()
 _WATCH_PATHS: list[str] = []
 _TRIAGE_PENDING: set[str] = set()
 _TRIAGE_LOCK = threading.Lock()
@@ -118,6 +120,16 @@ def build_parser() -> argparse.ArgumentParser:
     dashboard.add_argument("--host", default="127.0.0.1", help="Dashboard bind host")
     dashboard.add_argument("--port", type=int, default=8765, help="Dashboard bind port")
     dashboard.add_argument("--logs-dir", type=Path, help="Directory containing JSONL session logs")
+    dashboard.add_argument(
+        "--no-auto-collector",
+        action="store_true",
+        help="Do not auto-launch 'run --watch-sysmon' when the dashboard starts",
+    )
+    dashboard.add_argument(
+        "--no-collector-elevate",
+        action="store_true",
+        help="On Windows, launch collector without UAC elevation (default: request admin)",
+    )
 
     batch = subparsers.add_parser("batch", help="Run a mini-corpus batch analysis over a folder of EXEs")
     batch.add_argument("--input", type=Path, required=True, help="Directory containing sample EXEs")
@@ -151,7 +163,13 @@ def command_triage(args: argparse.Namespace) -> int:
 
 
 def command_dashboard(args: argparse.Namespace) -> int:
-    run_dashboard(host=args.host, port=args.port, logs_dir=args.logs_dir)
+    run_dashboard(
+        host=args.host,
+        port=args.port,
+        logs_dir=args.logs_dir,
+        auto_collector=not args.no_auto_collector,
+        elevate_collector=not args.no_collector_elevate,
+    )
     return 0
 
 
@@ -195,14 +213,16 @@ def command_run(args: argparse.Namespace) -> int:
     _SESSION_API_SCHEDULED.clear()
     _SESSION_API_SPAWNED.clear()
     _TRIAGE_PENDING.clear()
-    correlator = Correlator(minimum_score=args.minimum_score)
     writer = _create_writer(args)
+    logs_dir = _logs_dir_from_writer(writer)
+    correlator = Correlator(minimum_score=args.minimum_score, logs_dir=logs_dir)
     monitor = _create_monitor_or_none()
     if monitor is not None:
         for pid in args.attach_pid:
             _safe_attach(monitor, pid)
-    logs_dir = _logs_dir_from_writer(writer)
     _init_runtime_config(args, logs_dir)
+    if logs_dir is not None:
+        register_collector_pid(logs_dir, os.getpid())
     sysmon = _create_sysmon_or_none(args.watch_sysmon)
     file_watcher: FileDropWatcher | None = None
     file_watch_active = False
@@ -248,6 +268,8 @@ def command_run(args: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         if file_watcher is not None:
             file_watcher.stop()
+        if logs_dir is not None:
+            clear_collector_pid(logs_dir)
         mark_collector_stopped(logs_dir)
         if monitor is not None:
             monitor.detach_all()
@@ -409,6 +431,7 @@ def _process_analysis_queue(
                 correlator,
                 writer,
                 source="dashboard",
+                argv=request.argv,
             )
             continue
         event = FileEvent(
@@ -420,10 +443,38 @@ def _process_analysis_queue(
         _schedule_file_triage(event, correlator, writer, source="dashboard", write_event=False)
 
 
+def _mark_upload_analysis_spawned(writer: "JsonlWriter", path: str) -> None:
+    logs_dir = _logs_dir_from_writer(writer)
+    if logs_dir is None:
+        return
+    session_name = writer.path.name if writer.path is not None else None
+    AnalysisDatabase(logs_dir).set_upload_status_for_path(
+        path,
+        status="spawned",
+        session_name=session_name,
+    )
+
+
+def _mark_upload_analysis_failed(
+    writer: "JsonlWriter",
+    path: str,
+    *,
+    error: str,
+) -> None:
+    logs_dir = _logs_dir_from_writer(writer)
+    if logs_dir is None:
+        return
+    AnalysisDatabase(logs_dir).set_upload_status_for_path(
+        path,
+        status="failed",
+        error_message=error,
+    )
+
+
 def _schedule_api_analysis(path: str) -> bool:
     """Reserve one auto API analysis per normalized path for this run session."""
     key = _norm_path(path)
-    if key in _SESSION_API_SCHEDULED or key in _SESSION_API_SPAWNED:
+    if key in _SESSION_API_SCHEDULED or any(item[0] == key for item in _SESSION_API_SPAWNED):
         return False
     _SESSION_API_SCHEDULED.add(key)
     return True
@@ -436,8 +487,10 @@ def _run_api_analysis(
     writer: "JsonlWriter",
     *,
     source: str,
+    argv: list[str] | None = None,
 ) -> bool:
-    key = _norm_path(path)
+    extra_argv = [str(part) for part in (argv or []) if str(part).strip()]
+    key = (_norm_path(path), tuple(extra_argv))
     if key in _SESSION_API_SPAWNED:
         print(
             f"[!] API analysis already completed for {path}, skipping duplicate spawn",
@@ -450,6 +503,11 @@ def _run_api_analysis(
             f"[!] Cannot run API analysis for {path}: Frida is unavailable",
             file=sys.stderr,
             flush=True,
+        )
+        _mark_upload_analysis_failed(
+            writer,
+            path,
+            error="frida_unavailable",
         )
         writer.write(
             "api_run",
@@ -474,17 +532,20 @@ def _run_api_analysis(
         return False
 
     resolved = str(Path(path).resolve())
+    spawn_argv = [resolved, *extra_argv]
     try:
         device = frida.get_local_device()
-        pid = device.spawn([resolved])
+        pid = device.spawn(spawn_argv)
         _safe_attach(monitor, pid)
         device.resume(pid)
     except Exception as exc:
         print(f"[!] API spawn failed for {path}: {exc}", file=sys.stderr, flush=True)
+        _mark_upload_analysis_failed(writer, resolved, error=str(exc))
         writer.write(
             "api_run",
             {
                 "path": resolved,
+                "argv": spawn_argv,
                 "source": source,
                 "status": "failed",
                 "error": str(exc),
@@ -493,33 +554,35 @@ def _run_api_analysis(
         )
         return False
 
+    _mark_upload_analysis_spawned(writer, resolved)
     timestamp = datetime.now(timezone.utc)
     writer.write(
         "api_run",
         {
             "path": resolved,
             "pid": pid,
-            "argv": [resolved],
+            "argv": spawn_argv,
             "source": source,
             "status": "started",
             "timestamp": timestamp.isoformat(),
         },
     )
     _SESSION_API_SPAWNED.add(key)
+    command_line = " ".join(spawn_argv)
     process_event = ProcessEvent(
         timestamp=timestamp,
         pid=pid,
         image=resolved,
         parent_image="noirlycan-api-spawn",
         parent_pid=None,
-        command_line=resolved,
+        command_line=command_line,
         created_from_file=resolved,
         flags=["api_spawn"],
     )
     writer.write("frida_process", process_event)
     correlator.add_process(process_event)
     print(
-        f"[API:RUN] Spawned {resolved} as PID {pid} under Frida injection hooks",
+        f"[API:RUN] Spawned {command_line} as PID {pid} under Frida injection hooks",
         flush=True,
     )
     return True

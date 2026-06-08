@@ -1,6 +1,8 @@
 const charts = {};
 const fingerprints = {};
-const REFRESH_MS = 1000;
+const REFRESH_MS = 4000;
+const LIVE_REFRESH_DEBOUNCE_MS = 2000;
+const SESSION_TABS = new Set(["findings", "network", "primitives", "events", "files"]);
 
 // ---------------------------------------------------------------------------
 // Demo mode — toggled via ?demo=1 URL parameter. Disables auto-refresh,
@@ -63,6 +65,7 @@ const state = {
   session: null,
   runtime: null,
   runtimeSaving: false,
+  liveSocketConnected: false,
   filters: {
     query: "",
     severity: "",
@@ -377,6 +380,72 @@ function renderNetworkSummary(networkRows) {
   return endpoints.join(", ");
 }
 
+function chainsStatsSource() {
+  return state.session?.stats || state.overview?.stats || null;
+}
+
+function renderInjectionChains(chains, recursiveCount) {
+  const payload = { chains: chains || [], recursiveCount: recursiveCount ?? null };
+  if (!shouldRender("injection-chains", payload)) {
+    return;
+  }
+  const chip = document.getElementById("chain-count-chip");
+  const body = document.getElementById("chains-body");
+  if (!body) return;
+
+  const rows = payload.chains;
+  const recursive = Number(
+    payload.recursiveCount ?? rows.filter((chain) => chain.is_recursive).length,
+  );
+  if (chip) {
+    if (!rows.length) {
+      chip.textContent = "0 chains";
+    } else if (recursive > 0) {
+      chip.textContent = `${rows.length} chains (${recursive} recursive)`;
+    } else {
+      chip.textContent = rows.length === 1 ? "1 chain" : `${rows.length} chains`;
+    }
+  }
+
+  if (!rows.length) {
+    body.innerHTML =
+      '<tr><td colspan="5" class="empty">No injection chains in this session. '
+      + "Chains are built from findings with actor→target edges. "
+      + "Run a sample with cross-process inject to populate this view.</td></tr>";
+    return;
+  }
+
+  body.innerHTML = rows
+    .map((chain) => {
+      const pids = (chain.pids || []).join(" → ");
+      const imageList = chain.images || [];
+      const imagesShort = imageList.map((img) => shortPath(img) || "?").join(" → ");
+      const imagesFull = imageList.filter(Boolean).join(" → ");
+      const techniques = [...new Set((chain.techniques || []).filter(Boolean))]
+        .map((name) => formatTechniqueLabel(name))
+        .join(", ");
+      const scores = (chain.scores || []).filter((value) => value != null);
+      const scoreHint = scores.length ? ` title="edge scores: ${scores.join(", ")}"` : "";
+      return `
+      <tr class="chains-row"${scoreHint}>
+        <td>${chain.depth ?? "-"}</td>
+        <td>${chain.is_recursive ? '<span class="tag">yes</span>' : "no"}</td>
+        <td class="mono">${pids || "-"}</td>
+        <td class="mono" title="${escapeHtml(imagesFull)}">${escapeHtml(imagesShort || "-")}</td>
+        <td class="mono">${techniques || "-"}</td>
+      </tr>`;
+    })
+    .join("");
+}
+
+function renderInjectionChainsFromStats(stats) {
+  if (!stats) {
+    renderInjectionChains([], 0);
+    return;
+  }
+  renderInjectionChains(stats.injection_chains || [], stats.recursive_chain_count);
+}
+
 function renderFindings(rows) {
   if (!shouldRender("findings", rows)) {
     return;
@@ -608,6 +677,305 @@ function renderFiles(rows, activeLog) {
     .join("");
 }
 
+function shortSha(value) {
+  if (!value) return "-";
+  return value.length > 16 ? `${value.slice(0, 16)}…` : value;
+}
+
+function renderUploadCollectorStatus(collectorOnline) {
+  const chip = document.getElementById("upload-collector-chip");
+  const banner = document.getElementById("upload-collector-banner");
+  if (chip) {
+    if (collectorOnline) {
+      chip.textContent = "collector online";
+      chip.classList.add("online");
+      chip.classList.remove("offline");
+    } else {
+      chip.textContent = "collector offline";
+      chip.classList.add("offline");
+      chip.classList.remove("online");
+    }
+  }
+  if (banner) {
+    banner.classList.toggle("hidden", Boolean(collectorOnline));
+  }
+}
+
+function renderUploads(rows, dbPath, collectorOnline = false) {
+  if (!shouldRender("uploads", { rows, dbPath, collectorOnline })) {
+    return;
+  }
+  renderUploadCollectorStatus(collectorOnline);
+  const chip = document.getElementById("db-path-chip");
+  if (chip) {
+    chip.textContent = dbPath ? dbPath.split(/[\\/]/).pop() : "SQLite";
+    chip.title = dbPath || "";
+  }
+  const body = document.getElementById("uploads-body");
+  if (!body) return;
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="7" class="empty">No uploads yet. Drop a .jsonl log or sample above.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows
+    .map((row) => {
+      const isExecutable = row.content_kind === "executable";
+      const status = row.status || "";
+      const canRun = isExecutable && !["queued", "spawned", "running"].includes(status);
+      const canReport = ["spawned", "running", "parsed", "queued"].includes(status);
+      const canDelete = true;
+      const reportCell = canReport
+        ? `<button type="button" class="linkish" data-upload-report="${row.id}">View report</button>`
+        : "-";
+      const runDisabled = canRun ? "" : "disabled";
+      const reportBtn = canReport
+        ? `<button type="button" class="btn-mini" data-upload-report="${row.id}">Report</button>`
+        : "";
+      const runBtn = isExecutable
+        ? `<button type="button" class="btn-mini" data-upload-run="${row.id}" ${runDisabled}>Run</button>`
+        : "";
+      const deleteBtn = canDelete
+        ? `<button type="button" class="btn-mini danger" data-upload-delete="${row.id}">Delete</button>`
+        : "";
+      return `
+      <tr data-upload-id="${row.id}">
+        <td>${formatTime(row.uploaded_at)}</td>
+        <td class="mono" title="${row.stored_path || ""}">${row.original_name || "-"}</td>
+        <td>${row.content_kind || "-"}</td>
+        <td title="${row.error_message || ""}">${row.status_label || status || "-"}</td>
+        <td>${reportCell}</td>
+        <td><div class="upload-actions">${runBtn}${reportBtn}${deleteBtn}</div></td>
+        <td class="mono" title="${row.sha256 || ""}">${shortSha(row.sha256)}</td>
+      </tr>`;
+    })
+    .join("");
+}
+
+function setUploadStatus(message, kind = "") {
+  const node = document.getElementById("upload-status");
+  if (!node) return;
+  node.textContent = message;
+  node.classList.remove("ok", "error");
+  if (kind) node.classList.add(kind);
+}
+
+async function uploadDroppedFile(file) {
+  if (!file) return;
+  const suffix = (file.name.split(".").pop() || "").toLowerCase();
+  if (!["jsonl", "exe", "dll"].includes(suffix)) {
+    setUploadStatus("Unsupported file type. Use .jsonl, .exe, or .dll.", "error");
+    return;
+  }
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  const pidInput = document.getElementById("upload-target-pid");
+  const pidValue = pidInput ? Number(pidInput.value) : NaN;
+  if (suffix !== "jsonl" && Number.isFinite(pidValue) && pidValue > 0) {
+    formData.append("target_pid", String(Math.trunc(pidValue)));
+  }
+  setUploadStatus(`Uploading ${file.name}…`);
+  try {
+    const response = await fetch("/api/upload", { method: "POST", body: formData });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || `Upload failed (${response.status})`);
+    }
+    if (payload.kind === "jsonl") {
+      setUploadStatus(
+        `Parsed ${payload.session_name}: ${payload.parsed?.finding_count ?? 0} findings stored in DB.`,
+        "ok",
+      );
+      if (payload.session_name) {
+        await loadDashboard(payload.session_name, { force: true });
+        switchTab("findings");
+      }
+    } else {
+      setUploadStatus(payload.message || "Sample saved. Click Run to analyze.", "ok");
+    }
+    const overview = await loadOverview(state.activeLog);
+    if (overview) {
+      state.overview = overview;
+      renderUploads(
+        overview.uploads || [],
+        overview.db_path || "",
+        Boolean(overview.collector_online),
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    setUploadStatus(error.message || "Upload failed", "error");
+  }
+}
+
+async function runUploadAnalysis(uploadId, button) {
+  const pidInput = document.getElementById("upload-target-pid");
+  const pidValue = pidInput ? Number(pidInput.value) : NaN;
+  const payload = {};
+  if (Number.isFinite(pidValue) && pidValue > 0) {
+    payload.target_pid = Math.trunc(pidValue);
+  }
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Running…";
+  }
+  setUploadStatus("Queueing analysis…");
+  try {
+    const response = await fetch(`/api/uploads/${uploadId}/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || `Run failed (${response.status})`);
+    }
+    setUploadStatus(result.message || "Analysis queued.", "ok");
+    const overview = await loadOverview(state.activeLog);
+    if (overview) {
+      state.overview = overview;
+      renderUploads(
+        overview.uploads || [],
+        overview.db_path || "",
+        Boolean(overview.collector_online),
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    setUploadStatus(error.message || "Could not start analysis", "error");
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Run";
+    }
+  }
+}
+
+async function deleteUpload(uploadId) {
+  if (!window.confirm("Delete this upload and its report?")) {
+    return;
+  }
+  setUploadStatus("Deleting upload…");
+  try {
+    const response = await fetch(`/api/uploads/${uploadId}/delete`, { method: "POST" });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || `Delete failed (${response.status})`);
+    }
+    setUploadStatus(result.message || "Upload deleted.", "ok");
+    const overview = await loadOverview(state.activeLog);
+    if (overview) {
+      state.overview = overview;
+      renderUploads(
+        overview.uploads || [],
+        overview.db_path || "",
+        Boolean(overview.collector_online),
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    setUploadStatus(error.message || "Could not delete upload", "error");
+  }
+}
+
+function openUploadReportModal(payload) {
+  const upload = payload.upload || {};
+  const report = payload.report || {};
+  const stats = report.stats || {};
+  const totals = stats.totals || {};
+  const techniques = stats.techniques || {};
+  const modal = document.getElementById("upload-report-modal");
+  document.getElementById("upload-report-title").textContent = upload.original_name || "Upload report";
+  document.getElementById("upload-report-summary").innerHTML = `
+    <dt>Status</dt><dd>${upload.status || "-"}</dd>
+    <dt>Events</dt><dd>${report.event_count ?? totals.events ?? 0}</dd>
+    <dt>Findings</dt><dd>${report.finding_count ?? totals.findings ?? 0}</dd>
+    <dt>Primitives</dt><dd>${report.primitive_count ?? totals.primitives ?? 0}</dd>
+    <dt>Parsed</dt><dd>${formatTime(report.parsed_at)}</dd>
+    <dt>Session</dt><dd class="mono">${report.session_name || "-"}</dd>
+  `;
+  const techniqueTags = Object.entries(techniques)
+    .map(([name, count]) => `<span class="tag">${formatTechniqueLabel(name)} · ${count}</span>`)
+    .join("");
+  document.getElementById("upload-report-techniques").innerHTML =
+    techniqueTags || '<span class="empty">No techniques detected.</span>';
+  const findings = report.findings || stats.recent_findings || [];
+  document.getElementById("upload-report-findings").innerHTML = findings.length
+    ? `<table>
+        <thead><tr><th>Score</th><th>Technique</th><th>Severity</th><th>Actor</th><th>Target</th></tr></thead>
+        <tbody>
+          ${findings
+            .map(
+              (finding) => `
+            <tr>
+              <td>${finding.score ?? "-"}</td>
+              <td>${formatTechniqueLabel(finding.technique)}</td>
+              <td>${finding.severity || "-"}</td>
+              <td>${finding.actor_pid ?? "-"}</td>
+              <td>${finding.target_pid ?? "-"}</td>
+            </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>`
+    : '<div class="empty">No findings in this report.</div>';
+  modal.showModal();
+}
+
+async function openUploadReport(uploadId) {
+  setUploadStatus("Loading report…");
+  try {
+    const response = await fetch(`/api/uploads/${uploadId}/report`);
+    const payload = await response.json();
+    if (response.status === 202) {
+      setUploadStatus(payload.error || "No telemetry yet — wait for collector findings.", "error");
+      return;
+    }
+    if (!response.ok) {
+      throw new Error(payload.error || `Report unavailable (${response.status})`);
+    }
+    openUploadReportModal(payload);
+    const hint = payload.live_snapshot ? "Live snapshot loaded (collector still running)." : "Report loaded.";
+    setUploadStatus(hint, "ok");
+  } catch (error) {
+    console.error(error);
+    setUploadStatus(error.message || "Could not load report", "error");
+  }
+}
+
+function setupUploadDropzone() {
+  const dropzone = document.getElementById("upload-dropzone");
+  const input = document.getElementById("upload-input");
+  if (!dropzone || !input) return;
+
+  dropzone.addEventListener("click", () => input.click());
+  dropzone.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      input.click();
+    }
+  });
+  input.addEventListener("change", () => {
+    const file = input.files && input.files[0];
+    uploadDroppedFile(file);
+    input.value = "";
+  });
+  ["dragenter", "dragover"].forEach((name) => {
+    dropzone.addEventListener(name, (event) => {
+      event.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+  });
+  ["dragleave", "drop"].forEach((name) => {
+    dropzone.addEventListener(name, (event) => {
+      event.preventDefault();
+      dropzone.classList.remove("dragover");
+    });
+  });
+  dropzone.addEventListener("drop", (event) => {
+    const file = event.dataTransfer?.files?.[0];
+    uploadDroppedFile(file);
+  });
+}
+
 function populateLogSelect(files, activeLog) {
   const select = document.getElementById("log-select");
   const names = files.map((file) => file.name);
@@ -642,6 +1010,96 @@ function showLoadError(message) {
   document.getElementById("file-count").textContent = "load failed";
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatRuleMatchFromPayload(rule) {
+  if (!rule) return "-";
+  const groups = rule.api_groups;
+  if (Array.isArray(groups) && groups.length) {
+    return groups
+      .map((group, index) => {
+        const apis = Array.isArray(group) ? group.join(" or ") : String(group);
+        return `Step ${index + 1}: ${apis}`;
+      })
+      .join("\n");
+  }
+  if (rule.match_summary) return rule.match_summary;
+  return rule.description || "-";
+}
+
+function ruleHasActiveGates(rule) {
+  if (!rule) return false;
+  return Boolean(
+    rule.require_execution
+    || rule.require_cross_process
+    || rule.require_same_process
+    || rule.require_section_mapping
+    || rule.require_context_read
+    || Number(rule.min_finding_score ?? 0) > 0
+    || Number(rule.min_primitive_kinds ?? 2) > 2,
+  );
+}
+
+function setRuleViewNextSteps(html) {
+  const node = document.getElementById("rule-view-next-steps");
+  if (!node) return;
+  if (html) {
+    node.innerHTML = html;
+    node.classList.remove("hidden");
+  } else {
+    node.innerHTML = "";
+    node.classList.add("hidden");
+  }
+}
+
+function formatAutoConfidenceLabel(value) {
+  const raw = String(value || "by_kinds").trim();
+  const labels = {
+    by_kinds: "Auto by primitive kinds (2→medium, 3→high)",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+    auto: "Auto",
+    high_if_context_else_medium: "High if context read, else medium",
+    high_if_execute_else_medium: "High if execution, else medium",
+  };
+  return labels[raw] || raw.replace(/_/g, " ");
+}
+
+function formatTechniqueLabel(name) {
+  if (!name) return "unknown";
+  return String(name).replace(/_/g, " ");
+}
+
+function renderTechniques(techniques) {
+  const entries = Object.entries(techniques || {}).sort((a, b) => b[1] - a[1]);
+  renderRankList(
+    "technique-list",
+    entries.map(([name, count]) => [formatTechniqueLabel(name), count]),
+  );
+}
+
+function renderEvasionSummary(evasion) {
+  const chip = document.getElementById("evasion-chip");
+  const total = Number(evasion?.total || 0);
+  if (chip) {
+    chip.textContent = total === 1 ? "1 signal" : `${total} signals`;
+  }
+  const rows = Object.entries(evasion?.by_kind || {})
+    .sort((a, b) => b[1] - a[1])
+    .map(([kind, count]) => [kind.replace(/_/g, " "), count]);
+  if (evasion?.apis?.length) {
+    rows.push(["APIs", evasion.apis.join(", ")]);
+  }
+  renderRankList("evasion-summary", rows);
+}
+
 function renderOverview(payload) {
   renderMetrics(payload.stats.totals);
   renderSeverityChart(payload.stats.severity);
@@ -649,6 +1107,619 @@ function renderOverview(payload) {
   renderTimelineChart(payload.stats.timeline);
   renderRankList("api-list", payload.stats.top_apis);
   renderRankList("actor-list", payload.stats.top_actors);
+  renderTechniques(payload.stats.techniques);
+  renderEvasionSummary(payload.stats.evasion);
+}
+
+let classifierRulesDraft = null;
+let classifierTechniques = [];
+let ruleEditorMode = null;
+let ruleEditorRuleId = null;
+
+const RULES_TABLE_HEAD_HTML = `
+  <tr>
+    <th>On</th>
+    <th>Rule</th>
+    <th>Technique</th>
+    <th></th>
+  </tr>`;
+
+function syncCompactRulesTable(tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const table = tbody.closest("table");
+  if (!table) return;
+  table.classList.add("rules-table-compact");
+  table.classList.remove("rules-table-builtins");
+  const headRow = table.querySelector("thead tr");
+  if (!headRow) return;
+  const headers = [...headRow.querySelectorAll("th")].map((node) => node.textContent.trim().toLowerCase());
+  const isLegacy = headers.length > 4 || headers.includes("api match") || headers.includes("gates");
+  if (isLegacy) {
+    headRow.innerHTML = RULES_TABLE_HEAD_HTML;
+  }
+}
+
+function ensureRulesTabMarkup() {
+  syncCompactRulesTable("custom-rules-body");
+  syncCompactRulesTable("rules-body");
+
+  const panel = document.querySelector('[data-panel="rules"]');
+  if (!panel) return;
+  const title = panel.querySelector(".panel-head h2");
+  if (title && title.textContent.trim() === "Rules — gán technique") {
+    title.textContent = "Classifier rules";
+  }
+  const saveBtn = document.getElementById("rules-save-btn");
+  if (saveBtn && saveBtn.textContent.trim() === "Lưu cài đặt") {
+    saveBtn.textContent = "Save settings";
+  }
+
+  const expectedTemplate = "rules-v3";
+  const templateMeta = document.querySelector('meta[name="dashboard-template"]');
+  if (templateMeta && templateMeta.content !== expectedTemplate) {
+    const reloadKey = `dashboard-template-reload-${expectedTemplate}`;
+    if (!sessionStorage.getItem(reloadKey)) {
+      sessionStorage.setItem(reloadKey, "1");
+      window.location.reload();
+    }
+  }
+}
+
+function slugifyRuleId(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/^([^a-z])/, "r_$1")
+    .slice(0, 64);
+}
+
+function parseApiList(value) {
+  return String(value || "")
+    .split(/[,;\n]/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function formatApiList(values) {
+  return (values || []).join(", ");
+}
+
+function populateTechniqueSelect(select, techniques) {
+  if (!select) return;
+  const options = (techniques || []).map(
+    (item) => `<option value="${item.value}">${item.label || item.value}</option>`,
+  );
+  select.innerHTML = options.join("");
+}
+
+function formatApiGroupsText(apiGroups) {
+  if (!Array.isArray(apiGroups) || !apiGroups.length) return "";
+  return apiGroups
+    .map((group) => (Array.isArray(group) ? group.join(", ") : String(group)))
+    .join("\n");
+}
+
+function parseApiGroupsText(text) {
+  return String(text || "")
+    .split(/\r?\n/)
+    .map((line) => parseApiList(line))
+    .filter((group) => group.length > 0);
+}
+
+function setRuleEditorSectionVisible(id, visible) {
+  document.getElementById(id)?.classList.toggle("hidden", !visible);
+}
+
+function formatGatesHuman(rule) {
+  if (!rule) return "-";
+  const lines = [];
+  lines.push(rule.enabled !== false ? "Rule enabled" : "Rule disabled");
+  if (rule.require_execution) lines.push("Require execution (SetThreadContext, CreateRemoteThread, NtTestAlert…)");
+  if (rule.require_cross_process) lines.push("Require cross-process inject");
+  if (rule.require_same_process) lines.push("Require same-process (self-inject)");
+  if (rule.require_section_mapping) lines.push("Require section mapping");
+  if (rule.require_context_read) lines.push("Require thread context read");
+  lines.push(`Need ≥ ${rule.min_primitive_kinds ?? 2} primitive kinds (allocate / write / execute)`);
+  const minScore = Number(rule.min_finding_score ?? 0);
+  if (minScore > 0) lines.push(`Finding score ≥ ${minScore}`);
+  return lines.join(" · ");
+}
+
+function setRuleEditorHelp(html) {
+  const node = document.getElementById("rule-editor-help");
+  if (node) node.innerHTML = html;
+}
+
+function populateRuleViewPanel(rule, { isBuiltin }) {
+  const summary = document.getElementById("rule-view-summary");
+  const apis = document.getElementById("rule-view-apis");
+  const conditions = document.getElementById("rule-view-conditions");
+  const technique = document.getElementById("rule-view-technique");
+  const confidence = document.getElementById("rule-view-confidence");
+  if (!summary) return;
+  summary.textContent = isBuiltin
+    ? rule.description || "Built-in rule — fixed API list, not editable directly."
+    : rule.description || rule.rationale || "Custom rule — you choose APIs from the log.";
+  apis.textContent = formatRuleMatchFromPayload(rule);
+  if ((rule.signals || []).length) {
+    apis.textContent += `\n\nAdditional signals: ${rule.signals.join(", ")}`;
+  }
+  conditions.textContent = formatGatesHuman(rule);
+  technique.textContent = formatTechniqueLabel(rule.technique);
+  confidence.textContent = formatAutoConfidenceLabel(rule.confidence || rule.auto_confidence || "auto");
+  if (isBuiltin) {
+    setRuleViewNextSteps(
+      "<p><strong>What can you change?</strong></p>"
+      + "<p>• Toggle or tighten gates → click <strong>Edit gates</strong> below.</p>"
+      + "<p>• Change API list → click <strong>Duplicate to custom</strong>.</p>",
+    );
+  } else {
+    setRuleViewNextSteps(
+      "<p><strong>Want to edit?</strong> Click <strong>Edit</strong> → fill APIs (one step per line) → open "
+      + "<em>Gate conditions</em> if you need cross-process / execution filters.</p>",
+    );
+  }
+}
+
+function populateRuleEditorGates(rule, { includeCustomSignals = false } = {}) {
+  const data = rule || {};
+  document.getElementById("rule-editor-min-kinds").value = String(data.min_primitive_kinds ?? 2);
+  document.getElementById("rule-editor-min-score").value = String(data.min_finding_score ?? 0);
+  document.getElementById("rule-editor-confidence").value = data.confidence || "";
+  document.getElementById("rule-editor-enabled").checked = data.enabled !== false;
+  document.getElementById("rule-editor-req-exec").checked = Boolean(data.require_execution);
+  document.getElementById("rule-editor-req-cross").checked = Boolean(data.require_cross_process);
+  document.getElementById("rule-editor-req-same").checked = Boolean(data.require_same_process);
+  const sectionToggle = document.getElementById("rule-editor-req-section");
+  const contextToggle = document.getElementById("rule-editor-req-context");
+  if (sectionToggle) {
+    sectionToggle.checked = Boolean(data.require_section_mapping);
+    sectionToggle.closest("label")?.classList.toggle("hidden", !includeCustomSignals);
+  }
+  if (contextToggle) {
+    contextToggle.checked = Boolean(data.require_context_read);
+    contextToggle.closest("label")?.classList.toggle("hidden", !includeCustomSignals);
+  }
+}
+
+function populateRuleEditorCustom(rule) {
+  const isEdit = Boolean(rule?.id);
+  const idInput = document.getElementById("rule-editor-id");
+  idInput.value = rule?.id || "";
+  idInput.readOnly = isEdit;
+  document.getElementById("rule-editor-label").value = rule?.label || "";
+  document.getElementById("rule-editor-technique").value = rule?.technique || "unclassified";
+  document.getElementById("rule-editor-priority").value = String(rule?.priority ?? 500);
+  document.getElementById("rule-editor-phase").value = rule?.eval_phase || "before_builtin";
+  document.getElementById("rule-editor-api-groups").value = formatApiGroupsText(rule?.api_groups);
+  document.getElementById("rule-editor-required-apis").value = formatApiList(rule?.required_apis);
+  document.getElementById("rule-editor-any-apis").value = formatApiList(rule?.any_apis);
+  document.getElementById("rule-editor-description").value = rule?.description || "";
+  document.getElementById("rule-editor-rationale").value = rule?.rationale || "";
+  document.querySelectorAll("#rule-editor-kinds input[type=checkbox]").forEach((input) => {
+    input.checked = (rule?.required_kinds || []).includes(input.value);
+  });
+}
+
+function openRuleEditor(mode, rule) {
+  const modal = document.getElementById("rule-editor-modal");
+  if (!modal) return;
+  ruleEditorMode = mode;
+  ruleEditorRuleId = rule?.id || null;
+
+  const title = document.getElementById("rule-editor-title");
+  const eyebrow = document.getElementById("rule-editor-eyebrow");
+  const saveBtn = document.getElementById("rule-editor-save-btn");
+  const editBtn = document.getElementById("rule-editor-edit-btn");
+  const deleteBtn = document.getElementById("rule-editor-delete-btn");
+  const duplicateBtn = document.getElementById("rule-editor-duplicate-btn");
+
+  const isBuiltin = mode.startsWith("builtin");
+  const isView = mode.endsWith("-view");
+  const isEdit = !isView;
+
+  setRuleEditorSectionVisible("rule-editor-view-panel", isView);
+  setRuleEditorSectionVisible("rule-editor-custom-panel", mode === "custom-new" || mode === "custom-edit");
+  setRuleEditorSectionVisible("rule-editor-gates-panel", isEdit);
+
+  const gatesDetails = document.getElementById("rule-editor-gates-details");
+  const gatesSummary = document.getElementById("rule-editor-gates-summary");
+  if (gatesDetails) {
+    if (mode === "builtin-edit") {
+      gatesDetails.open = true;
+      gatesDetails.classList.add("gates-required");
+      if (gatesSummary) gatesSummary.textContent = "Edit gate conditions";
+    } else {
+      gatesDetails.classList.remove("gates-required");
+      if (gatesSummary) gatesSummary.textContent = "Gate conditions (expand if needed)";
+      if (mode === "custom-new") {
+        gatesDetails.open = false;
+      } else if (mode === "custom-edit") {
+        gatesDetails.open = ruleHasActiveGates(rule);
+      }
+    }
+  }
+
+  document.querySelectorAll(".gate-custom-only").forEach((node) => {
+    node.classList.toggle("hidden", isBuiltin);
+  });
+
+  if (!isView) {
+    setRuleViewNextSteps("");
+  }
+
+  if (isBuiltin) {
+    eyebrow.textContent = "Built-in rule";
+    title.textContent = rule?.label || rule?.id || "Built-in rule";
+    if (isView) {
+      setRuleEditorHelp(
+        "<p><strong>How to read this:</strong> The rule matches when the log contains the APIs below. "
+        + "You <em>cannot edit</em> the API list — only toggle the rule or adjust <strong>gate conditions</strong>. "
+        + "To change APIs → click <strong>Duplicate to custom</strong>.</p>",
+      );
+      populateRuleViewPanel(rule, { isBuiltin: true });
+    } else {
+      setRuleEditorHelp(
+        "<p><strong>Edit gates:</strong> Enable a condition to require it on the finding. "
+        + "Example: enable <em>cross-process</em> so the rule skips same-process inject.</p>",
+      );
+      populateRuleEditorGates(rule, { includeCustomSignals: false });
+    }
+  } else if (mode === "custom-view") {
+    eyebrow.textContent = "Custom rule";
+    title.textContent = rule?.label || rule?.id || "Custom rule";
+    setRuleEditorHelp("<p>Your custom rule. Click <strong>Edit</strong> to change APIs or gate conditions.</p>");
+    populateRuleViewPanel(rule, { isBuiltin: false });
+  } else {
+    eyebrow.textContent = "Custom rule";
+    title.textContent = mode === "custom-edit" ? `Edit: ${rule?.label || rule?.id}` : "Add new rule";
+    setRuleEditorHelp(
+      "<p><strong>3 steps:</strong> (1) Name + technique. "
+      + "(2) Fill APIs — one step per line in the inject chain. "
+      + "(3) Enable gate conditions if needed (often <em>cross-process</em> for inject into Edge).</p>"
+      + "<p class=\"rule-help-example\"><strong>Edge example:</strong><br>"
+      + "<code>ntallocatevirtualmemory</code><br><code>ntwritevirtualmemory</code><br>"
+      + "<code>ntmapviewofsection</code><br><code>setthreadcontext</code></p>",
+    );
+    populateRuleEditorCustom(rule || {});
+    populateRuleEditorGates(rule || {}, { includeCustomSignals: true });
+  }
+
+  editBtn.textContent = isBuiltin ? "Edit gates" : "Edit";
+  editBtn.classList.toggle("hidden", !isView);
+  saveBtn.classList.toggle("hidden", isView);
+  deleteBtn.classList.toggle("hidden", mode !== "custom-edit");
+  duplicateBtn.classList.toggle("hidden", !isBuiltin || !isView);
+
+  modal.showModal();
+}
+
+function builtinRuleToCustomDraft(rule) {
+  const suffix = "_custom";
+  let id = slugifyRuleId(`${rule.id}${suffix}`);
+  const existing = new Set((classifierRulesDraft?.custom_rules || []).map((item) => item.id));
+  let counter = 2;
+  while (existing.has(id)) {
+    id = slugifyRuleId(`${rule.id}${suffix}${counter}`);
+    counter += 1;
+  }
+  return {
+    id,
+    label: `${rule.label || rule.id} (custom)`,
+    technique: rule.technique || "unclassified",
+    enabled: true,
+    priority: 700,
+    eval_phase: "before_builtin",
+    confidence: rule.confidence || "",
+    api_groups: Array.isArray(rule.api_groups) ? rule.api_groups.map((group) => [...group]) : [],
+    required_apis: [],
+    any_apis: [],
+    required_kinds: [],
+    min_primitive_kinds: rule.min_primitive_kinds ?? 2,
+    min_finding_score: rule.min_finding_score ?? 0,
+    require_execution: Boolean(rule.require_execution),
+    require_cross_process: Boolean(rule.require_cross_process),
+    require_same_process: Boolean(rule.require_same_process),
+    require_section_mapping: false,
+    require_context_read: false,
+    description: rule.description || "",
+    rationale: `Custom copy of built-in rule ${rule.id}.`,
+    source: "custom",
+  };
+}
+
+function collectCustomRulePayload() {
+  const idRaw = document.getElementById("rule-editor-id")?.value || "";
+  const label = document.getElementById("rule-editor-label")?.value || "";
+  let id = slugifyRuleId(idRaw || label);
+  if (!/^[a-z][a-z0-9_-]{1,63}$/.test(id)) {
+    throw new Error("Rule ID must be a slug: lowercase letters, numbers, underscores, hyphens.");
+  }
+  const requiredKinds = [];
+  document.querySelectorAll("#rule-editor-kinds input[type=checkbox]:checked").forEach((input) => {
+    requiredKinds.push(input.value);
+  });
+  const apiGroups = parseApiGroupsText(document.getElementById("rule-editor-api-groups")?.value);
+  return {
+    id,
+    label: label || id,
+    technique: document.getElementById("rule-editor-technique")?.value || "unclassified",
+    enabled: Boolean(document.getElementById("rule-editor-enabled")?.checked),
+    priority: Number(document.getElementById("rule-editor-priority")?.value || 500),
+    eval_phase: document.getElementById("rule-editor-phase")?.value || "before_builtin",
+    confidence: document.getElementById("rule-editor-confidence")?.value || "",
+    api_groups: apiGroups,
+    required_apis: parseApiList(document.getElementById("rule-editor-required-apis")?.value),
+    any_apis: parseApiList(document.getElementById("rule-editor-any-apis")?.value),
+    required_kinds: requiredKinds,
+    min_primitive_kinds: Number(document.getElementById("rule-editor-min-kinds")?.value || 2),
+    min_finding_score: Number(document.getElementById("rule-editor-min-score")?.value || 0),
+    require_execution: Boolean(document.getElementById("rule-editor-req-exec")?.checked),
+    require_cross_process: Boolean(document.getElementById("rule-editor-req-cross")?.checked),
+    require_same_process: Boolean(document.getElementById("rule-editor-req-same")?.checked),
+    require_section_mapping: Boolean(document.getElementById("rule-editor-req-section")?.checked),
+    require_context_read: Boolean(document.getElementById("rule-editor-req-context")?.checked),
+    description: document.getElementById("rule-editor-description")?.value || "",
+    rationale: document.getElementById("rule-editor-rationale")?.value || "",
+    source: "custom",
+  };
+}
+
+function collectBuiltinGatePayload(ruleId) {
+  return {
+    id: ruleId,
+    enabled: Boolean(document.getElementById("rule-editor-enabled")?.checked),
+    min_primitive_kinds: Number(document.getElementById("rule-editor-min-kinds")?.value || 2),
+    min_finding_score: Number(document.getElementById("rule-editor-min-score")?.value || 0),
+    require_execution: Boolean(document.getElementById("rule-editor-req-exec")?.checked),
+    require_cross_process: Boolean(document.getElementById("rule-editor-req-cross")?.checked),
+    require_same_process: Boolean(document.getElementById("rule-editor-req-same")?.checked),
+    confidence: document.getElementById("rule-editor-confidence")?.value || "",
+  };
+}
+
+async function saveRuleEditor() {
+  try {
+    if (ruleEditorMode === "builtin-edit") {
+      if (!ruleEditorRuleId) throw new Error("Missing built-in rule id.");
+      const gatePayload = collectBuiltinGatePayload(ruleEditorRuleId);
+      setRulesStatus("Saving gates…");
+      const response = await fetch("/api/rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          minimum_score: classifierRulesDraft?.minimum_score ?? 50,
+          minimum_operational_kinds: classifierRulesDraft?.minimum_operational_kinds ?? 2,
+          classification_enabled: classifierRulesDraft?.classification_enabled ?? true,
+          require_cross_process_findings: classifierRulesDraft?.require_cross_process_findings ?? false,
+          ignore_same_process_findings: classifierRulesDraft?.ignore_same_process_findings ?? false,
+          rules: [gatePayload],
+          custom_rules: classifierRulesDraft?.custom_rules || [],
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || `Save failed (${response.status})`);
+      document.getElementById("rule-editor-modal")?.close();
+      renderClassifierRules(result, result.config_path);
+      setRulesStatus(result.message || "Gates saved.", "ok");
+      return;
+    }
+
+    if (ruleEditorMode === "custom-new" || ruleEditorMode === "custom-edit") {
+      const payload = collectCustomRulePayload();
+      if (ruleEditorMode === "custom-edit" && ruleEditorRuleId && ruleEditorRuleId !== payload.id) {
+        throw new Error("Cannot change Rule ID while editing. Delete and recreate if needed.");
+      }
+      if (!payload.api_groups.length && !payload.required_apis.length) {
+        throw new Error("Need at least API groups or Required APIs.");
+      }
+      setRulesStatus("Saving custom rule…");
+      const response = await fetch(`/api/rules/custom/${encodeURIComponent(payload.id)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || `Save failed (${response.status})`);
+      document.getElementById("rule-editor-modal")?.close();
+      renderClassifierRules(result, result.config_path);
+      setRulesStatus(result.message || "Custom rule saved.", "ok");
+    }
+  } catch (error) {
+    console.error(error);
+    setRulesStatus(error.message || "Could not save rule", "error");
+  }
+}
+
+async function deleteCustomRuleById(ruleId) {
+  if (!ruleId) return;
+  const rule = (classifierRulesDraft?.custom_rules || []).find((item) => item.id === ruleId);
+  const label = rule?.label || ruleId;
+  if (!window.confirm(`Delete custom rule "${label}"?`)) return;
+  setRulesStatus("Deleting…");
+  try {
+    const response = await fetch(`/api/rules/custom/${encodeURIComponent(ruleId)}`, {
+      method: "DELETE",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || `Delete failed (${response.status})`);
+    document.getElementById("rule-editor-modal")?.close();
+    renderClassifierRules(result, result.config_path);
+    setRulesStatus(result.message || "Rule deleted.", "ok");
+  } catch (error) {
+    console.error(error);
+    setRulesStatus(error.message || "Could not delete rule", "error");
+  }
+}
+
+async function deleteRuleFromEditor() {
+  if (!ruleEditorRuleId) return;
+  await deleteCustomRuleById(ruleEditorRuleId);
+}
+
+function duplicateBuiltinFromEditor() {
+  const rule = (classifierRulesDraft?.rules || []).find((item) => item.id === ruleEditorRuleId);
+  if (!rule) return;
+  openRuleEditor("custom-new", builtinRuleToCustomDraft(rule));
+}
+
+function renderCustomRulesTable(customRules) {
+  const body = document.getElementById("custom-rules-body");
+  if (!body) return;
+  const rows = customRules || [];
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="4" class="empty">No custom rules yet. Click + Add rule.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows
+    .map(
+      (rule) => `
+      <tr data-custom-rule-id="${rule.id}" class="rules-row-clickable">
+        <td><span class="rule-status-dot ${rule.enabled ? "on" : "off"}" title="${rule.enabled ? "Enabled" : "Disabled"}"></span></td>
+        <td class="rule-name-cell">
+          <span class="rule-label">${escapeHtml(rule.label || rule.id)}</span>
+        </td>
+        <td class="mono">${formatTechniqueLabel(rule.technique)}</td>
+        <td class="rules-row-actions">
+          <button type="button" class="btn-mini" data-custom-rule-view="${rule.id}">View</button>
+          <button type="button" class="btn-mini" data-custom-rule-edit="${rule.id}">Edit</button>
+          <button type="button" class="btn-mini danger" data-custom-rule-delete="${rule.id}">Delete</button>
+        </td>
+      </tr>`,
+    )
+    .join("");
+}
+
+function renderClassifierRules(rulesPayload, configPath) {
+  if (!rulesPayload) return;
+  ensureRulesTabMarkup();
+  classifierTechniques = rulesPayload.techniques || classifierTechniques;
+  populateTechniqueSelect(document.getElementById("rule-editor-technique"), classifierTechniques);
+  classifierRulesDraft = {
+    minimum_score: rulesPayload.minimum_score,
+    minimum_operational_kinds: rulesPayload.minimum_operational_kinds,
+    classification_enabled: rulesPayload.classification_enabled,
+    require_cross_process_findings: rulesPayload.require_cross_process_findings,
+    ignore_same_process_findings: rulesPayload.ignore_same_process_findings,
+    rules: (rulesPayload.rules || []).map((rule) => ({ ...rule })),
+    custom_rules: (rulesPayload.custom_rules || []).map((rule) => ({ ...rule })),
+  };
+  renderCustomRulesTable(classifierRulesDraft.custom_rules);
+  const chip = document.getElementById("rules-config-chip");
+  if (chip && configPath) {
+    chip.textContent = configPath.split(/[\\/]/).pop() || ".classifier_rules.json";
+    chip.title = configPath;
+  }
+  const scoreInput = document.getElementById("rules-minimum-score");
+  if (scoreInput) {
+    scoreInput.value = String(rulesPayload.minimum_score ?? 50);
+  }
+  const kindsInput = document.getElementById("rules-minimum-operational-kinds");
+  if (kindsInput) {
+    kindsInput.value = String(rulesPayload.minimum_operational_kinds ?? 2);
+  }
+  const enabledToggle = document.getElementById("rules-classification-enabled");
+  if (enabledToggle) {
+    enabledToggle.checked = Boolean(rulesPayload.classification_enabled);
+  }
+  const crossToggle = document.getElementById("rules-require-cross-process");
+  if (crossToggle) {
+    crossToggle.checked = Boolean(rulesPayload.require_cross_process_findings);
+  }
+  const sameToggle = document.getElementById("rules-ignore-same-process");
+  if (sameToggle) {
+    sameToggle.checked = Boolean(rulesPayload.ignore_same_process_findings);
+  }
+  const body = document.getElementById("rules-body");
+  if (!body) return;
+  const rows = (rulesPayload.rules || []).filter((rule) => rule.source !== "custom");
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="4" class="empty">No built-in rules.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows
+    .map(
+      (rule) => `
+      <tr data-rule-row="${rule.id}" class="rules-row-clickable">
+        <td><input type="checkbox" data-rule-id="${rule.id}" data-field="enabled" ${rule.enabled ? "checked" : ""} title="Toggle rule" /></td>
+        <td class="rule-name-cell">
+          <span class="rule-label">${escapeHtml(rule.label || rule.id)}</span>
+        </td>
+        <td class="mono">${formatTechniqueLabel(rule.technique)}</td>
+        <td class="rules-row-actions">
+          <button type="button" class="btn-mini" data-builtin-rule-view="${rule.id}">View</button>
+        </td>
+      </tr>`,
+    )
+    .join("");
+  setRulesStatus("Toggle built-in rules with checkbox → Save settings. API details: click View.");
+}
+
+function setRulesStatus(message, kind = "") {
+  const node = document.getElementById("rules-status");
+  if (!node) return;
+  node.textContent = message;
+  node.classList.remove("ok", "error");
+  if (kind) node.classList.add(kind);
+}
+
+function collectRuleRowSettings(row) {
+  const ruleId = row.dataset.ruleRow;
+  if (!ruleId) return null;
+  const draft = (classifierRulesDraft?.rules || []).find((item) => item.id === ruleId);
+  const enabled = Boolean(row.querySelector(`[data-rule-id="${ruleId}"][data-field="enabled"]`)?.checked);
+  return {
+    id: ruleId,
+    enabled,
+    min_primitive_kinds: draft?.min_primitive_kinds ?? 2,
+    require_execution: Boolean(draft?.require_execution),
+    require_cross_process: Boolean(draft?.require_cross_process),
+    require_same_process: Boolean(draft?.require_same_process),
+    min_finding_score: draft?.min_finding_score ?? 0,
+    confidence: draft?.confidence || "",
+  };
+}
+
+async function saveClassifierRules() {
+  const scoreInput = document.getElementById("rules-minimum-score");
+  const kindsInput = document.getElementById("rules-minimum-operational-kinds");
+  const enabledToggle = document.getElementById("rules-classification-enabled");
+  const crossToggle = document.getElementById("rules-require-cross-process");
+  const sameToggle = document.getElementById("rules-ignore-same-process");
+  const body = document.getElementById("rules-body");
+  const rules = [];
+  body?.querySelectorAll("tr[data-rule-row]").forEach((row) => {
+    const item = collectRuleRowSettings(row);
+    if (item) rules.push(item);
+  });
+  const payload = {
+    minimum_score: Number(scoreInput?.value || 50),
+    minimum_operational_kinds: Number(kindsInput?.value || 2),
+    classification_enabled: Boolean(enabledToggle?.checked),
+    require_cross_process_findings: Boolean(crossToggle?.checked),
+    ignore_same_process_findings: Boolean(sameToggle?.checked),
+    rules,
+    custom_rules: classifierRulesDraft?.custom_rules || [],
+  };
+  setRulesStatus("Saving…");
+  try {
+    const response = await fetch("/api/rules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || `API error ${response.status}`);
+    }
+    renderClassifierRules(result, result.config_path);
+    setRulesStatus(result.message || "Settings saved.", "ok");
+  } catch (error) {
+    console.error(error);
+    setRulesStatus(error.message || "Could not save settings", "error");
+  }
 }
 
 function renderSessionViews(session) {
@@ -657,6 +1728,7 @@ function renderSessionViews(session) {
   renderPrimitives(session.primitives || []);
   renderTriages(session.pending_file_drops || [], session.triages || []);
   renderEvents(session.events || []);
+  renderInjectionChainsFromStats(session.stats);
 }
 
 function openFindingModal(finding) {
@@ -735,9 +1807,23 @@ function openFindingModal(finding) {
   }
 }
 
-async function loadOverview(selectedLog) {
-  const query = selectedLog ? `?log=${encodeURIComponent(selectedLog)}` : "";
-  const response = await fetch(`/api/overview${query}`);
+async function loadClassifierRules() {
+  const response = await fetch("/api/rules");
+  if (!response.ok) {
+    setRulesStatus(`Could not load rules (${response.status})`, "error");
+    return null;
+  }
+  const payload = await response.json();
+  renderClassifierRules(payload, payload.config_path);
+  return payload;
+}
+
+async function loadOverview(selectedLog, { includeRules = false } = {}) {
+  const params = new URLSearchParams();
+  if (selectedLog) params.set("log", selectedLog);
+  if (includeRules) params.set("include_rules", "1");
+  const query = params.toString();
+  const response = await fetch(query ? `/api/overview?${query}` : "/api/overview");
   if (!response.ok) {
     showLoadError(`API error ${response.status}`);
     return null;
@@ -794,7 +1880,7 @@ function renderRuntimeControls(runtime) {
       "Locked off by CLI (--no-watch-files). Restart run without that flag to control from the dashboard.";
   } else if (!runtime.collector_online) {
     hint.textContent =
-      "Start python -m noirlycan_telemetry run in a terminal, then toggle watch here. Changes apply within ~1s.";
+      "Start python -m noirlycan_telemetry run in a terminal, then toggle watch here. Runtime syncs over WebSocket.";
   } else if (runtime.auto_api_analysis_enabled || runtime.auto_triage_enabled) {
     hint.textContent = paths
       ? `Watching: ${paths}. New files are auto-spawned under Frida API hooks.`
@@ -837,8 +1923,32 @@ async function saveRuntimeConfig(patch) {
 }
 
 function shouldPauseRefresh() {
-  const modal = document.getElementById("finding-modal");
-  return modal.open || document.hidden;
+  const findingModal = document.getElementById("finding-modal");
+  const ruleModal = document.getElementById("rule-editor-modal");
+  return Boolean(findingModal?.open || ruleModal?.open || document.hidden);
+}
+
+let liveRefreshTimer = null;
+
+function scheduleDashboardRefresh(selectedLog, { force = false } = {}) {
+  if (force) {
+    if (liveRefreshTimer) {
+      clearTimeout(liveRefreshTimer);
+      liveRefreshTimer = null;
+    }
+    return loadDashboard(selectedLog, { force: true });
+  }
+  if (shouldPauseRefresh()) {
+    return;
+  }
+  if (liveRefreshTimer) {
+    return;
+  }
+  liveRefreshTimer = setTimeout(() => {
+    liveRefreshTimer = null;
+    const selected = selectedLog || document.getElementById("log-select")?.value;
+    loadDashboard(selected || undefined);
+  }, LIVE_REFRESH_DEBOUNCE_MS);
 }
 
 async function loadDashboard(selectedLog, { force = false } = {}) {
@@ -861,23 +1971,35 @@ async function loadDashboard(selectedLog, { force = false } = {}) {
 
   populateLogSelect(overview.files, state.activeLog);
 
-  if (state.activeTab === "overview" || state.activeTab === "sessions" || force) {
+  if (state.activeTab === "chains" || force) {
+    renderInjectionChainsFromStats(overview.stats);
+  }
+
+  if (state.activeTab === "overview" || state.activeTab === "sessions" || state.activeTab === "upload" || force) {
     if (state.activeTab === "overview" || force) {
       renderOverview(overview);
     }
     if (state.activeTab === "sessions" || force) {
       renderFiles(overview.files, state.activeLog);
     }
+    if (state.activeTab === "upload" || force) {
+      renderUploads(
+        overview.uploads || [],
+        overview.db_path || "",
+        Boolean(overview.collector_online),
+      );
+    }
   }
 
-  if (state.activeTab === "files" || force) {
+  if ((state.activeTab === "files" || force) && !state.liveSocketConnected) {
     const runtime = await loadRuntimeConfig();
     if (runtime) {
       renderRuntimeControls(runtime);
     }
   }
 
-  if (state.activeLog) {
+  const needsSession = force || SESSION_TABS.has(state.activeTab);
+  if (state.activeLog && needsSession) {
     const session = await loadSession(state.activeLog, filters);
     state.session = session;
     if (session) {
@@ -908,6 +2030,7 @@ async function loadDashboard(selectedLog, { force = false } = {}) {
     renderNetwork([]);
     renderPrimitives([]);
     renderEvents([]);
+    renderInjectionChains([], 0);
   }
 }
 
@@ -925,6 +2048,13 @@ function switchTab(tabName) {
     if (tabName === "overview") {
       renderOverview(state.overview);
     }
+    if (tabName === "upload") {
+      renderUploads(
+        state.overview.uploads || [],
+        state.overview.db_path || "",
+        Boolean(state.overview.collector_online),
+      );
+    }
     if (tabName === "sessions") {
       renderFiles(state.overview.files, state.activeLog);
     }
@@ -933,6 +2063,12 @@ function switchTab(tabName) {
     loadRuntimeConfig().then((runtime) => {
       if (runtime) renderRuntimeControls(runtime);
     });
+  }
+  if (tabName === "rules") {
+    loadClassifierRules();
+  }
+  if (tabName === "chains") {
+    renderInjectionChainsFromStats(chainsStatsSource());
   }
   if (state.session) {
     if (tabName === "findings") {
@@ -1005,6 +2141,26 @@ function setupDelegatedClicks() {
     switchTab("network");
   });
 
+  document.getElementById("uploads-body")?.addEventListener("click", (event) => {
+    const runButton = event.target.closest("[data-upload-run]");
+    if (runButton && !runButton.disabled) {
+      const uploadId = Number(runButton.dataset.uploadRun);
+      if (uploadId) runUploadAnalysis(uploadId, runButton);
+      return;
+    }
+    const deleteButton = event.target.closest("[data-upload-delete]");
+    if (deleteButton) {
+      const uploadId = Number(deleteButton.dataset.uploadDelete);
+      if (uploadId) deleteUpload(uploadId);
+      return;
+    }
+    const reportButton = event.target.closest("[data-upload-report]");
+    if (reportButton) {
+      const uploadId = Number(reportButton.dataset.uploadReport);
+      if (uploadId) openUploadReport(uploadId);
+    }
+  });
+
   document.getElementById("triage-body").addEventListener("click", (event) => {
     const button = event.target.closest("[data-analyze-path]");
     if (!button || button.disabled) return;
@@ -1059,6 +2215,98 @@ document.querySelectorAll(".tab").forEach((tab) => {
 });
 
 let refreshTimer = null;
+let liveSocket = null;
+let liveSocketRetry = 0;
+
+function liveSocketUrl() {
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${window.location.host}/ws/dashboard/`;
+}
+
+function handleLiveSocketMessage(event) {
+  let message;
+  try {
+    message = JSON.parse(event.data);
+  } catch (error) {
+    console.error("invalid websocket payload", error);
+    return;
+  }
+  if (message.type === "runtime" && message.runtime) {
+    state.runtime = message.runtime;
+    renderRuntimeControls(message.runtime);
+    return;
+  }
+  if (message.type === "refresh") {
+    const selected = document.getElementById("log-select")?.value;
+    scheduleDashboardRefresh(selected || undefined);
+  }
+}
+
+let collectorStartRequested = false;
+
+async function requestCollectorStart() {
+  if (collectorStartRequested) return;
+  collectorStartRequested = true;
+  try {
+    const response = await fetch("/api/collector/start", { method: "POST" });
+    const payload = await response.json();
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.message || payload.error || `API error ${response.status}`);
+    }
+    if (payload.message) {
+      setUploadStatus(payload.message, payload.collector_online ? "ok" : "");
+    }
+    const selected = document.getElementById("log-select")?.value;
+    setTimeout(() => loadDashboard(selected || undefined, { force: true }), 1500);
+  } catch (error) {
+    console.error(error);
+    collectorStartRequested = false;
+    setUploadStatus("Could not start collector. Approve UAC or run dashboard as admin.", "error");
+  }
+}
+
+function maybeAutoStartCollector() {
+  if (DEMO_MODE) {
+    return;
+  }
+  if (state.runtime?.collector_online || state.overview?.collector_online) {
+    return;
+  }
+  requestCollectorStart();
+}
+
+function connectLiveSocket() {
+  if (DEMO_MODE || liveSocket) {
+    return;
+  }
+  const socket = new WebSocket(liveSocketUrl());
+  liveSocket = socket;
+
+  socket.addEventListener("open", () => {
+    liveSocketRetry = 0;
+    state.liveSocketConnected = true;
+    setupAutoRefresh();
+    setTimeout(maybeAutoStartCollector, 1200);
+  });
+
+  socket.addEventListener("message", handleLiveSocketMessage);
+
+  socket.addEventListener("close", () => {
+    state.liveSocketConnected = false;
+    if (liveSocket === socket) {
+      liveSocket = null;
+    }
+    setupAutoRefresh();
+    const delay = Math.min(10000, 500 * 2 ** liveSocketRetry);
+    liveSocketRetry += 1;
+    setTimeout(connectLiveSocket, delay);
+  });
+
+  socket.addEventListener("error", () => {
+    socket.close();
+  });
+}
+
 function setupAutoRefresh() {
   if (refreshTimer) {
     clearInterval(refreshTimer);
@@ -1067,6 +2315,10 @@ function setupAutoRefresh() {
   if (DEMO_MODE) {
     // Demo / thesis-screenshot mode: never auto-refresh so the rendered view
     // stays stable for screen capture.
+    return;
+  }
+  if (state.liveSocketConnected) {
+    // WebSocket pushes refresh when logs/runtime change.
     return;
   }
   if (document.getElementById("auto-refresh").checked) {
@@ -1117,6 +2369,80 @@ async function requestFileAnalysis(path, button) {
 }
 
 setupDelegatedClicks();
+setupUploadDropzone();
+document.getElementById("start-collector-btn")?.addEventListener("click", () => {
+  collectorStartRequested = false;
+  requestCollectorStart();
+});
+document.getElementById("rules-save-btn")?.addEventListener("click", saveClassifierRules);
+document.getElementById("rules-add-custom-btn")?.addEventListener("click", () => openRuleEditor("custom-new", null));
+document.getElementById("rule-editor-save-btn")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  saveRuleEditor();
+});
+document.getElementById("rule-editor-edit-btn")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  if (!ruleEditorRuleId) return;
+  if (ruleEditorMode === "builtin-view") {
+    const rule = (classifierRulesDraft?.rules || []).find((item) => item.id === ruleEditorRuleId);
+    if (rule) openRuleEditor("builtin-edit", rule);
+    return;
+  }
+  if (ruleEditorMode === "custom-view") {
+    const rule = (classifierRulesDraft?.custom_rules || []).find((item) => item.id === ruleEditorRuleId);
+    if (rule) openRuleEditor("custom-edit", rule);
+  }
+});
+document.getElementById("rule-editor-delete-btn")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  deleteRuleFromEditor();
+});
+document.getElementById("rule-editor-duplicate-btn")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  duplicateBuiltinFromEditor();
+});
+document.getElementById("rule-editor-label")?.addEventListener("input", (event) => {
+  const idInput = document.getElementById("rule-editor-id");
+  if (!idInput || idInput.readOnly || idInput.value.trim()) return;
+  idInput.value = slugifyRuleId(event.target.value);
+});
+document.getElementById("custom-rules-body")?.addEventListener("click", (event) => {
+  const viewButton = event.target.closest("[data-custom-rule-view]");
+  if (viewButton) {
+    const rule = (classifierRulesDraft?.custom_rules || []).find((item) => item.id === viewButton.dataset.customRuleView);
+    if (rule) openRuleEditor("custom-view", rule);
+    return;
+  }
+  const editButton = event.target.closest("[data-custom-rule-edit]");
+  if (editButton) {
+    const rule = (classifierRulesDraft?.custom_rules || []).find((item) => item.id === editButton.dataset.customRuleEdit);
+    if (rule) openRuleEditor("custom-edit", rule);
+    return;
+  }
+  const row = event.target.closest("tr[data-custom-rule-id]");
+  if (row && !event.target.closest("button")) {
+    const rule = (classifierRulesDraft?.custom_rules || []).find((item) => item.id === row.dataset.customRuleId);
+    if (rule) openRuleEditor("custom-view", rule);
+  }
+  const deleteButton = event.target.closest("[data-custom-rule-delete]");
+  if (deleteButton) {
+    deleteCustomRuleById(deleteButton.dataset.customRuleDelete);
+    return;
+  }
+});
+document.getElementById("rules-body")?.addEventListener("click", (event) => {
+  const viewButton = event.target.closest("[data-builtin-rule-view]");
+  if (viewButton) {
+    const rule = (classifierRulesDraft?.rules || []).find((item) => item.id === viewButton.dataset.builtinRuleView);
+    if (rule) openRuleEditor("builtin-view", rule);
+    return;
+  }
+  const row = event.target.closest("tr[data-rule-row]");
+  if (row && !event.target.closest("button,input")) {
+    const rule = (classifierRulesDraft?.rules || []).find((item) => item.id === row.dataset.ruleRow);
+    if (rule) openRuleEditor("builtin-view", rule);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Bootstrap: apply demo mode + restore deep-link state from URL hash.
@@ -1148,6 +2474,8 @@ function restoreFromHash() {
 const initialHash = restoreFromHash();
 const initialLog = initialHash.log || undefined;
 
+ensureRulesTabMarkup();
+
 window.addEventListener("popstate", () => {
   restoreFromHash();
   applyFilters();
@@ -1174,9 +2502,11 @@ loadDashboard(initialLog, { force: true })
         openFindingModal(finding);
       }
     }
+    maybeAutoStartCollector();
   })
   .catch((error) => {
     console.error(error);
     showLoadError("Could not load dashboard data");
   });
+connectLiveSocket();
 setupAutoRefresh();

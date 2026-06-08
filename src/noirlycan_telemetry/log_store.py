@@ -94,25 +94,38 @@ class LogSummary:
     primitive_count: int
 
 
-def summarize_log_file(path: Path) -> LogSummary:
-    events = read_jsonl(path)
+_summary_cache: dict[str, tuple[float, int, LogSummary]] = {}
+
+
+def _summary_from_events(path: Path, events: list[dict[str, Any]], *, stat: os.stat_result | None = None) -> LogSummary:
     findings = [event for event in events if event.get("type") == "finding"]
     critical = sum(
         1
         for event in findings
         if str(_nested(event, "value", "severity", default="")).lower() == "critical"
     )
-    stat = path.stat()
+    file_stat = stat or path.stat()
     return LogSummary(
         name=path.name,
         path=str(path),
-        size_bytes=stat.st_size,
-        modified_at=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+        size_bytes=file_stat.st_size,
+        modified_at=datetime.fromtimestamp(file_stat.st_mtime, tz=timezone.utc).isoformat(),
         event_count=len(events),
         finding_count=len(findings),
         critical_count=critical,
         primitive_count=sum(1 for event in events if event.get("type") == "primitive"),
     )
+
+
+def summarize_log_file(path: Path) -> LogSummary:
+    stat = path.stat()
+    cache_key = str(path.resolve())
+    cached = _summary_cache.get(cache_key)
+    if cached and cached[0] == stat.st_mtime and cached[1] == stat.st_size:
+        return cached[2]
+    summary = _summary_from_events(path, read_jsonl(path), stat=stat)
+    _summary_cache[cache_key] = (stat.st_mtime, stat.st_size, summary)
+    return summary
 
 
 def aggregate_events(events: list[dict[str, Any]]) -> dict[str, Any]:
@@ -281,7 +294,7 @@ def session_detail(
     return {
         "name": path.name,
         "path": str(path),
-        "summary": summarize_log_file(path).__dict__,
+        "summary": _summary_from_events(path, events).__dict__,
         "stats": stats,
         "findings": _apply_finding_filters(stats["recent_findings"], severity, target_pid, query),
         "primitives": _extract_primitives(
@@ -301,31 +314,35 @@ def session_detail(
 def aggregate_logs(logs_dir: Path | str | None = None, selected: str | None = None) -> dict[str, Any]:
     directory = resolve_logs_dir(logs_dir)
     files = list_log_files(directory)
-    summaries = [summarize_log_file(path) for path in files]
+
+    active_path: Path | None = None
+    events: list[dict[str, Any]] = []
+    active: str | None = None
 
     if selected:
         target = directory / selected
         if not target.exists():
             target = Path(selected)
         if target.exists():
+            active_path = target.resolve()
             events = read_jsonl(target)
             active = target.name
         elif files:
-            # Requested log no longer exists (deleted / renamed / stale
-            # deep-link). Fall back to the most recent session so the
-            # dashboard still shows something useful instead of an empty
-            # dropdown.
+            active_path = files[0].resolve()
             events = read_jsonl(files[0])
             active = files[0].name
-        else:
-            events = []
-            active = None
     elif files:
+        active_path = files[0].resolve()
         events = read_jsonl(files[0])
         active = files[0].name
-    else:
-        events = []
-        active = None
+
+    summaries: list[LogSummary] = []
+    for path in files:
+        resolved = path.resolve()
+        if active_path is not None and resolved == active_path:
+            summaries.append(_summary_from_events(path, events))
+        else:
+            summaries.append(summarize_log_file(path))
 
     return {
         "logs_dir": str(directory),

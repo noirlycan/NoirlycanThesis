@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .atomic_io import atomic_write_text
 from .log_store import default_logs_dir
 
 CONFIG_NAME = ".runtime.json"
 COLLECTOR_STALE_SECONDS = 8
+_HEARTBEAT_SAVE_INTERVAL_SECONDS = 2.0
+_last_heartbeat_save_monotonic: dict[str, float] = {}
 
 
 @dataclass
@@ -60,12 +64,10 @@ def load_runtime_config(logs_dir: Path | str | None = None) -> RuntimeConfig:
 
 def save_runtime_config(config: RuntimeConfig, logs_dir: Path | str | None = None) -> Path:
     path = resolve_config_path(logs_dir)
-    path.parent.mkdir(parents=True, exist_ok=True)
     config.updated_at = datetime.now(timezone.utc).isoformat()
     payload = asdict(config)
-    temp = path.with_suffix(".tmp")
-    temp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    temp.replace(path)
+    content = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    atomic_write_text(path, content)
     return path
 
 
@@ -99,16 +101,31 @@ def touch_collector_heartbeat(
     logs_dir: Path | str | None = None,
     watch_paths: list[str] | None = None,
 ) -> RuntimeConfig:
+    path = resolve_config_path(logs_dir)
     config = load_runtime_config(logs_dir)
     config.collector_active = True
     config.last_heartbeat = datetime.now(timezone.utc).isoformat()
     if watch_paths is not None:
         config.watch_paths = list(watch_paths)
-    save_runtime_config(config, logs_dir)
+
+    now = time.monotonic()
+    last_save = _last_heartbeat_save_monotonic.get(str(path), 0.0)
+    if now - last_save < _HEARTBEAT_SAVE_INTERVAL_SECONDS:
+        return config
+
+    try:
+        save_runtime_config(config, logs_dir)
+        _last_heartbeat_save_monotonic[str(path)] = now
+    except OSError:
+        # Dashboard/collector can contend on .runtime.json on Windows.
+        pass
     return config
 
 
 def mark_collector_stopped(logs_dir: Path | str | None = None) -> None:
     config = load_runtime_config(logs_dir)
     config.collector_active = False
-    save_runtime_config(config, logs_dir)
+    try:
+        save_runtime_config(config, logs_dir)
+    except OSError:
+        pass

@@ -146,7 +146,7 @@ Auto-attach is useful for file-dropping experiments, but it can miss very early
 injection activity if the process injects before Frida attaches. Use `spawn`
 for controlled tests where possible.
 
-### 6. Open the web dashboard
+### 6. Open the web dashboard (Django)
 
 After collecting one or more sessions in `logs/`, launch the statistics UI:
 
@@ -154,7 +154,7 @@ After collecting one or more sessions in `logs/`, launch the statistics UI:
 noirlycan-telemetry dashboard
 ```
 
-Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The interactive dashboard includes:
+Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The dashboard is a **Django** app with drag-and-drop upload (tab **Upload**), SQLite persistence for parsed logs (`logs/noirlycan.db`), and the same REST API paths as before (`/api/overview`, `/api/upload`, …). It includes:
 
 - tabs for **Overview**, **Findings**, **Network**, **Primitives**, **Event stream**, and **Sessions**,
 - filters by severity, target PID, event type, and free-text search,

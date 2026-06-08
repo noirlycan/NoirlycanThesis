@@ -289,6 +289,15 @@ REPO_EXTRA_APIS: frozenset[str] = frozenset(
         "ZwCreateThreadEx",
         "ZwSetContextThread",
         "ZwResumeThread",
+        "ZwReadVirtualMemory",
+        "ZwGetContextThread",
+        "ZwUnmapViewOfSection",
+        "ZwQueueApcThread",
+        "ZwQueueApcThreadEx",
+        "ZwOpenProcess",
+        "ZwOpenThread",
+        "ZwSuspendThread",
+        "ZwAlertResumeThread",
     }
 )
 

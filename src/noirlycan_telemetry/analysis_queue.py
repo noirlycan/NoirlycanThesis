@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .atomic_io import atomic_write_text
 from .log_store import default_logs_dir
 
 QUEUE_NAME = ".analysis_queue.json"
@@ -15,6 +16,7 @@ ANALYSIS_MODES = {"api", "static"}
 class AnalysisRequest:
     path: str
     mode: str = "api"
+    argv: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -42,7 +44,13 @@ def _parse_request(item: object) -> AnalysisRequest | None:
         path = str(item.get("path") or "").strip()
         if not path:
             return None
-        return AnalysisRequest(path=str(Path(path)), mode=_normalize_mode(item.get("mode")))
+        argv_raw = item.get("argv") or []
+        argv = [str(part) for part in argv_raw if str(part).strip()] if isinstance(argv_raw, list) else []
+        return AnalysisRequest(
+            path=str(Path(path)),
+            mode=_normalize_mode(item.get("mode")),
+            argv=argv,
+        )
     return None
 
 
@@ -70,14 +78,16 @@ def save_analysis_queue(queue: AnalysisQueue, logs_dir: Path | str | None = None
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "pending": [
-            {"path": request.path, "mode": request.mode}
+            {
+                "path": request.path,
+                "mode": request.mode,
+                "argv": list(request.argv),
+            }
             for request in _dedupe_requests(queue.pending)
         ],
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    temp = path.with_suffix(".tmp")
-    temp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    temp.replace(path)
+    atomic_write_text(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
     return path
 
 
@@ -86,16 +96,38 @@ def enqueue_analysis(
     logs_dir: Path | str | None = None,
     *,
     mode: str = "api",
+    argv: list[str] | None = None,
 ) -> bool:
     normalized = str(Path(path))
     if not normalized.strip():
         return False
-    request = AnalysisRequest(path=normalized, mode=_normalize_mode(mode))
+    request = AnalysisRequest(
+        path=normalized,
+        mode=_normalize_mode(mode),
+        argv=[str(part) for part in (argv or []) if str(part).strip()],
+    )
     queue = load_analysis_queue(logs_dir)
-    key = (request.path.lower(), request.mode)
-    if any((existing.path.lower(), existing.mode) == key for existing in queue.pending):
+    key = (request.path.lower(), request.mode, tuple(request.argv))
+    if any(
+        (existing.path.lower(), existing.mode, tuple(existing.argv)) == key
+        for existing in queue.pending
+    ):
         return False
     queue.pending.append(request)
+    save_analysis_queue(queue, logs_dir)
+    return True
+
+
+def remove_from_queue(path: str, logs_dir: Path | str | None = None) -> bool:
+    normalized = str(Path(path))
+    if not normalized.strip():
+        return False
+    queue = load_analysis_queue(logs_dir)
+    key = normalized.lower()
+    before = len(queue.pending)
+    queue.pending = [request for request in queue.pending if request.path.lower() != key]
+    if len(queue.pending) == before:
+        return False
     save_analysis_queue(queue, logs_dir)
     return True
 
@@ -111,10 +143,10 @@ def drain_analysis_queue(logs_dir: Path | str | None = None) -> list[AnalysisReq
 
 
 def _dedupe_requests(requests: list[AnalysisRequest]) -> list[AnalysisRequest]:
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[str, str, tuple[str, ...]]] = set()
     rows: list[AnalysisRequest] = []
     for request in requests:
-        key = (request.path.lower(), request.mode)
+        key = (request.path.lower(), request.mode, tuple(request.argv))
         if key in seen:
             continue
         seen.add(key)

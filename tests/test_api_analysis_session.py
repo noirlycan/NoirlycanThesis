@@ -11,5 +11,5 @@ def test_schedule_api_analysis_once_per_session() -> None:
     assert cli_module._schedule_api_analysis(path) is True
     assert cli_module._schedule_api_analysis(path) is False
 
-    cli_module._SESSION_API_SPAWNED.add(cli_module._norm_path(path))
+    cli_module._SESSION_API_SPAWNED.add((cli_module._norm_path(path), ()))
     assert cli_module._schedule_api_analysis(path) is False

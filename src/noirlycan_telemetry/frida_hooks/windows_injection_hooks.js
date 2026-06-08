@@ -38,14 +38,6 @@ const DYNAMIC_INJECTION_APIS = new Set([
   "RtlCreateUserThread",
   "RtlCreateUserProcess",
   "LdrLoadDll",
-  "ZwAllocateVirtualMemory",
-  "ZwCreateSection",
-  "ZwMapViewOfSection",
-  "ZwWriteVirtualMemory",
-  "ZwProtectVirtualMemory",
-  "ZwCreateThreadEx",
-  "ZwSetContextThread",
-  "ZwResumeThread",
 ]);
 
 function ptrToString(value) {
@@ -500,9 +492,10 @@ const API_HANDLERS = {
     },
     onLeave(retval) {
       if (ntSuccess(retval)) {
+        const base = readPointerSafe(this.baseAddressPointer);
         emit("allocate", "NtAllocateVirtualMemory", {
           target_pid: this.targetPid,
-          address: readPointerSafe(this.baseAddressPointer).toString(),
+          address: base.isNull() || base.toString() === "0x0" ? null : base.toString(),
           size: readSizeSafe(this.sizePointer),
           protection: this.protection,
         });
@@ -766,21 +759,19 @@ const API_HANDLERS = {
   },
 };
 
-[
-  "ZwAllocateVirtualMemory",
-  "ZwCreateSection",
-  "ZwMapViewOfSection",
-  "ZwWriteVirtualMemory",
-  "ZwProtectVirtualMemory",
-  "ZwCreateThreadEx",
-  "ZwSetContextThread",
-  "ZwResumeThread",
-].forEach(function (zwApi) {
-  const ntApi = "Nt" + zwApi.substring(2);
-  if (API_HANDLERS[ntApi]) {
-    API_HANDLERS[zwApi] = API_HANDLERS[ntApi];
-  }
-});
+function installZwAliases() {
+  Object.keys(API_HANDLERS).forEach(function (apiName) {
+    if (apiName.indexOf("Nt") !== 0) {
+      return;
+    }
+    const zwApi = "Zw" + apiName.substring(2);
+    if (!API_HANDLERS[zwApi]) {
+      API_HANDLERS[zwApi] = API_HANDLERS[apiName];
+    }
+  });
+}
+
+installZwAliases();
 
 function installStaticHooks() {
   hook(kernel32, "CreateProcessW", {
@@ -1363,7 +1354,7 @@ function installPaperExtendedHooks() {
     hook(moduleName, "memcpy", {
       onEnter(args) {
         this.size = args[2].toString();
-        if (parseInt(this.size, 10) >= 0x1000) {
+        if (parseInt(this.size, 10) >= 0x40) {
           emit("write", "memcpy", {
             target_pid: currentPid(),
             address: args[0].toString(),

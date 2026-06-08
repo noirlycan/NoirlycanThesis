@@ -3,11 +3,12 @@ from __future__ import annotations
 from collections import defaultdict, deque
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-from pathlib import PureWindowsPath
+from pathlib import Path, PureWindowsPath
 
 from .execution_analysis import analyze_execution, operational_kind_count
 from .injection_graph import InjectionGraph
 from .process_resolve import image_for_pid as resolve_image_for_pid
+from .classifier_config import load_classifier_config
 from .technique_classifier import apply_classification
 from .models import (
     FileEvent,
@@ -31,9 +32,11 @@ class Correlator:
         self,
         window_seconds: int = 300,
         minimum_score: int = 50,
+        logs_dir: str | Path | None = None,
     ) -> None:
         self.window = timedelta(seconds=window_seconds)
         self.minimum_score = minimum_score
+        self.logs_dir = logs_dir
         self.files_by_path: dict[str, FileEvent] = {}
         self.processes_by_pid: dict[int, ProcessEvent] = {}
         self.primitives: deque[MemoryPrimitive] = deque()
@@ -84,9 +87,16 @@ class Correlator:
                 grouped[(primitive.actor_pid, primitive.target_pid)].append(primitive)
 
         findings: list[Finding] = []
+        rules_config = load_classifier_config(self.logs_dir)
         for (actor_pid, target_pid), primitives in grouped.items():
             kinds = {primitive.kind for primitive in primitives}
-            if operational_kind_count(kinds) < 2:
+            if operational_kind_count(kinds) < rules_config.minimum_operational_kinds:
+                continue
+            if rules_config.ignore_same_process_findings and actor_pid == target_pid:
+                continue
+            if rules_config.require_cross_process_findings and (
+                target_pid is None or target_pid == actor_pid
+            ):
                 continue
             if not _has_temporal_consistency(primitives):
                 continue
@@ -102,7 +112,8 @@ class Correlator:
                 evidence["actor_image"] = actor_image
             if target_image:
                 evidence["target_image"] = target_image
-            if score < self.minimum_score:
+            minimum_score = rules_config.minimum_score
+            if score < minimum_score:
                 continue
             execution_meta = analyze_execution(primitives)
             title = (
@@ -140,7 +151,7 @@ class Correlator:
                 score=score,
                 evidence=evidence,
             )
-            finding = apply_classification(finding)
+            finding = apply_classification(finding, logs_dir=self.logs_dir)
             finding = self._injection_graph.add_finding(finding)
             findings.append(finding)
         return findings
@@ -243,9 +254,27 @@ class Correlator:
             evidence["hijack_prep"] = True
         if evidence.get("missing_execution_transfer"):
             score = min(score, 75)
-        if any(primitive.target_pid and primitive.target_pid != primitive.actor_pid for primitive in primitives):
+        has_executable_protection = any(
+            primitive.details.get("protection", "").upper().find("EXECUTE") >= 0
+            for primitive in primitives
+        )
+        is_cross_process = any(
+            primitive.target_pid and primitive.target_pid != primitive.actor_pid
+            for primitive in primitives
+        )
+        if is_cross_process:
             score += 15
             evidence["cross_process"] = True
+        elif (
+            PrimitiveKind.ALLOCATE in kinds
+            and PrimitiveKind.WRITE in kinds
+            and has_executable_protection
+        ):
+            score += 10
+            evidence["local_staging"] = True
+        if _dll_path_remote_thread_pattern(primitives):
+            score += 5
+            evidence["dll_path_remote_thread"] = True
         if any("section" in primitive.api.lower() for primitive in primitives):
             score += 10
             evidence["section_mapping"] = True
@@ -253,7 +282,7 @@ class Correlator:
             evidence["txf_transaction"] = True
         if any(primitive.details.get("process_reflection") for primitive in primitives):
             evidence["process_reflection"] = True
-        if any(primitive.details.get("protection", "").upper().find("EXECUTE") >= 0 for primitive in primitives):
+        if has_executable_protection:
             score += 10
             evidence["executable_protection"] = True
         if process is not None and any(flag.upper() == "CREATE_SUSPENDED" for flag in process.flags):
@@ -270,6 +299,9 @@ class Correlator:
                 score += 10
             if related_file.entropy is not None and related_file.entropy >= 7.0:
                 score += 5
+        if _resume_only_spawn_to_trusted_target(primitives, evidence):
+            score = min(score, 50)
+            evidence["likely_installer_spawn"] = True
         return min(score, 100), evidence
 
     def _expire(self, now: datetime) -> None:
@@ -286,6 +318,48 @@ class Correlator:
             ]
             if not self.network_connections[pid]:
                 del self.network_connections[pid]
+
+
+_RESUME_THREAD_APIS = frozenset(
+    {
+        "resumethread",
+        "ntresumethread",
+        "ntalertresumethread",
+        "zwresumethread",
+    }
+)
+_TRUSTED_TARGET_MARKERS = ("\\program files\\", "\\program files (x86)\\")
+_INJECTION_STRENGTH_APIS = frozenset(
+    {
+        "ntmapviewofsection",
+        "zwmapviewofsection",
+        "setthreadcontext",
+        "ntsetcontextthread",
+        "zwsetcontextthread",
+        "getthreadcontext",
+        "ntgetcontextthread",
+        "zwgetcontextthread",
+    }
+)
+
+
+def _resume_only_spawn_to_trusted_target(
+    primitives: list[MemoryPrimitive],
+    evidence: dict[str, object],
+) -> bool:
+    if not evidence.get("cross_process"):
+        return False
+    execute_apis = {primitive.api.lower() for primitive in primitives if primitive.kind == PrimitiveKind.EXECUTE}
+    if not execute_apis or not execute_apis <= _RESUME_THREAD_APIS:
+        return False
+    apis_lower = {primitive.api.lower() for primitive in primitives}
+    if apis_lower & _INJECTION_STRENGTH_APIS:
+        return False
+    for primitive in primitives:
+        target = (primitive.target_image or "").lower()
+        if any(marker in target for marker in _TRUSTED_TARGET_MARKERS):
+            return True
+    return False
 
 
 def _has_temporal_consistency(primitives: list[MemoryPrimitive]) -> bool:
@@ -321,35 +395,115 @@ def _has_temporal_consistency(primitives: list[MemoryPrimitive]) -> bool:
 
 
 def _has_memory_congruence(primitives: list[MemoryPrimitive]) -> bool:
-    with_addresses = [primitive for primitive in primitives if primitive.address is not None]
-    if len(with_addresses) < 2:
+    """Paper §3.3 memory-range congruence with practical extensions.
+
+    * ``address == 0`` is treated as missing (failed hook read).
+    * ``thread_parameter`` on execute primitives links CreateRemoteThread
+      (LoadLibraryW + remote path buffer) to a prior allocate/write.
+    * ``context_pointer`` links Get/NtGetContextThread to Set/NtSetContextThread.
+    * Multiple remote writes without a hook-visible allocator base are still one
+      chain when other operational kinds are present (common for NtAllocateVirtualMemory).
+    """
+    kinds = {primitive.kind for primitive in primitives}
+    by_kind: dict[PrimitiveKind, list[list[tuple[int, int]]]] = defaultdict(list)
+    linked_primitive_count = 0
+    for primitive in primitives:
+        ranges = _memory_link_ranges(primitive)
+        if not ranges:
+            continue
+        by_kind[primitive.kind].append(ranges)
+        linked_primitive_count += 1
+
+    if linked_primitive_count < 2:
         return True
 
-    by_kind: dict[PrimitiveKind, list[MemoryPrimitive]] = defaultdict(list)
-    for primitive in with_addresses:
-        by_kind[primitive.kind].append(primitive)
-
-    for left_kind, left_values in by_kind.items():
-        for right_kind, right_values in by_kind.items():
+    for left_kind, left_range_groups in by_kind.items():
+        for right_kind, right_range_groups in by_kind.items():
             if left_kind == right_kind:
                 continue
-            for left in left_values:
-                for right in right_values:
-                    if _ranges_overlap_or_contain(left, right):
+            for left_ranges in left_range_groups:
+                for right_ranges in right_range_groups:
+                    if _any_ranges_overlap(left_ranges, right_ranges):
                         return True
+
+    # NtAllocateVirtualMemory often returns no usable base address from hooks, so
+    # only WRITE primitives carry ranges (payload + small pointer patch). Treat
+    # that as congruent when the chain already has multiple operational kinds.
+    if operational_kind_count(kinds) >= 2 and len(by_kind) == 1:
+        return True
+
+    return False
+
+
+def _memory_link_ranges(primitive: MemoryPrimitive) -> list[tuple[int, int]]:
+    ranges: list[tuple[int, int]] = []
+    if primitive.address is not None and primitive.address != 0:
+        size = primitive.size if primitive.size is not None and primitive.size > 0 else 1
+        ranges.append((primitive.address, primitive.address + size))
+    if primitive.kind == PrimitiveKind.EXECUTE:
+        parameter = _detail_int(primitive.details.get("thread_parameter"))
+        if parameter is not None:
+            ranges.append((parameter, parameter + 1))
+    pointer = _detail_int(primitive.details.get("context_pointer"))
+    if pointer is not None:
+        ranges.append((pointer, pointer + 1))
+    return ranges
+
+
+def _any_ranges_overlap(
+    left_ranges: list[tuple[int, int]],
+    right_ranges: list[tuple[int, int]],
+) -> bool:
+    for left_start, left_end in left_ranges:
+        for right_start, right_end in right_ranges:
+            if left_start < right_end and right_start < left_end:
+                return True
     return False
 
 
 def _ranges_overlap_or_contain(left: MemoryPrimitive, right: MemoryPrimitive) -> bool:
-    if left.address is None or right.address is None:
-        return True
-    left_size = left.size or 1
-    right_size = right.size or 1
-    left_start = left.address
-    left_end = left.address + left_size
-    right_start = right.address
-    right_end = right.address + right_size
-    return left_start < right_end and right_start < left_end
+    return _any_ranges_overlap(_memory_link_ranges(left), _memory_link_ranges(right))
+
+
+def _detail_int(value: object) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value if value != 0 else None
+    if isinstance(value, str):
+        try:
+            parsed = int(value, 0)
+        except ValueError:
+            return None
+        return parsed if parsed != 0 else None
+    return None
+
+
+def _dll_path_remote_thread_pattern(primitives: list[MemoryPrimitive]) -> bool:
+    """Classic DLL injection: CRT start routine + parameter at written path buffer."""
+    execute_primitives = [p for p in primitives if p.kind == PrimitiveKind.EXECUTE]
+    write_primitives = [p for p in primitives if p.kind == PrimitiveKind.WRITE]
+    if not execute_primitives or not write_primitives:
+        return False
+    remote_thread_apis = {
+        "createremotethread",
+        "createremotethreadex",
+        "ntcreatethreadex",
+        "rtlcreateuserthread",
+    }
+    for execute in execute_primitives:
+        if execute.api.lower() not in remote_thread_apis:
+            continue
+        parameter = _detail_int(execute.details.get("thread_parameter"))
+        if parameter is None:
+            continue
+        for write in write_primitives:
+            if write.address is None or write.address == 0:
+                continue
+            write_size = write.size if write.size is not None and write.size > 0 else 1
+            if write.address <= parameter < write.address + write_size:
+                return True
+    return False
 
 
 def _severity(score: int) -> Severity:

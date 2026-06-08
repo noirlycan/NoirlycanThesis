@@ -3,7 +3,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from noirlycan_telemetry.models import FileEvent, Finding, MemoryPrimitive, PrimitiveKind, Severity
-from noirlycan_telemetry.technique_classifier import InjectionTechnique, classify_finding
+from noirlycan_telemetry.technique_classifier import (
+    InjectionTechnique,
+    TechniqueConfidence,
+    classify_finding,
+)
 
 
 def _primitive(
@@ -59,6 +63,60 @@ def test_early_bird_apc_classification() -> None:
     assert result.technique == InjectionTechnique.EARLY_BIRD_APC_INJECTION
 
 
+def test_local_alertable_wake_classification() -> None:
+    local_allocate = MemoryPrimitive(
+        timestamp=datetime.now(timezone.utc),
+        kind=PrimitiveKind.ALLOCATE,
+        actor_pid=4296,
+        actor_image="C:\\samples\\aes_decrypt_loader.exe",
+        target_pid=4296,
+        target_image="C:\\samples\\aes_decrypt_loader.exe",
+        address=0x10000,
+        size=0x1000,
+        api="NtAllocateVirtualMemory",
+        details={},
+    )
+    local_alert = MemoryPrimitive(
+        timestamp=datetime.now(timezone.utc),
+        kind=PrimitiveKind.EXECUTE,
+        actor_pid=4296,
+        actor_image="C:\\samples\\aes_decrypt_loader.exe",
+        target_pid=4296,
+        target_image="C:\\samples\\aes_decrypt_loader.exe",
+        address=0x10000,
+        size=0x1000,
+        api="NtTestAlert",
+        details={},
+    )
+    finding = Finding(
+        timestamp=datetime.now(timezone.utc),
+        severity=Severity.MEDIUM,
+        title="local staging",
+        description="allocate + alert",
+        actor_pid=4296,
+        target_pid=4296,
+        primitives=[local_allocate, local_alert],
+        score=55,
+        evidence={"execution_confirmed": True},
+    )
+    result = classify_finding(finding)
+    assert result.technique == InjectionTechnique.LOCAL_APC_INJECTION
+
+
+def test_cross_process_staging_classification() -> None:
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "NtAllocateVirtualMemory"),
+            _primitive(PrimitiveKind.WRITE, "NtWriteVirtualMemory"),
+            cross_process=True,
+            execution_confirmed=False,
+            missing_execution_transfer=True,
+        )
+    )
+    assert result.technique == InjectionTechnique.SECTION_MAPPING_INJECTION
+    assert result.confidence == TechniqueConfidence.MEDIUM
+
+
 def test_fiber_local_classification() -> None:
     local = MemoryPrimitive(
         timestamp=datetime.now(timezone.utc),
@@ -98,6 +156,24 @@ def test_threadpool_wait_classification() -> None:
         )
     )
     assert result.technique == InjectionTechnique.THREADPOOL_WAIT_INJECTION
+
+
+def test_winrar_like_resume_chain_is_not_reflective_dll() -> None:
+    result = classify_finding(
+        _finding(
+            _primitive(PrimitiveKind.ALLOCATE, "NtAllocateVirtualMemory"),
+            _primitive(PrimitiveKind.WRITE, "NtWriteVirtualMemory"),
+            _primitive(
+                PrimitiveKind.EXECUTE,
+                "ResumeThread",
+                target_pid=368,
+            ),
+            cross_process=True,
+            execution_confirmed=True,
+        )
+    )
+    assert result.technique == InjectionTechnique.PROCESS_HOLLOWING_CLASSIC
+    assert result.technique != InjectionTechnique.REFLECTIVE_DLL_INJECTION
 
 
 def test_reflective_dll_classification() -> None:
@@ -279,6 +355,52 @@ def test_manual_mapping_classification() -> None:
         )
     )
     assert result.technique == InjectionTechnique.MANUAL_MAPPING
+
+
+def test_classic_dll_injection_classified_before_shellcode() -> None:
+    remote_buffer = 0x20000
+    result = classify_finding(
+        _finding(
+            MemoryPrimitive(
+                timestamp=datetime.now(timezone.utc),
+                kind=PrimitiveKind.ALLOCATE,
+                actor_pid=1000,
+                actor_image="C:\\malware\\injector.exe",
+                target_pid=2000,
+                target_image="C:\\Windows\\explorer.exe",
+                address=remote_buffer,
+                size=64,
+                api="VirtualAllocEx",
+                details={},
+            ),
+            MemoryPrimitive(
+                timestamp=datetime.now(timezone.utc),
+                kind=PrimitiveKind.WRITE,
+                actor_pid=1000,
+                actor_image="C:\\malware\\injector.exe",
+                target_pid=2000,
+                target_image="C:\\Windows\\explorer.exe",
+                address=remote_buffer,
+                size=64,
+                api="WriteProcessMemory",
+                details={},
+            ),
+            MemoryPrimitive(
+                timestamp=datetime.now(timezone.utc),
+                kind=PrimitiveKind.EXECUTE,
+                actor_pid=1000,
+                actor_image="C:\\malware\\injector.exe",
+                target_pid=2000,
+                target_image="C:\\Windows\\explorer.exe",
+                address=0x7FFE00001000,
+                size=1,
+                api="CreateRemoteThread",
+                details={"thread_parameter": hex(remote_buffer)},
+            ),
+            cross_process=True,
+        )
+    )
+    assert result.technique == InjectionTechnique.DLL_INJECTION
 
 
 def test_classic_shellcode_not_misclassified_as_reflective() -> None:

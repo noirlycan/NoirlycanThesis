@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .atomic_io import atomic_write_text
 from .log_store import default_logs_dir
 
 QUEUE_NAME = ".triage_queue.json"
@@ -41,9 +42,7 @@ def save_triage_queue(queue: TriageQueue, logs_dir: Path | str | None = None) ->
         "pending": _dedupe_paths(queue.pending),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    temp = path.with_suffix(".tmp")
-    temp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    temp.replace(path)
+    atomic_write_text(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
     return path
 
 
