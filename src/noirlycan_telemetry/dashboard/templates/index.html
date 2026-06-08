@@ -4,14 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Noirlycan Telemetry</title>
+    <!-- Vendored Chart.js v4.4.1 (MIT). Avoids CDN dependency so the
+         dashboard works on an air-gapped lab VM and is not blocked by
+         browser tracking-prevention. License + source in the file header. -->
+    <script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+    <!-- Google Fonts kept as progressive enhancement; CSS falls back to
+         system monospace / sans-serif if these are blocked. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
   </head>
   <body>
     <div class="backdrop"></div>
