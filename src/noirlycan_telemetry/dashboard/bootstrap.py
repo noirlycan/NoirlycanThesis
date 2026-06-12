@@ -13,11 +13,15 @@ def configure(logs_dir: Path | str | None = None) -> None:
     resolved = None
     if logs_dir is not None:
         resolved = str(Path(logs_dir).expanduser().resolve())
-        os.environ["NOIRLYCAN_LOGS_DIR"] = resolved
+        if not settings.configured:
+            os.environ["NOIRLYCAN_LOGS_DIR"] = resolved
+
     if not settings.configured:
         django.setup()
-    elif resolved is not None:
+
+    if resolved is not None:
         settings.NOIRLYCAN_LOGS_DIR = resolved
+        os.environ.pop("NOIRLYCAN_LOGS_DIR", None)
 
 
 def make_client(logs_dir: Path | str | None = None) -> Client:

@@ -30,9 +30,11 @@ from .sysmon import SYSMON_ACCESS_HINT, SYSMON_INSTALL_HINT, SysmonPoller, Sysmo
 
 
 class JsonlWriter:
-    def __init__(self, path: Path | None) -> None:
+    def __init__(self, path: Path | None, *, flush_every: int = 32) -> None:
         self.path = path
         self._handle = path.open("a", encoding="utf-8") if path else None
+        self._flush_every = max(1, int(flush_every))
+        self._pending_writes = 0
 
     def write(self, event_type: str, value: Any) -> None:
         if self._handle is None:
@@ -42,7 +44,23 @@ class JsonlWriter:
             "value": jsonable(value),
         }
         self._handle.write(json.dumps(payload, sort_keys=True) + "\n")
+        self._pending_writes += 1
+        if self._pending_writes >= self._flush_every:
+            self._handle.flush()
+            self._pending_writes = 0
+
+    def flush(self) -> None:
+        if self._handle is None:
+            return
         self._handle.flush()
+        self._pending_writes = 0
+
+    def close(self) -> None:
+        if self._handle is None:
+            return
+        self.flush()
+        self._handle.close()
+        self._handle = None
 
 
 def jsonable(value: Any) -> Any:
@@ -181,6 +199,7 @@ def runtime_event_to_evasion(runtime_event) -> EvasionSignalEvent | None:
 
 
 FileEventHandler = Callable[[FileEvent, Correlator, JsonlWriter], None]
+ProcessEventHandler = Callable[[ProcessEvent, Correlator, JsonlWriter], None]
 
 
 def process_sysmon_batch(
@@ -191,6 +210,7 @@ def process_sysmon_batch(
     auto_attach: bool,
     *,
     file_handler: FileEventHandler | None = None,
+    process_handler: ProcessEventHandler | None = None,
 ) -> None:
     try:
         events = list(sysmon.poll_once())
@@ -207,6 +227,8 @@ def process_sysmon_batch(
         elif isinstance(event, ProcessEvent):
             writer.write("sysmon", event)
             correlator.add_process(event)
+            if process_handler is not None:
+                process_handler(event, correlator, writer)
             if auto_attach and monitor is not None and should_auto_attach(event):
                 safe_attach(monitor, event.pid)
         elif isinstance(event, NetworkConnectionEvent):

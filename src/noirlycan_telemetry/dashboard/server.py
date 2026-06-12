@@ -34,6 +34,9 @@ def run_dashboard(
     _verify_static_assets()
     configure(logs_dir)
     from django.conf import settings
+    from django.core.management import call_command
+
+    call_command("migrate", run_syncdb=True, verbosity=1, interactive=False)
 
     from ..log_store import resolve_logs_dir
 

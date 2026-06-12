@@ -16,6 +16,8 @@ from ..analysis_db import AnalysisDatabase, sha256_file, uploads_dir
 from ..analysis_queue import enqueue_analysis, load_analysis_queue, remove_from_queue
 from ..upload_finalize import build_upload_report
 from ..log_store import aggregate_logs, resolve_log_path, resolve_logs_dir, session_detail
+from ..reclassify import reclassify_session
+from ..session_analytics import analyze_corpus
 from ..classifier_config import (
     RuleSettings,
     classifier_rules_payload,
@@ -87,7 +89,7 @@ def _enrich_uploads(rows: list[dict], logs_dir: Path, collector_online: bool) ->
 def _static_asset_version() -> str:
     dashboard_dir = Path(__file__).resolve().parent
     stamps: list[str] = []
-    for name in ("dashboard.js", "dashboard.css"):
+    for name in ("dashboard.js", "dashboard.css", "i18n.js"):
         path = dashboard_dir / "static" / name
         if path.is_file():
             stamps.append(str(int(path.stat().st_mtime)))
@@ -103,7 +105,8 @@ def index(request: HttpRequest) -> HttpResponse:
         "index.html",
         {
             "asset_version": _static_asset_version(),
-            "template_version": "rules-v3",
+            "template_version": "standalone-v1",
+            "title": "Telemetry",
         },
     )
     response["Cache-Control"] = "no-store"
@@ -120,6 +123,38 @@ def health(request: HttpRequest) -> JsonResponse:
             "db_path": str(database.db_path),
         }
     )
+
+
+@require_GET
+def corpus(request: HttpRequest) -> JsonResponse:
+    logs_dir = _logs_dir()
+    limit_raw = request.GET.get("limit", "").strip()
+    limit = int(limit_raw) if limit_raw.isdigit() else None
+    database = _database()
+    payload = analyze_corpus(logs_dir, limit=limit, database=database)
+    payload["classifier_rules_path"] = str(resolve_config_path(logs_dir))
+    payload["db_findings"] = database.aggregate_stored_findings()
+    return JsonResponse(payload)
+
+
+@require_http_methods(["GET", "POST"])
+def reclassify_session_view(request: HttpRequest, name: str) -> JsonResponse:
+    logs_dir = _logs_dir()
+    write_mode = (request.GET.get("write") or request.POST.get("write") or "").strip().lower()
+    try:
+        payload = reclassify_session(
+            name,
+            logs_dir=logs_dir,
+            write=write_mode or False,
+        )
+        if write_mode:
+            database = _database()
+            database.invalidate_session_analytics_cache(payload.get("session") or name)
+    except FileNotFoundError as exc:
+        return JsonResponse({"error": str(exc)}, status=404)
+    except OSError as exc:
+        return JsonResponse({"error": str(exc)}, status=500)
+    return JsonResponse(payload)
 
 
 @require_GET

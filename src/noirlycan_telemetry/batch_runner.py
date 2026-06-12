@@ -49,7 +49,7 @@ def run_sample_analysis(
     if not sample_path.exists():
         return {"sample": str(sample_path), "error": "file not found"}
 
-    correlator = Correlator(minimum_score=minimum_score)
+    correlator = Correlator(minimum_score=minimum_score, logs_dir=logs_dir)
     log_path = new_session_log_path(logs_dir)
     writer = JsonlWriter(log_path)
     monitor = create_monitor_or_none() if use_frida else None
@@ -79,6 +79,7 @@ def run_sample_analysis(
     except Exception as exc:  # pragma: no cover - runtime dependent
         error = str(exc)
     finally:
+        writer.close()
         if monitor is not None:
             monitor.detach_all()
 

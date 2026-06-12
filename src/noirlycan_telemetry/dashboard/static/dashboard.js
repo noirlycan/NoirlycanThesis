@@ -66,6 +66,7 @@ const state = {
   runtime: null,
   runtimeSaving: false,
   liveSocketConnected: false,
+  corpus: null,
   filters: {
     query: "",
     severity: "",
@@ -73,6 +74,172 @@ const state = {
     type: "",
   },
 };
+
+const t = (key, vars) => NoirlycanI18n.t(key, vars);
+
+let loadingCount = 0;
+let loadingShownAt = 0;
+let loadingHideTimer = null;
+
+function chartStyle() {
+  const root = getComputedStyle(document.documentElement);
+  return {
+    text: root.getPropertyValue("--chart-text").trim() || "#6b7c93",
+    grid: root.getPropertyValue("--chart-grid").trim() || "rgba(15, 23, 42, 0.08)",
+  };
+}
+
+function clearChart(id) {
+  if (charts[id]) {
+    charts[id].destroy();
+    delete charts[id];
+  }
+}
+
+function setChartPlaceholder(id, show) {
+  const placeholder = document.querySelector(`[data-chart-placeholder="${id}"]`);
+  const canvas = document.getElementById(`${id}-chart`);
+  if (placeholder) {
+    placeholder.classList.toggle("hidden", !show);
+  }
+  if (canvas) {
+    canvas.style.display = show ? "none" : "";
+  }
+}
+
+function setLoading(active) {
+  const shell = document.getElementById("dashboard-shell");
+  const overlay = document.getElementById("dashboard-loading");
+  if (!shell || !overlay) return;
+
+  if (active) {
+    loadingCount += 1;
+    if (loadingCount === 1) {
+      loadingShownAt = Date.now();
+      if (loadingHideTimer) {
+        clearTimeout(loadingHideTimer);
+        loadingHideTimer = null;
+      }
+      loadingHideTimer = setTimeout(() => {
+        if (loadingCount > 0) {
+          overlay.classList.remove("hidden");
+          shell.setAttribute("aria-busy", "true");
+        }
+      }, 200);
+    }
+    return;
+  }
+
+  loadingCount = Math.max(0, loadingCount - 1);
+  if (loadingCount > 0) return;
+
+  const elapsed = Date.now() - loadingShownAt;
+  const hide = () => {
+    overlay.classList.add("hidden");
+    shell.removeAttribute("aria-busy");
+    loadingHideTimer = null;
+  };
+
+  if (elapsed < 200 && loadingShownAt) {
+    setTimeout(hide, 200 - elapsed);
+    return;
+  }
+  hide();
+}
+
+function showToast(message, type = "error") {
+  const container = document.getElementById("toast-container");
+  if (!container || !message) return;
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+function updateAutoRefreshLabel() {
+  const label = document.getElementById("auto-refresh-label");
+  const toggle = document.getElementById("auto-refresh");
+  if (!label || !toggle) return;
+  if (state.liveSocketConnected) {
+    label.textContent = t("toolbar.autoRefresh.live");
+    return;
+  }
+  if (toggle.checked) {
+    label.textContent = t("toolbar.autoRefresh.polling");
+    return;
+  }
+  label.textContent = t("toolbar.autoRefresh.paused");
+}
+
+function renderStatusBar(overview) {
+  const collector = document.getElementById("status-collector");
+  const live = document.getElementById("status-live");
+  const session = document.getElementById("status-session");
+  const events = document.getElementById("status-events");
+  const online = Boolean(overview?.collector_online);
+
+  if (collector) {
+    collector.textContent = online ? t("status.collectorOnline") : t("status.collectorOffline");
+    collector.classList.toggle("online", online);
+    collector.classList.toggle("offline", !online);
+  }
+  if (live) {
+    const connected = Boolean(state.liveSocketConnected);
+    live.textContent = connected ? t("status.liveConnected") : t("status.liveDisconnected");
+    live.classList.toggle("live", connected);
+  }
+  if (session) {
+    const activeLog = overview?.active_log || state.activeLog || "";
+    session.textContent = activeLog || t("status.noSession");
+  }
+  if (events) {
+    const count = overview?.stats?.totals?.events ?? 0;
+    events.textContent = t("status.events", { count });
+  }
+  updateAutoRefreshLabel();
+}
+
+function bustFingerprints() {
+  Object.keys(fingerprints).forEach((key) => delete fingerprints[key]);
+}
+
+function rerenderDashboard() {
+  bustFingerprints();
+  NoirlycanI18n.applyI18n();
+  ensureMetricCards(true);
+  if (state.overview) {
+    renderStatusBar(state.overview);
+    if (state.activeTab === "overview") {
+      renderOverview(state.overview);
+    }
+    if (state.activeTab === "upload") {
+      renderUploads(
+        state.overview.uploads || [],
+        state.overview.db_path || "",
+        Boolean(state.overview.collector_online),
+      );
+    }
+    if (state.activeTab === "sessions") {
+      renderFiles(state.overview.files, state.activeLog);
+    }
+    if (state.activeTab === "chains") {
+      renderInjectionChainsFromStats(chainsStatsSource());
+    }
+    if (state.activeTab === "corpus" && state.corpus) {
+      renderCorpus(state.corpus, { forceCards: true });
+    }
+  }
+  if (state.session) {
+    renderSessionViews(state.session);
+  }
+  if (state.activeTab === "rules" && classifierRulesDraft) {
+    renderClassifierRules(classifierRulesDraft, classifierRulesDraft.config_path);
+  }
+  if (state.runtime) {
+    renderRuntimeControls(state.runtime);
+  }
+}
 
 const palette = {
   critical: "#ff6b8a",
@@ -149,19 +316,19 @@ function buildSessionQuery(filters) {
   return query ? `?${query}` : "";
 }
 
-function ensureMetricCards() {
+function ensureMetricCards(force = false) {
   const root = document.getElementById("metric-cards");
-  if (root.childElementCount) {
+  if (!force && root.childElementCount) {
     return;
   }
   const cards = [
-    { key: "events", label: "Total events", className: "" },
-    { key: "findings", label: "Findings (deduped)", className: "findings" },
-    { key: "network", label: "Network events", className: "sysmon" },
-    { key: "primitives", label: "Primitives", className: "primitives" },
-    { key: "sysmon", label: "Sysmon events", className: "sysmon" },
-    { key: "frida_raw", label: "Frida events", className: "" },
-    { key: "triage", label: "File triage", className: "findings" },
+    { key: "events", label: t("metric.events"), className: "" },
+    { key: "findings", label: t("metric.findings"), className: "findings" },
+    { key: "network", label: t("metric.network"), className: "sysmon" },
+    { key: "primitives", label: t("metric.primitives"), className: "primitives" },
+    { key: "sysmon", label: t("metric.sysmon"), className: "sysmon" },
+    { key: "frida_raw", label: t("metric.frida"), className: "" },
+    { key: "triage", label: t("metric.triage"), className: "findings" },
   ];
   root.innerHTML = cards
     .map(
@@ -195,10 +362,14 @@ function renderSeverityChart(severity) {
   }
   const labels = Object.keys(severity);
   if (!labels.length) {
+    clearChart("severity");
+    setChartPlaceholder("severity", true);
     return;
   }
+  setChartPlaceholder("severity", false);
   const values = labels.map((key) => severity[key]);
   const colors = labels.map((label) => palette[label] || "#60738f");
+  const style = chartStyle();
 
   if (
     updateChart("severity", (chart) => {
@@ -219,7 +390,7 @@ function renderSeverityChart(severity) {
     },
     options: {
       animation: false,
-      plugins: { legend: { position: "bottom", labels: { color: "#d7e5fb" } } },
+      plugins: { legend: { position: "bottom", labels: { color: style.text } } },
     },
   });
 }
@@ -230,10 +401,14 @@ function renderPrimitiveChart(kinds) {
   }
   const labels = Object.keys(kinds);
   if (!labels.length) {
+    clearChart("primitive");
+    setChartPlaceholder("primitive", true);
     return;
   }
+  setChartPlaceholder("primitive", false);
   const values = labels.map((key) => kinds[key]);
   const colors = labels.map((label) => palette[label] || "#4f8cff");
+  const style = chartStyle();
 
   if (
     updateChart("primitive", (chart) => {
@@ -256,8 +431,8 @@ function renderPrimitiveChart(kinds) {
       animation: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: "#9db3d1" }, grid: { color: "rgba(255,255,255,0.05)" } },
-        y: { ticks: { color: "#9db3d1" }, grid: { color: "rgba(255,255,255,0.05)" } },
+        x: { ticks: { color: style.text }, grid: { color: style.grid } },
+        y: { ticks: { color: style.text }, grid: { color: style.grid } },
       },
     },
   });
@@ -268,10 +443,14 @@ function renderTimelineChart(timeline) {
     return;
   }
   if (!timeline.length) {
+    clearChart("timeline");
+    setChartPlaceholder("timeline", true);
     return;
   }
+  setChartPlaceholder("timeline", false);
   const labels = timeline.map(([bucket]) => bucket);
   const values = timeline.map(([, count]) => count);
+  const style = chartStyle();
 
   if (
     updateChart("timeline", (chart) => {
@@ -302,8 +481,8 @@ function renderTimelineChart(timeline) {
       animation: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: "#9db3d1", maxRotation: 0 }, grid: { color: "rgba(255,255,255,0.05)" } },
-        y: { ticks: { color: "#9db3d1" }, grid: { color: "rgba(255,255,255,0.05)" } },
+        x: { ticks: { color: style.text, maxRotation: 0 }, grid: { color: style.grid } },
+        y: { ticks: { color: style.text }, grid: { color: style.grid } },
       },
     },
   });
@@ -315,7 +494,7 @@ function renderRankList(elementId, rows) {
   }
   const root = document.getElementById(elementId);
   if (!rows.length) {
-    root.innerHTML = '<div class="empty">No data yet.</div>';
+    root.innerHTML = `<div class="empty">${t("rank.noData")}</div>`;
     return;
   }
   // Normalise: rows can be either Counter-style tuples [name, count] or
@@ -399,19 +578,18 @@ function renderInjectionChains(chains, recursiveCount) {
   );
   if (chip) {
     if (!rows.length) {
-      chip.textContent = "0 chains";
+      chip.textContent = t("chains.chip.zero");
     } else if (recursive > 0) {
-      chip.textContent = `${rows.length} chains (${recursive} recursive)`;
+      chip.textContent = t("chains.chip.recursive", { count: rows.length, recursive });
+    } else if (rows.length === 1) {
+      chip.textContent = t("chains.chip.one");
     } else {
-      chip.textContent = rows.length === 1 ? "1 chain" : `${rows.length} chains`;
+      chip.textContent = t("chains.chip.many", { count: rows.length });
     }
   }
 
   if (!rows.length) {
-    body.innerHTML =
-      '<tr><td colspan="5" class="empty">No injection chains in this session. '
-      + "Chains are built from findings with actor→target edges. "
-      + "Run a sample with cross-process inject to populate this view.</td></tr>";
+    body.innerHTML = `<tr><td colspan="5" class="empty">${t("chains.empty")}</td></tr>`;
     return;
   }
 
@@ -457,17 +635,12 @@ function renderFindings(rows) {
     const overview = state.overview && state.overview.stats;
     const primitives = overview ? Number(overview.totals?.primitives ?? 0) : 0;
     const kinds = overview ? Object.keys(overview.primitive_kinds || {}) : [];
-    let hint = "No findings in this session yet.";
+    let hint = t("findings.empty");
     if (primitives > 0 && kinds.length < 2) {
-      hint = `
-        <strong>No injection chain matched yet.</strong><br>
-        Captured ${primitives} primitive(s), but only one kind
-        (<code>${kinds.join(", ") || "—"}</code>) — the 2-of-3 rule needs
-        at least two distinct kinds on the same (actor, target).<br>
-        Most common cause: <em>late attach</em>. Use
-        <code>noirlycan-telemetry spawn -- &lt;loader.exe&gt; &lt;args&gt;</code>
-        so Frida hooks load before the loader's first injection API.
-      `;
+      hint = `<strong>${t("findings.lateAttachTitle")}</strong><br>${t("findings.lateAttachBody", {
+        primitives,
+        kinds: kinds.join(", ") || "—",
+      })}`;
     }
     body.innerHTML = `<tr><td colspan="8" class="empty">${hint}</td></tr>`;
     return;
@@ -496,8 +669,7 @@ function renderNetwork(rows) {
   }
   const body = document.getElementById("network-body");
   if (!rows.length) {
-    body.innerHTML =
-      '<tr><td colspan="6" class="empty">No outbound network captured yet for watched PIDs.</td></tr>';
+    body.innerHTML = `<tr><td colspan="6" class="empty">${t("network.empty")}</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -551,8 +723,7 @@ function renderTriages(pendingRows, triagedRows) {
   const body = document.getElementById("triage-body");
   const collectorOnline = Boolean(state.runtime?.collector_online);
   if (!rows.length) {
-    body.innerHTML =
-      '<tr><td colspan="10" class="empty">No file drops yet. Start <code>run</code>, copy a NEW .exe to D:\\ or Downloads, then click <strong>Analyze</strong>.</td></tr>';
+    body.innerHTML = `<tr><td colspan="10" class="empty">${t("files.empty")}</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -567,8 +738,8 @@ function renderTriages(pendingRows, triagedRows) {
         ? `<button type="button" class="btn-analyze" data-analyze-path="${encodeURIComponent(
             row.path || ""
           )}" ${collectorOnline ? "" : "disabled"} title="${
-            collectorOnline ? "Spawn under Frida API hooks" : "Start run collector with Frida first"
-          }">Analyze APIs</button>`
+            collectorOnline ? t("files.analyzeTitle") : t("files.analyzeDisabled")
+          }">${t("files.analyzeApis")}</button>`
         : "-";
       return `
       <tr>
@@ -593,7 +764,7 @@ function renderPrimitives(rows) {
   }
   const body = document.getElementById("primitives-body");
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="7" class="empty">No primitives captured yet.</td></tr>';
+    body.innerHTML = `<tr><td colspan="7" class="empty">${t("primitives.empty")}</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -634,9 +805,9 @@ function renderEvents(rows) {
     return;
   }
   const body = document.getElementById("events-body");
-  document.getElementById("event-count-label").textContent = `${rows.length} events`;
+  document.getElementById("event-count-label").textContent = t("events.count", { count: rows.length });
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="3" class="empty">No events match the current filters.</td></tr>';
+    body.innerHTML = `<tr><td colspan="3" class="empty">${t("events.empty")}</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -657,8 +828,7 @@ function renderFiles(rows, activeLog) {
   }
   const body = document.getElementById("files-body");
   if (!rows.length) {
-    body.innerHTML =
-      '<tr><td colspan="6" class="empty">No JSONL files in logs/ yet. Run spawn or run with default logging.</td></tr>';
+    body.innerHTML = `<tr><td colspan="6" class="empty">${t("sessions.empty")}</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -677,6 +847,202 @@ function renderFiles(rows, activeLog) {
     .join("");
 }
 
+function ensureCorpusMetricCards(force = false) {
+  const root = document.getElementById("corpus-metric-cards");
+  if (!root || (!force && root.childElementCount)) return;
+  const cards = [
+    { key: "samples", label: t("corpus.metric.samples") },
+    { key: "detected", label: t("corpus.metric.detected") },
+    { key: "rate", label: t("corpus.metric.rate") },
+    { key: "recursive", label: t("corpus.metric.recursive") },
+  ];
+  root.innerHTML = cards
+    .map(
+      (card) => `
+      <article class="metric-card" data-corpus-metric="${card.key}">
+        <div class="label">${card.label}</div>
+        <div class="value">0</div>
+      </article>`
+    )
+    .join("");
+}
+
+function ensureCorpusDbMetricCards(force = false) {
+  const root = document.getElementById("corpus-db-metric-cards");
+  if (!root || (!force && root.childElementCount)) return;
+  const cards = [
+    { key: "rows", label: t("corpus.db.metric.rows") },
+    { key: "sessions", label: t("corpus.db.metric.sessions") },
+    { key: "techniques", label: t("corpus.db.metric.techniques") },
+  ];
+  root.innerHTML = cards
+    .map(
+      (card) => `
+      <article class="metric-card" data-corpus-db-metric="${card.key}">
+        <div class="label">${card.label}</div>
+        <div class="value">0</div>
+      </article>`
+    )
+    .join("");
+}
+
+function renderCorpusDbFindings(dbFindings, { forceCards = false } = {}) {
+  ensureCorpusDbMetricCards(forceCards);
+  const rows = Number(dbFindings?.finding_rows || 0);
+  const sessions = Number(dbFindings?.session_count || 0);
+  const techniqueMap = dbFindings?.technique_distribution || {};
+  const techniqueCount = Object.keys(techniqueMap).length;
+
+  const chip = document.getElementById("corpus-db-chip");
+  if (chip) chip.textContent = t("corpus.dbChip", { rows, sessions });
+
+  const metrics = { rows, sessions, techniques: techniqueCount };
+  document.querySelectorAll("[data-corpus-db-metric]").forEach((card) => {
+    const key = card.dataset.corpusDbMetric;
+    const valueNode = card.querySelector(".value");
+    if (valueNode) valueNode.textContent = String(metrics[key] ?? 0);
+  });
+
+  const dbTechniqueRoot = document.getElementById("corpus-db-techniques");
+  if (!dbTechniqueRoot) return;
+  const techniques = Object.entries(techniqueMap).sort((left, right) => right[1] - left[1]);
+  if (!rows || !techniques.length) {
+    dbTechniqueRoot.innerHTML = `<div class="empty">${t("corpus.db.empty")}</div>`;
+    return;
+  }
+  renderRankList("corpus-db-techniques", techniques);
+}
+
+function renderCorpus(payload, { forceCards = false } = {}) {
+  if (!payload) return;
+  ensureCorpusMetricCards(forceCards);
+  const sampleCount = Number(payload.samples || 0);
+  const chip = document.getElementById("corpus-sample-chip");
+  if (chip) chip.textContent = t("corpus.chip", { count: sampleCount });
+
+  const metrics = {
+    samples: sampleCount,
+    detected: Number(payload.injection_detected_count || 0),
+    rate: sampleCount
+      ? `${Math.round(Number(payload.injection_detection_rate || 0) * 100)}%`
+      : "0%",
+    recursive: Number(payload.recursive_sample_count || 0),
+  };
+  document.querySelectorAll("[data-corpus-metric]").forEach((card) => {
+    const key = card.dataset.corpusMetric;
+    const valueNode = card.querySelector(".value");
+    if (valueNode) valueNode.textContent = String(metrics[key] ?? 0);
+  });
+
+  const techniques = Object.entries(payload.technique_distribution || {}).sort(
+    (left, right) => right[1] - left[1]
+  );
+  const techniqueRoot = document.getElementById("corpus-techniques");
+  if (techniqueRoot) {
+    if (!techniques.length) {
+      techniqueRoot.innerHTML = `<div class="empty">${t("rank.noData")}</div>`;
+    } else {
+      renderRankList("corpus-techniques", techniques);
+    }
+  }
+
+  const body = document.getElementById("corpus-sessions-body");
+  if (body) {
+    const rows = payload.sessions || [];
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="4" class="empty">${t("corpus.empty")}</td></tr>`;
+    } else {
+      body.innerHTML = rows
+        .map(
+          (row) => `
+        <tr class="clickable" data-session-name="${row.session}">
+          <td class="mono">${row.session}</td>
+          <td>${row.findings ?? 0}</td>
+          <td>${row.injection_detected ? "yes" : "no"}</td>
+          <td>${row.max_score ?? 0}</td>
+        </tr>`
+        )
+        .join("");
+    }
+  }
+
+  renderCorpusDbFindings(payload.db_findings || {}, { forceCards });
+}
+
+async function loadCorpus({ force = false } = {}) {
+  if (!force && state.corpus) {
+    renderCorpus(state.corpus);
+    return state.corpus;
+  }
+  setLoading(true);
+  try {
+    const response = await fetch("/api/corpus");
+    if (!response.ok) {
+      throw new Error(t("corpus.loadFailed"));
+    }
+    const payload = await response.json();
+    state.corpus = payload;
+    renderCorpus(payload);
+    return payload;
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || t("corpus.loadFailed"), "error");
+    return null;
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function requestReclassify() {
+  const selected = document.getElementById("log-select")?.value || state.activeLog;
+  if (!selected) {
+    showToast(t("status.noLogSelected"), "error");
+    return;
+  }
+  const writeSidecar = Boolean(document.getElementById("reclassify-write-sidecar")?.checked);
+  setLoading(true);
+  try {
+    const query = writeSidecar ? "?write=sidecar" : "";
+    const response = await fetch(`/api/reclassify/${encodeURIComponent(selected)}${query}`);
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || t("corpus.reclassifyFailed"));
+    }
+    const summary = t("corpus.reclassifyDone", {
+      original: payload.original_finding_count ?? 0,
+      next: payload.reclassified_finding_count ?? 0,
+      delta: payload.delta_findings ?? 0,
+    });
+    const output = document.getElementById("reclassify-output");
+    if (output) {
+      output.textContent = JSON.stringify(
+        {
+          summary,
+          written_path: payload.written_path || null,
+          original_techniques: payload.original_techniques,
+          reclassified_techniques: payload.reclassified_techniques,
+          findings: payload.findings,
+        },
+        null,
+        2
+      );
+    }
+    const toastMessage = payload.written_path
+      ? `${summary} · ${t("corpus.writtenPath", { path: payload.written_path })}`
+      : summary;
+    showToast(toastMessage, "success");
+    if (writeSidecar) {
+      state.corpus = null;
+      await loadCorpus({ force: true });
+    }
+  } catch (error) {
+    console.error(error);
+    showToast(error.message || t("corpus.reclassifyFailed"), "error");
+  } finally {
+    setLoading(false);
+  }
+}
+
 function shortSha(value) {
   if (!value) return "-";
   return value.length > 16 ? `${value.slice(0, 16)}…` : value;
@@ -687,11 +1053,11 @@ function renderUploadCollectorStatus(collectorOnline) {
   const banner = document.getElementById("upload-collector-banner");
   if (chip) {
     if (collectorOnline) {
-      chip.textContent = "collector online";
+      chip.textContent = t("upload.collectorOnline");
       chip.classList.add("online");
       chip.classList.remove("offline");
     } else {
-      chip.textContent = "collector offline";
+      chip.textContent = t("upload.collectorOffline");
       chip.classList.add("offline");
       chip.classList.remove("online");
     }
@@ -714,7 +1080,7 @@ function renderUploads(rows, dbPath, collectorOnline = false) {
   const body = document.getElementById("uploads-body");
   if (!body) return;
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="7" class="empty">No uploads yet. Drop a .jsonl log or sample above.</td></tr>';
+    body.innerHTML = `<tr><td colspan="6" class="empty">${t("upload.empty")}</td></tr>`;
     return;
   }
   body.innerHTML = rows
@@ -723,27 +1089,20 @@ function renderUploads(rows, dbPath, collectorOnline = false) {
       const status = row.status || "";
       const canRun = isExecutable && !["queued", "spawned", "running"].includes(status);
       const canReport = ["spawned", "running", "parsed", "queued"].includes(status);
-      const canDelete = true;
-      const reportCell = canReport
-        ? `<button type="button" class="linkish" data-upload-report="${row.id}">View report</button>`
-        : "-";
       const runDisabled = canRun ? "" : "disabled";
       const reportBtn = canReport
-        ? `<button type="button" class="btn-mini" data-upload-report="${row.id}">Report</button>`
+        ? `<button type="button" class="btn-mini" data-upload-report="${row.id}">${t("upload.viewReport")}</button>`
         : "";
       const runBtn = isExecutable
-        ? `<button type="button" class="btn-mini" data-upload-run="${row.id}" ${runDisabled}>Run</button>`
+        ? `<button type="button" class="btn-mini" data-upload-run="${row.id}" ${runDisabled}>${t("upload.run")}</button>`
         : "";
-      const deleteBtn = canDelete
-        ? `<button type="button" class="btn-mini danger" data-upload-delete="${row.id}">Delete</button>`
-        : "";
+      const deleteBtn = `<button type="button" class="btn-mini danger" data-upload-delete="${row.id}">${t("upload.delete")}</button>`;
       return `
       <tr data-upload-id="${row.id}">
         <td>${formatTime(row.uploaded_at)}</td>
         <td class="mono" title="${row.stored_path || ""}">${row.original_name || "-"}</td>
         <td>${row.content_kind || "-"}</td>
         <td title="${row.error_message || ""}">${row.status_label || status || "-"}</td>
-        <td>${reportCell}</td>
         <td><div class="upload-actions">${runBtn}${reportBtn}${deleteBtn}</div></td>
         <td class="mono" title="${row.sha256 || ""}">${shortSha(row.sha256)}</td>
       </tr>`;
@@ -763,7 +1122,8 @@ async function uploadDroppedFile(file) {
   if (!file) return;
   const suffix = (file.name.split(".").pop() || "").toLowerCase();
   if (!["jsonl", "exe", "dll"].includes(suffix)) {
-    setUploadStatus("Unsupported file type. Use .jsonl, .exe, or .dll.", "error");
+    setUploadStatus(t("upload.unsupported"), "error");
+    showToast(t("upload.unsupported"), "error");
     return;
   }
   const formData = new FormData();
@@ -773,7 +1133,7 @@ async function uploadDroppedFile(file) {
   if (suffix !== "jsonl" && Number.isFinite(pidValue) && pidValue > 0) {
     formData.append("target_pid", String(Math.trunc(pidValue)));
   }
-  setUploadStatus(`Uploading ${file.name}…`);
+  setUploadStatus(t("upload.uploading", { name: file.name }));
   try {
     const response = await fetch("/api/upload", { method: "POST", body: formData });
     const payload = await response.json();
@@ -781,16 +1141,20 @@ async function uploadDroppedFile(file) {
       throw new Error(payload.error || `Upload failed (${response.status})`);
     }
     if (payload.kind === "jsonl") {
-      setUploadStatus(
-        `Parsed ${payload.session_name}: ${payload.parsed?.finding_count ?? 0} findings stored in DB.`,
-        "ok",
-      );
+      const parsedMessage = t("upload.parsed", {
+        session: payload.session_name,
+        findings: payload.parsed?.finding_count ?? 0,
+      });
+      setUploadStatus(parsedMessage, "ok");
+      showToast(parsedMessage, "success");
       if (payload.session_name) {
         await loadDashboard(payload.session_name, { force: true });
         switchTab("findings");
       }
     } else {
-      setUploadStatus(payload.message || "Sample saved. Click Run to analyze.", "ok");
+      const savedMessage = payload.message || t("upload.saved");
+      setUploadStatus(savedMessage, "ok");
+      showToast(savedMessage, "success");
     }
     const overview = await loadOverview(state.activeLog);
     if (overview) {
@@ -803,7 +1167,9 @@ async function uploadDroppedFile(file) {
     }
   } catch (error) {
     console.error(error);
-    setUploadStatus(error.message || "Upload failed", "error");
+    const uploadError = error.message || "Upload failed";
+    setUploadStatus(uploadError, "error");
+    showToast(uploadError, "error");
   }
 }
 
@@ -1006,8 +1372,10 @@ function populateLogSelect(files, activeLog) {
 }
 
 function showLoadError(message) {
-  document.getElementById("active-log-label").textContent = message;
-  document.getElementById("file-count").textContent = "load failed";
+  const label = message || t("error.loadDashboard");
+  document.getElementById("active-log-label").textContent = label;
+  document.getElementById("file-count").textContent = t("status.loadFailed");
+  showToast(label, "error");
 }
 
 function escapeHtml(value) {
@@ -1089,7 +1457,7 @@ function renderEvasionSummary(evasion) {
   const chip = document.getElementById("evasion-chip");
   const total = Number(evasion?.total || 0);
   if (chip) {
-    chip.textContent = total === 1 ? "1 signal" : `${total} signals`;
+    chip.textContent = t("chart.evasionChip", { count: total });
   }
   const rows = Object.entries(evasion?.by_kind || {})
     .sort((a, b) => b[1] - a[1])
@@ -1115,56 +1483,6 @@ let classifierRulesDraft = null;
 let classifierTechniques = [];
 let ruleEditorMode = null;
 let ruleEditorRuleId = null;
-
-const RULES_TABLE_HEAD_HTML = `
-  <tr>
-    <th>On</th>
-    <th>Rule</th>
-    <th>Technique</th>
-    <th></th>
-  </tr>`;
-
-function syncCompactRulesTable(tbodyId) {
-  const tbody = document.getElementById(tbodyId);
-  if (!tbody) return;
-  const table = tbody.closest("table");
-  if (!table) return;
-  table.classList.add("rules-table-compact");
-  table.classList.remove("rules-table-builtins");
-  const headRow = table.querySelector("thead tr");
-  if (!headRow) return;
-  const headers = [...headRow.querySelectorAll("th")].map((node) => node.textContent.trim().toLowerCase());
-  const isLegacy = headers.length > 4 || headers.includes("api match") || headers.includes("gates");
-  if (isLegacy) {
-    headRow.innerHTML = RULES_TABLE_HEAD_HTML;
-  }
-}
-
-function ensureRulesTabMarkup() {
-  syncCompactRulesTable("custom-rules-body");
-  syncCompactRulesTable("rules-body");
-
-  const panel = document.querySelector('[data-panel="rules"]');
-  if (!panel) return;
-  const title = panel.querySelector(".panel-head h2");
-  if (title && title.textContent.trim() === "Rules — gán technique") {
-    title.textContent = "Classifier rules";
-  }
-  const saveBtn = document.getElementById("rules-save-btn");
-  if (saveBtn && saveBtn.textContent.trim() === "Lưu cài đặt") {
-    saveBtn.textContent = "Save settings";
-  }
-
-  const expectedTemplate = "rules-v3";
-  const templateMeta = document.querySelector('meta[name="dashboard-template"]');
-  if (templateMeta && templateMeta.content !== expectedTemplate) {
-    const reloadKey = `dashboard-template-reload-${expectedTemplate}`;
-    if (!sessionStorage.getItem(reloadKey)) {
-      sessionStorage.setItem(reloadKey, "1");
-      window.location.reload();
-    }
-  }
-}
 
 function slugifyRuleId(value) {
   return String(value || "")
@@ -1594,7 +1912,6 @@ function renderCustomRulesTable(customRules) {
 
 function renderClassifierRules(rulesPayload, configPath) {
   if (!rulesPayload) return;
-  ensureRulesTabMarkup();
   classifierTechniques = rulesPayload.techniques || classifierTechniques;
   populateTechniqueSelect(document.getElementById("rule-editor-technique"), classifierTechniques);
   classifierRulesDraft = {
@@ -1825,7 +2142,7 @@ async function loadOverview(selectedLog, { includeRules = false } = {}) {
   const query = params.toString();
   const response = await fetch(query ? `/api/overview?${query}` : "/api/overview");
   if (!response.ok) {
-    showLoadError(`API error ${response.status}`);
+    showLoadError(t("error.api", { status: response.status }));
     return null;
   }
   return response.json();
@@ -1865,32 +2182,26 @@ function renderRuntimeControls(runtime) {
   autoApiToggle.disabled = Boolean(runtime.file_drop_watch_locked) || state.runtimeSaving;
 
   if (runtime.collector_online) {
-    status.textContent = "collector online";
+    status.textContent = t("upload.collectorOnline");
     status.classList.add("online");
     status.classList.remove("offline");
   } else {
-    status.textContent = "collector offline";
+    status.textContent = t("upload.collectorOffline");
     status.classList.add("offline");
     status.classList.remove("online");
   }
 
   const paths = (runtime.watch_paths || []).join(", ");
   if (runtime.file_drop_watch_locked) {
-    hint.textContent =
-      "Locked off by CLI (--no-watch-files). Restart run without that flag to control from the dashboard.";
+    hint.textContent = t("files.hint.locked");
   } else if (!runtime.collector_online) {
-    hint.textContent =
-      "Start python -m noirlycan_telemetry run in a terminal, then toggle watch here. Runtime syncs over WebSocket.";
+    hint.textContent = t("files.hint.offline");
   } else if (runtime.auto_api_analysis_enabled || runtime.auto_triage_enabled) {
-    hint.textContent = paths
-      ? `Watching: ${paths}. New files are auto-spawned under Frida API hooks.`
-      : "Auto API analysis is on. Dropped EXEs run under injection hooks automatically.";
+    hint.textContent = paths ? t("files.hint.autoOn", { paths }) : t("files.hint.autoOnNoPaths");
   } else if (runtime.file_drop_watch_enabled) {
-    hint.textContent = paths
-      ? `Watching: ${paths}. Click Analyze APIs on pending rows to spawn under Frida hooks.`
-      : "File watch is on. Click Analyze APIs to run dropped EXEs under injection hooks.";
+    hint.textContent = paths ? t("files.hint.watchOn", { paths }) : t("files.hint.watchOnNoPaths");
   } else {
-    hint.textContent = "File watch is paused. Enable watch to detect new files.";
+    hint.textContent = t("files.hint.paused");
   }
 }
 
@@ -1913,7 +2224,7 @@ async function saveRuntimeConfig(patch) {
     if (state.runtime) {
       renderRuntimeControls(state.runtime);
     }
-    showLoadError("Could not update file-drop watch setting");
+    showLoadError(t("error.runtimeUpdate"));
   } finally {
     state.runtimeSaving = false;
     if (state.runtime) {
@@ -1956,18 +2267,24 @@ async function loadDashboard(selectedLog, { force = false } = {}) {
     return;
   }
 
-  const filters = currentFilters();
-  state.filters = filters;
+  setLoading(true);
+  try {
+    const filters = currentFilters();
+    state.filters = filters;
 
-  const overview = await loadOverview(selectedLog);
-  if (!overview) return;
+    const overview = await loadOverview(selectedLog);
+    if (!overview) return;
 
-  state.overview = overview;
-  state.activeLog = overview.active_log || selectedLog || "";
+    state.overview = overview;
+    state.activeLog = overview.active_log || selectedLog || "";
 
-  document.getElementById("logs-dir").textContent = overview.logs_dir;
-  document.getElementById("active-log-label").textContent = state.activeLog || "no log selected";
-  document.getElementById("file-count").textContent = `${overview.files.length} files`;
+    document.getElementById("logs-dir").textContent = overview.logs_dir;
+    document.getElementById("active-log-label").textContent =
+      state.activeLog || t("status.noLogSelected");
+    document.getElementById("file-count").textContent = t("status.files", {
+      count: overview.files.length,
+    });
+    renderStatusBar(overview);
 
   populateLogSelect(overview.files, state.activeLog);
 
@@ -2032,13 +2349,18 @@ async function loadDashboard(selectedLog, { force = false } = {}) {
     renderEvents([]);
     renderInjectionChains([], 0);
   }
+  } finally {
+    setLoading(false);
+  }
 }
 
 function switchTab(tabName) {
   state.activeTab = tabName;
   writeHash({ tab: tabName === "overview" ? "" : tabName });
   document.querySelectorAll(".tab").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.tab === tabName);
+    const active = tab.dataset.tab === tabName;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", active ? "true" : "false");
   });
   document.querySelectorAll(".tab-panel").forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.panel === tabName);
@@ -2069,6 +2391,9 @@ function switchTab(tabName) {
   }
   if (tabName === "chains") {
     renderInjectionChainsFromStats(chainsStatsSource());
+  }
+  if (tabName === "corpus") {
+    loadCorpus({ force: !state.corpus });
   }
   if (state.session) {
     if (tabName === "findings") {
@@ -2174,12 +2499,29 @@ function setupDelegatedClicks() {
     if (!row) return;
     document.getElementById("log-select").value = row.dataset.sessionName;
     applyFilters();
-    switchTab("overview");
+    switchTab("findings");
+  });
+
+  document.getElementById("corpus-sessions-body")?.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-session-name]");
+    if (!row) return;
+    document.getElementById("log-select").value = row.dataset.sessionName;
+    applyFilters();
+    switchTab("findings");
   });
 }
 
-document.getElementById("refresh-btn").addEventListener("click", applyFilters);
-document.getElementById("apply-filters-btn").addEventListener("click", applyFilters);
+document.getElementById("corpus-refresh-btn")?.addEventListener("click", () => {
+  state.corpus = null;
+  loadCorpus({ force: true });
+});
+document.getElementById("reclassify-btn")?.addEventListener("click", requestReclassify);
+
+document.getElementById("refresh-btn").addEventListener("click", () => {
+  const selected = document.getElementById("log-select").value;
+  Object.keys(fingerprints).forEach((key) => delete fingerprints[key]);
+  loadDashboard(selected || undefined, { force: true });
+});
 document.getElementById("clear-filters-btn").addEventListener("click", clearFilters);
 
 document.getElementById("log-select").addEventListener("change", (event) => {
@@ -2255,13 +2597,16 @@ async function requestCollectorStart() {
     }
     if (payload.message) {
       setUploadStatus(payload.message, payload.collector_online ? "ok" : "");
+      showToast(payload.message, payload.collector_online ? "success" : "info");
     }
     const selected = document.getElementById("log-select")?.value;
     setTimeout(() => loadDashboard(selected || undefined, { force: true }), 1500);
   } catch (error) {
     console.error(error);
     collectorStartRequested = false;
-    setUploadStatus("Could not start collector. Approve UAC or run dashboard as admin.", "error");
+    const collectorError = error.message || "Could not start collector. Approve UAC or run dashboard as admin.";
+    setUploadStatus(collectorError, "error");
+    showToast(collectorError, "error");
   }
 }
 
@@ -2286,6 +2631,10 @@ function connectLiveSocket() {
     liveSocketRetry = 0;
     state.liveSocketConnected = true;
     setupAutoRefresh();
+    updateAutoRefreshLabel();
+    if (state.overview) {
+      renderStatusBar(state.overview);
+    }
     setTimeout(maybeAutoStartCollector, 1200);
   });
 
@@ -2297,6 +2646,10 @@ function connectLiveSocket() {
       liveSocket = null;
     }
     setupAutoRefresh();
+    updateAutoRefreshLabel();
+    if (state.overview) {
+      renderStatusBar(state.overview);
+    }
     const delay = Math.min(10000, 500 * 2 ** liveSocketRetry);
     liveSocketRetry += 1;
     setTimeout(connectLiveSocket, delay);
@@ -2329,7 +2682,10 @@ function setupAutoRefresh() {
   }
 }
 
-document.getElementById("auto-refresh").addEventListener("change", setupAutoRefresh);
+document.getElementById("auto-refresh").addEventListener("change", () => {
+  setupAutoRefresh();
+  updateAutoRefreshLabel();
+});
 
 document.getElementById("file-drop-toggle").addEventListener("change", (event) => {
   saveRuntimeConfig({ file_drop_watch_enabled: event.target.checked });
@@ -2346,7 +2702,7 @@ document.getElementById("auto-api-toggle").addEventListener("change", (event) =>
 async function requestFileAnalysis(path, button) {
   const original = button.textContent;
   button.disabled = true;
-  button.textContent = "Queued…";
+  button.textContent = t("files.queued");
   try {
     const response = await fetch("/api/triage/request", {
       method: "POST",
@@ -2364,7 +2720,7 @@ async function requestFileAnalysis(path, button) {
     console.error(error);
     button.disabled = false;
     button.textContent = original;
-    showLoadError("Could not queue API hook analysis");
+    showLoadError(t("error.queueAnalysis"));
   }
 }
 
@@ -2474,7 +2830,12 @@ function restoreFromHash() {
 const initialHash = restoreFromHash();
 const initialLog = initialHash.log || undefined;
 
-ensureRulesTabMarkup();
+window.onLocaleChange = rerenderDashboard;
+NoirlycanI18n.applyI18n();
+NoirlycanI18n.updateLangToggle();
+document.querySelectorAll(".lang-toggle [data-locale]").forEach((button) => {
+  button.addEventListener("click", () => NoirlycanI18n.setLocale(button.dataset.locale));
+});
 
 window.addEventListener("popstate", () => {
   restoreFromHash();
@@ -2506,7 +2867,8 @@ loadDashboard(initialLog, { force: true })
   })
   .catch((error) => {
     console.error(error);
-    showLoadError("Could not load dashboard data");
+    showLoadError(t("error.loadDashboard"));
   });
 connectLiveSocket();
 setupAutoRefresh();
+updateAutoRefreshLabel();

@@ -91,8 +91,24 @@ class FridaInjectionMonitor:
         self._queue.put(FridaRuntimeEvent(event_type=event_type, payload=payload))
 
 
+_OBSERVATION_KINDS: dict[str, PrimitiveKind] = {
+    "allocate": PrimitiveKind.ALLOCATE,
+    "write": PrimitiveKind.WRITE,
+    "execute": PrimitiveKind.EXECUTE,
+    "context_read": PrimitiveKind.CONTEXT_READ,
+}
+_OBSERVATION_HINT_KINDS: dict[str, PrimitiveKind] = {
+    "txf": PrimitiveKind.WRITE,
+    "ghosting": PrimitiveKind.WRITE,
+}
+
+
 def runtime_event_to_primitive(event: FridaRuntimeEvent) -> MemoryPrimitive | None:
     payload = event.payload
+    if event.event_type == "api_observation":
+        return _observation_to_primitive(payload)
+    if event.event_type != "memory_primitive":
+        return None
     primitive_kind = _kind_from_payload(payload)
     if primitive_kind is None:
         return None
@@ -144,6 +160,36 @@ _BASE_KEYS = {
     "size",
     "api",
 }
+
+
+def _observation_to_primitive(payload: dict[str, Any]) -> MemoryPrimitive | None:
+    category = str(payload.get("category") or "").strip().lower()
+    if category in {"remote_read", "access"}:
+        return None
+    primitive_kind = _OBSERVATION_KINDS.get(category) or _OBSERVATION_HINT_KINDS.get(category)
+    if primitive_kind is None:
+        return None
+    actor_pid = _safe_int(payload.get("actor_pid")) or 0
+    timestamp = _parse_timestamp(payload.get("timestamp"))
+    details = {
+        key: value
+        for key, value in payload.items()
+        if key not in _BASE_KEYS and key != "category"
+    }
+    details.setdefault("observation", True)
+    details.setdefault("category", category)
+    return MemoryPrimitive(
+        timestamp=timestamp,
+        kind=primitive_kind,
+        actor_pid=actor_pid,
+        actor_image=payload.get("actor_image"),
+        target_pid=_safe_int(payload.get("target_pid")),
+        target_image=payload.get("target_image"),
+        address=_safe_int(payload.get("address")),
+        size=_safe_int(payload.get("size")),
+        api=str(payload.get("api") or "api_observation"),
+        details=details,
+    )
 
 
 def _kind_from_payload(payload: dict[str, Any]) -> PrimitiveKind | None:

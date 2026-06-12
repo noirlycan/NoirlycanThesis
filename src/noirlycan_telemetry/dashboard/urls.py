@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.urls import path, re_path
-from django.views.static import serve
+from django.contrib import admin
+from django.contrib.staticfiles.views import serve as staticfiles_serve
+from django.urls import include, path, re_path
 
 from . import views
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path("", views.index, name="index"),
     path("api/health", views.health, name="health"),
     path("api/overview", views.overview, name="overview"),
+    path("api/corpus", views.corpus, name="corpus"),
+    path("api/reclassify/<path:name>", views.reclassify_session_view, name="reclassify"),
     path("api/uploads", views.list_uploads, name="uploads"),
     path("api/upload", views.upload_file, name="upload"),
     path("api/uploads/<int:upload_id>/run", views.upload_run, name="upload-run"),
@@ -27,12 +31,10 @@ urlpatterns = [
     path("api/export/<path:name>", views.export_session, name="export"),
 ]
 
-# Lab dashboard: always expose vendored CSS/JS (Django skips this when DEBUG=False).
-_static_root = settings.BASE_DIR / "static"
+# Serve dashboard, Jet, and admin static via staticfiles finders (not only dashboard/static).
 urlpatterns += [
     re_path(
         r"^static/(?P<path>.*)$",
-        serve,
-        {"document_root": _static_root},
+        staticfiles_serve,
     ),
 ]

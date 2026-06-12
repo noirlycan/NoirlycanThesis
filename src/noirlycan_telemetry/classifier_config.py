@@ -71,6 +71,14 @@ def _parse_rule_settings(raw: object) -> RuleSettings | None:
     )
 
 
+def ensure_classifier_config(logs_dir: Path | str | None = None) -> Path:
+    """Create `.classifier_rules.json` with defaults when missing."""
+    path = resolve_config_path(logs_dir)
+    if not path.exists():
+        save_classifier_config(ClassifierRulesConfig(), logs_dir)
+    return path
+
+
 def load_classifier_config(logs_dir: Path | str | None = None) -> ClassifierRulesConfig:
     path = resolve_config_path(logs_dir)
     if not path.exists():

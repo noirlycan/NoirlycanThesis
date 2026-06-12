@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .log_store import aggregate_events, read_jsonl, resolve_logs_dir
+from .log_store import aggregate_events, count_jsonl_lines, read_jsonl, resolve_logs_dir
 
 
 def default_db_path(logs_dir: Path | str | None = None) -> Path:
@@ -89,6 +89,20 @@ class AnalysisDatabase:
                     ON uploads(uploaded_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_parsed_sessions_name
                     ON parsed_sessions(session_name);
+                CREATE INDEX IF NOT EXISTS idx_uploads_stored_path
+                    ON uploads(stored_path);
+                CREATE INDEX IF NOT EXISTS idx_stored_findings_technique
+                    ON stored_findings(technique);
+
+                CREATE TABLE IF NOT EXISTS jsonl_analytics_cache (
+                    session_name TEXT PRIMARY KEY,
+                    source_path TEXT NOT NULL,
+                    mtime REAL NOT NULL,
+                    size_bytes INTEGER NOT NULL,
+                    lines_processed INTEGER NOT NULL DEFAULT 0,
+                    state_json TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 """
             )
 
@@ -160,25 +174,59 @@ class AnalysisDatabase:
         stats_payload = json.dumps(stats, ensure_ascii=False, sort_keys=True)
 
         with self._connect() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO parsed_sessions (
-                    upload_id, session_name, source_path, event_count, finding_count,
-                    primitive_count, stats_json, parsed_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    upload_id,
-                    resolved_name,
-                    str(source_path.resolve()),
-                    int(totals.get("events") or 0),
-                    int(totals.get("findings") or 0),
-                    int(totals.get("primitives") or 0),
-                    stats_payload,
-                    parsed_at,
-                ),
-            )
-            session_id = int(cursor.lastrowid)
+            existing = connection.execute(
+                "SELECT id FROM parsed_sessions WHERE session_name = ?",
+                (resolved_name,),
+            ).fetchone()
+            if existing is not None:
+                session_id = int(existing["id"])
+                connection.execute(
+                    "DELETE FROM stored_findings WHERE session_id = ?",
+                    (session_id,),
+                )
+                connection.execute(
+                    """
+                    UPDATE parsed_sessions
+                    SET upload_id = COALESCE(?, upload_id),
+                        source_path = ?,
+                        event_count = ?,
+                        finding_count = ?,
+                        primitive_count = ?,
+                        stats_json = ?,
+                        parsed_at = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        upload_id,
+                        str(source_path.resolve()),
+                        int(totals.get("events") or 0),
+                        int(totals.get("findings") or 0),
+                        int(totals.get("primitives") or 0),
+                        stats_payload,
+                        parsed_at,
+                        session_id,
+                    ),
+                )
+            else:
+                cursor = connection.execute(
+                    """
+                    INSERT INTO parsed_sessions (
+                        upload_id, session_name, source_path, event_count, finding_count,
+                        primitive_count, stats_json, parsed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        upload_id,
+                        resolved_name,
+                        str(source_path.resolve()),
+                        int(totals.get("events") or 0),
+                        int(totals.get("findings") or 0),
+                        int(totals.get("primitives") or 0),
+                        stats_payload,
+                        parsed_at,
+                    ),
+                )
+                session_id = int(cursor.lastrowid)
             for finding in stats.get("recent_findings") or []:
                 if not isinstance(finding, dict):
                     continue
@@ -283,21 +331,114 @@ class AnalysisDatabase:
     def find_upload_by_stored_path(self, stored_path: str) -> dict[str, Any] | None:
         resolved = str(Path(stored_path).expanduser().resolve())
         with self._connect() as connection:
-            rows = connection.execute(
+            row = connection.execute(
                 """
                 SELECT id, original_name, stored_path, content_kind, size_bytes, sha256,
                        status, error_message, uploaded_at, session_name
                 FROM uploads
+                WHERE stored_path = ?
+                LIMIT 1
+                """,
+                (resolved,),
+            ).fetchone()
+        return dict(row) if row is not None else None
+
+    def load_cached_session_state(self, path: Path) -> dict[str, Any] | None:
+        resolved = path.resolve()
+        stat = resolved.stat()
+        with self._connect() as connection:
+            row = connection.execute(
                 """
+                SELECT mtime, size_bytes, lines_processed, state_json
+                FROM jsonl_analytics_cache
+                WHERE session_name = ?
+                """,
+                (resolved.name,),
+            ).fetchone()
+        if row is None:
+            return None
+        item = dict(row)
+        if (
+            float(item["mtime"]) == stat.st_mtime
+            and int(item["size_bytes"]) == stat.st_size
+        ):
+            state = json.loads(item["state_json"])
+            state["_lines_processed"] = int(item["lines_processed"])
+            return state
+        if int(item["size_bytes"]) < stat.st_size and float(item["mtime"]) <= stat.st_mtime:
+            state = json.loads(item["state_json"])
+            state["_lines_processed"] = int(item["lines_processed"])
+            state["_incremental"] = True
+            return state
+        return None
+
+    def store_cached_session_state(self, path: Path, state: dict[str, Any]) -> None:
+        resolved = path.resolve()
+        stat = resolved.stat()
+        payload = {key: value for key, value in state.items() if not key.startswith("_")}
+        lines_processed = int(state.get("_lines_processed") or count_jsonl_lines(resolved))
+        updated_at = datetime.now(timezone.utc).isoformat()
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO jsonl_analytics_cache (
+                    session_name, source_path, mtime, size_bytes, lines_processed, state_json, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(session_name) DO UPDATE SET
+                    source_path = excluded.source_path,
+                    mtime = excluded.mtime,
+                    size_bytes = excluded.size_bytes,
+                    lines_processed = excluded.lines_processed,
+                    state_json = excluded.state_json,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    resolved.name,
+                    str(resolved),
+                    stat.st_mtime,
+                    stat.st_size,
+                    lines_processed,
+                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                    updated_at,
+                ),
+            )
+
+    def invalidate_session_analytics_cache(self, session_name: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM jsonl_analytics_cache WHERE session_name = ?",
+                (session_name,),
+            )
+
+    def aggregate_stored_findings(self, *, limit: int = 500) -> dict[str, Any]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT sf.technique, sf.severity, sf.score, ps.session_name
+                FROM stored_findings sf
+                JOIN parsed_sessions ps ON ps.id = sf.session_id
+                ORDER BY sf.id DESC
+                LIMIT ?
+                """,
+                (max(1, limit),),
             ).fetchall()
+        technique_counts: dict[str, int] = {}
+        severity_counts: dict[str, int] = {}
+        sessions: set[str] = set()
         for row in rows:
             item = dict(row)
-            try:
-                if str(Path(item["stored_path"]).resolve()).lower() == resolved.lower():
-                    return item
-            except OSError:
-                continue
-        return None
+            technique = str(item.get("technique") or "unclassified")
+            severity = str(item.get("severity") or "unknown")
+            technique_counts[technique] = technique_counts.get(technique, 0) + 1
+            severity_counts[severity] = severity_counts.get(severity, 0) + 1
+            if item.get("session_name"):
+                sessions.add(str(item["session_name"]))
+        return {
+            "finding_rows": len(rows),
+            "session_count": len(sessions),
+            "technique_distribution": technique_counts,
+            "severity_distribution": severity_counts,
+        }
 
     def set_upload_status_for_path(
         self,

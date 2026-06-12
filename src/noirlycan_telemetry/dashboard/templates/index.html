@@ -1,57 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="dashboard-template" content="{{ template_version }}" />
-    <title>Noirlycan Telemetry</title>
-    <!-- Vendored Chart.js v4.4.1 (MIT). Avoids CDN dependency so the
-         dashboard works on an air-gapped lab VM and is not blocked by
-         browser tracking-prevention. License + source in the file header. -->
-    {% load static %}
-    <script src="{% static 'vendor/chart.umd.js' %}"></script>
-    <link rel="stylesheet" href="{% static 'dashboard.css' %}?v={{ asset_version }}" />
-    <!-- Google Fonts kept as progressive enhancement; CSS falls back to
-         system monospace / sans-serif if these are blocked. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div class="backdrop"></div>
-    <div class="shell">
+{% extends "base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Noirlycan Telemetry{% endblock %}
+
+{% block extrahead %}
+  <meta name="dashboard-template" content="{{ template_version }}" />
+  <script src="{% static 'vendor/chart.umd.js' %}"></script>
+  <script src="{% static 'i18n.js' %}?v={{ asset_version }}"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="noirlycan-app">
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+    <div class="shell" id="dashboard-shell">
+      <div id="dashboard-loading" class="loading-overlay hidden" aria-live="polite">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span data-i18n="status.loading">Loading…</span>
+      </div>
       <header class="hero">
         <div>
-          <p class="eyebrow">Windows injection telemetry</p>
-          <h1>Noirlycan Dashboard</h1>
+          <p class="eyebrow" data-i18n="hero.eyebrow">Windows injection telemetry</p>
+          <h1 class="page-title" data-i18n="hero.title">Live telemetry</h1>
           <p class="subtitle">
-            Interactive view of Sysmon + Frida JSONL sessions in
+            <span data-i18n="hero.subtitle">Interactive view of Sysmon + Frida JSONL sessions in</span>
             <code id="logs-dir">logs/</code>
           </p>
+          <div class="status-bar" id="status-bar">
+            <span class="status-chip offline" id="status-collector" data-i18n="status.collectorOffline">Collector offline</span>
+            <span class="status-chip" id="status-live" data-i18n="status.liveDisconnected">Polling mode</span>
+            <span class="status-chip" id="status-session" data-i18n="status.noSession">No session</span>
+            <span class="status-chip" id="status-events" data-i18n="status.events" data-i18n-vars='{"count":0}'>0 events</span>
+          </div>
         </div>
         <div class="hero-actions">
+          <div class="lang-toggle" role="group" data-i18n-aria="lang.label" aria-label="Language">
+            <button type="button" data-locale="en" class="active" aria-pressed="true">EN</button>
+            <button type="button" data-locale="vi" aria-pressed="false">VI</button>
+          </div>
           <label class="select-wrap">
-            <span>Session log</span>
+            <span data-i18n="hero.sessionLog">Session log</span>
             <select id="log-select"></select>
           </label>
-          <button id="refresh-btn" type="button">Refresh</button>
-          <button id="export-btn" type="button" class="secondary">Export JSONL</button>
+          <button id="refresh-btn" type="button" data-i18n="hero.reload">Reload data</button>
+          <button id="export-btn" type="button" class="secondary" data-i18n="hero.export">Export JSONL</button>
         </div>
       </header>
 
       <section class="toolbar panel">
         <div class="toolbar-group">
           <label class="field">
-            <span>Search</span>
-            <input id="filter-query" type="search" placeholder="API, PID, image, endpoint..." />
+            <span data-i18n="toolbar.search">Search</span>
+            <input id="filter-query" type="search" data-i18n-placeholder="toolbar.searchPlaceholder" placeholder="API, PID, image, endpoint..." />
           </label>
           <label class="field">
-            <span>Severity</span>
+            <span data-i18n="toolbar.severity">Severity</span>
             <select id="filter-severity">
-              <option value="">All</option>
+              <option value="" data-i18n="toolbar.severity.all">All</option>
               <option value="critical">Critical</option>
               <option value="high">High</option>
               <option value="medium">Medium</option>
@@ -59,13 +63,13 @@
             </select>
           </label>
           <label class="field">
-            <span>Target PID</span>
-            <input id="filter-pid" type="number" min="0" placeholder="Any" />
+            <span data-i18n="toolbar.targetPid">Target PID</span>
+            <input id="filter-pid" type="number" min="0" data-i18n-placeholder="toolbar.targetPidPlaceholder" placeholder="Any" />
           </label>
           <label class="field">
-            <span>Event type</span>
+            <span data-i18n="toolbar.eventType">Event type</span>
             <select id="filter-type">
-              <option value="">All</option>
+              <option value="" data-i18n="toolbar.severity.all">All</option>
               <option value="finding">finding</option>
               <option value="primitive">primitive</option>
               <option value="network">network</option>
@@ -77,24 +81,24 @@
         <div class="toolbar-group toolbar-actions">
           <label class="toggle">
             <input id="auto-refresh" type="checkbox" />
-            <span>Auto-refresh (4s)</span>
+            <span id="auto-refresh-label" data-i18n="toolbar.autoRefresh.paused">Paused</span>
           </label>
-          <button id="apply-filters-btn" type="button">Apply filters</button>
-          <button id="clear-filters-btn" type="button" class="secondary">Clear</button>
+          <button id="clear-filters-btn" type="button" class="secondary" data-i18n="toolbar.clear">Clear</button>
         </div>
       </section>
 
-      <nav class="tabs" id="view-tabs">
-        <button type="button" class="tab active" data-tab="overview">Overview</button>
-        <button type="button" class="tab" data-tab="rules">Rules</button>
-        <button type="button" class="tab" data-tab="findings">Findings</button>
-        <button type="button" class="tab" data-tab="network">Network</button>
-        <button type="button" class="tab" data-tab="primitives">Primitives</button>
-        <button type="button" class="tab" data-tab="upload">Upload</button>
-        <button type="button" class="tab" data-tab="files">File drops</button>
-        <button type="button" class="tab" data-tab="events">Event stream</button>
-        <button type="button" class="tab" data-tab="chains">Injection chains</button>
-        <button type="button" class="tab" data-tab="sessions">Sessions</button>
+      <nav class="tabs" id="view-tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="overview" role="tab" aria-selected="true" data-i18n="tab.overview">Overview</button>
+        <button type="button" class="tab" data-tab="rules" role="tab" aria-selected="false" data-i18n="tab.rules">Rules</button>
+        <button type="button" class="tab" data-tab="findings" role="tab" aria-selected="false" data-i18n="tab.findings">Findings</button>
+        <button type="button" class="tab" data-tab="network" role="tab" aria-selected="false" data-i18n="tab.network">Network</button>
+        <button type="button" class="tab" data-tab="primitives" role="tab" aria-selected="false" data-i18n="tab.primitives">Primitives</button>
+        <button type="button" class="tab" data-tab="upload" role="tab" aria-selected="false" data-i18n="tab.upload">Upload</button>
+        <button type="button" class="tab" data-tab="files" role="tab" aria-selected="false" data-i18n="tab.files">File drops</button>
+        <button type="button" class="tab" data-tab="events" role="tab" aria-selected="false" data-i18n="tab.events">Event stream</button>
+        <button type="button" class="tab" data-tab="chains" role="tab" aria-selected="false" data-i18n="tab.chains">Injection chains</button>
+        <button type="button" class="tab" data-tab="sessions" role="tab" aria-selected="false" data-i18n="tab.sessions">Sessions</button>
+        <button type="button" class="tab" data-tab="corpus" role="tab" aria-selected="false" data-i18n="tab.corpus">Corpus</button>
       </nav>
 
       <section class="tab-panel active" data-panel="overview">
@@ -103,40 +107,49 @@
         <section class="grid-two">
           <article class="panel">
             <div class="panel-head">
-              <h2>Finding severity</h2>
-              <span class="chip">correlation output</span>
+              <h2 data-i18n="chart.severity">Finding severity</h2>
+              <span class="chip" data-i18n="chart.severityChip">correlation output</span>
             </div>
-            <canvas id="severity-chart"></canvas>
+            <div class="chart-wrap" data-chart-wrap="severity">
+              <canvas id="severity-chart"></canvas>
+              <div class="chart-placeholder hidden" data-chart-placeholder="severity" data-i18n="chart.noData">No data yet</div>
+            </div>
           </article>
           <article class="panel">
             <div class="panel-head">
-              <h2>Injection primitives</h2>
-              <span class="chip">allocate / write / execute</span>
+              <h2 data-i18n="chart.primitives">Injection primitives</h2>
+              <span class="chip" data-i18n="chart.primitivesChip">allocate / write / execute</span>
             </div>
-            <canvas id="primitive-chart"></canvas>
+            <div class="chart-wrap" data-chart-wrap="primitive">
+              <canvas id="primitive-chart"></canvas>
+              <div class="chart-placeholder hidden" data-chart-placeholder="primitive" data-i18n="chart.noData">No data yet</div>
+            </div>
           </article>
         </section>
 
         <section class="panel timeline-panel">
           <div class="panel-head">
-            <h2>Event timeline</h2>
-            <span class="chip">minute buckets</span>
+            <h2 data-i18n="chart.timeline">Event timeline</h2>
+            <span class="chip" data-i18n="chart.timelineChip">minute buckets</span>
           </div>
-          <canvas id="timeline-chart"></canvas>
+          <div class="chart-wrap" data-chart-wrap="timeline">
+            <canvas id="timeline-chart"></canvas>
+            <div class="chart-placeholder hidden" data-chart-placeholder="timeline" data-i18n="chart.noData">No data yet</div>
+          </div>
         </section>
 
         <section class="grid-two">
           <article class="panel">
             <div class="panel-head">
-              <h2>Top APIs</h2>
-              <span class="chip">Frida hooks</span>
+              <h2 data-i18n="chart.topApis">Top APIs</h2>
+              <span class="chip" data-i18n="chart.topApisChip">Frida hooks</span>
             </div>
             <div id="api-list" class="rank-list"></div>
           </article>
           <article class="panel">
             <div class="panel-head">
-              <h2>Top actors</h2>
-              <span class="chip">source images</span>
+              <h2 data-i18n="chart.topActors">Top actors</h2>
+              <span class="chip" data-i18n="chart.topActorsChip">source images</span>
             </div>
             <div id="actor-list" class="rank-list"></div>
           </article>
@@ -145,15 +158,15 @@
         <section class="grid-two">
           <article class="panel">
             <div class="panel-head">
-              <h2>Injection techniques</h2>
-              <span class="chip">rule classifier</span>
+              <h2 data-i18n="chart.techniques">Injection techniques</h2>
+              <span class="chip" data-i18n="chart.techniquesChip">rule classifier</span>
             </div>
             <div id="technique-list" class="rank-list"></div>
           </article>
           <article class="panel">
             <div class="panel-head">
-              <h2>Evasion signals</h2>
-              <span class="chip" id="evasion-chip">0 signals</span>
+              <h2 data-i18n="chart.evasion">Evasion signals</h2>
+              <span class="chip" id="evasion-chip" data-i18n="chart.evasionChip" data-i18n-vars='{"count":0}'>0 signals</span>
             </div>
             <div id="evasion-summary" class="rank-list"></div>
           </article>
@@ -163,54 +176,54 @@
       <section class="tab-panel" data-panel="rules">
         <article class="panel">
           <div class="panel-head">
-            <h2>Classifier rules</h2>
+            <h2 data-i18n="rules.title">Classifier rules</h2>
             <span class="chip" id="rules-config-chip">.classifier_rules.json</span>
           </div>
-          <p class="hint">
-            The table shows rule names only. Click <strong>View</strong> for API match details and gate conditions.
-            Built-in rules: toggle quickly with the checkbox, then <strong>Save settings</strong>.
+          <p class="hint" data-i18n="rules.hint">
+            The table shows rule names only. Click View for API match details and gate conditions.
+            Built-in rules: toggle quickly with the checkbox, then Save settings.
           </p>
           <details class="rules-global-settings">
-            <summary>Global settings (rarely needed)</summary>
-            <p class="field-help">Applies to <em>all</em> new findings from the running collector.</p>
+            <summary data-i18n="rules.globalSettings">Global settings (rarely needed)</summary>
+            <p class="field-help" data-i18n="rules.globalHelp">Applies to all new findings from the running collector.</p>
             <div class="rules-controls">
               <label class="field">
-                <span>Minimum finding score (0–100)</span>
+                <span data-i18n="rules.minScore">Minimum finding score (0–100)</span>
                 <input id="rules-minimum-score" type="number" min="0" max="100" step="1" value="50" />
               </label>
               <label class="field">
-                <span>Min operational kinds (2–3)</span>
+                <span data-i18n="rules.minKinds">Min operational kinds (2–3)</span>
                 <input id="rules-minimum-operational-kinds" type="number" min="2" max="3" step="1" value="2" />
               </label>
               <label class="toggle">
                 <input id="rules-classification-enabled" type="checkbox" checked />
-                <span>Enable technique classification</span>
+                <span data-i18n="rules.enableClassification">Enable technique classification</span>
               </label>
               <label class="toggle">
                 <input id="rules-require-cross-process" type="checkbox" />
-                <span>Require cross-process findings</span>
+                <span data-i18n="rules.requireCross">Require cross-process findings</span>
               </label>
               <label class="toggle">
                 <input id="rules-ignore-same-process" type="checkbox" />
-                <span>Ignore same-process findings</span>
+                <span data-i18n="rules.ignoreSame">Ignore same-process findings</span>
               </label>
-              <button type="button" id="rules-save-btn" class="btn">Save settings</button>
+              <button type="button" id="rules-save-btn" class="btn" data-i18n="rules.saveSettings">Save settings</button>
             </div>
           </details>
-          <p id="rules-status" class="hint upload-status">Loading rules…</p>
+          <p id="rules-status" class="hint upload-status" data-i18n="rules.loading">Loading rules…</p>
 
-          <h3 class="rules-section-title">My rules (custom)</h3>
-          <p class="hint">Custom rules — click <strong>View</strong> to read config, <strong>Edit</strong> to change, or <strong>+ Add rule</strong>.</p>
+          <h3 class="rules-section-title" data-i18n="rules.customTitle">My rules (custom)</h3>
+          <p class="hint" data-i18n="rules.customHint">Custom rules — click View to read config, Edit to change, or + Add rule.</p>
           <div class="rules-controls">
-            <button type="button" id="rules-add-custom-btn" class="btn">+ Add rule</button>
+            <button type="button" id="rules-add-custom-btn" class="btn" data-i18n="rules.addRule">+ Add rule</button>
           </div>
           <div class="table-wrap rules-table-wrap">
             <table class="rules-table rules-table-compact">
               <thead>
                 <tr>
-                  <th>On</th>
-                  <th>Rule</th>
-                  <th>Technique</th>
+                  <th data-i18n="rules.th.on">On</th>
+                  <th data-i18n="rules.th.rule">Rule</th>
+                  <th data-i18n="rules.th.technique">Technique</th>
                   <th></th>
                 </tr>
               </thead>
@@ -218,15 +231,15 @@
             </table>
           </div>
 
-          <h3 class="rules-section-title">Built-in rules</h3>
-          <p class="hint">Shipped with the classifier — click <strong>View</strong> for API match and gates. Toggle built-in rules with the checkbox; duplicate to custom to change API patterns.</p>
+          <h3 class="rules-section-title" data-i18n="rules.builtinTitle">Built-in rules</h3>
+          <p class="hint" data-i18n="rules.builtinHint">Shipped with the classifier — click View for API match and gates. Toggle built-in rules with the checkbox; duplicate to custom to change API patterns.</p>
           <div class="table-wrap rules-table-wrap">
             <table class="rules-table rules-table-compact">
               <thead>
                 <tr>
-                  <th>On</th>
-                  <th>Rule</th>
-                  <th>Technique</th>
+                  <th data-i18n="rules.th.on">On</th>
+                  <th data-i18n="rules.th.rule">Rule</th>
+                  <th data-i18n="rules.th.technique">Technique</th>
                   <th></th>
                 </tr>
               </thead>
@@ -239,22 +252,22 @@
       <section class="tab-panel" data-panel="findings">
         <article class="panel">
           <div class="panel-head">
-            <h2>Findings</h2>
-            <span class="chip" id="active-log-label">no log selected</span>
+            <h2 data-i18n="findings.title">Findings</h2>
+            <span class="chip" id="active-log-label" data-i18n="status.noLogSelected">No log selected</span>
           </div>
-          <p class="hint">Click a row to inspect evidence, primitives, and related network activity.</p>
+          <p class="hint" data-i18n="findings.hint">Click a row to inspect evidence, primitives, and related network activity.</p>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>Severity</th>
-                  <th>Score</th>
-                  <th>Injection target</th>
-                  <th>Technique</th>
-                  <th>APIs</th>
-                  <th>Network</th>
-                  <th>Description</th>
+                  <th data-i18n="findings.th.time">Time</th>
+                  <th data-i18n="findings.th.severity">Severity</th>
+                  <th data-i18n="findings.th.score">Score</th>
+                  <th data-i18n="findings.th.target">Injection target</th>
+                  <th data-i18n="findings.th.technique">Technique</th>
+                  <th data-i18n="findings.th.apis">APIs</th>
+                  <th data-i18n="findings.th.network">Network</th>
+                  <th data-i18n="findings.th.description">Description</th>
                 </tr>
               </thead>
               <tbody id="findings-body"></tbody>
@@ -266,19 +279,19 @@
       <section class="tab-panel" data-panel="network">
         <article class="panel">
           <div class="panel-head">
-            <h2>Network activity</h2>
-            <span class="chip">post-HIGH beacon watch</span>
+            <h2 data-i18n="network.title">Network activity</h2>
+            <span class="chip" data-i18n="network.chip">post-HIGH beacon watch</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>PID</th>
-                  <th>Image</th>
-                  <th>Endpoint</th>
-                  <th>Protocol</th>
-                  <th>Beacon?</th>
+                  <th data-i18n="network.th.time">Time</th>
+                  <th data-i18n="network.th.pid">PID</th>
+                  <th data-i18n="network.th.image">Image</th>
+                  <th data-i18n="network.th.endpoint">Endpoint</th>
+                  <th data-i18n="network.th.protocol">Protocol</th>
+                  <th data-i18n="network.th.beacon">Beacon?</th>
                 </tr>
               </thead>
               <tbody id="network-body"></tbody>
@@ -290,20 +303,20 @@
       <section class="tab-panel" data-panel="primitives">
         <article class="panel">
           <div class="panel-head">
-            <h2>Injection primitives</h2>
-            <span class="chip">Frida allocate / write / execute</span>
+            <h2 data-i18n="primitives.title">Injection primitives</h2>
+            <span class="chip" data-i18n="primitives.chip">Frida allocate / write / execute</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>Kind</th>
-                  <th>API</th>
-                  <th>Actor</th>
-                  <th>Injection target</th>
-                  <th>Address</th>
-                  <th>Size</th>
+                  <th data-i18n="primitives.th.time">Time</th>
+                  <th data-i18n="primitives.th.kind">Kind</th>
+                  <th data-i18n="primitives.th.api">API</th>
+                  <th data-i18n="primitives.th.actor">Actor</th>
+                  <th data-i18n="primitives.th.target">Injection target</th>
+                  <th data-i18n="primitives.th.address">Address</th>
+                  <th data-i18n="primitives.th.size">Size</th>
                 </tr>
               </thead>
               <tbody id="primitives-body"></tbody>
@@ -315,45 +328,40 @@
       <section class="tab-panel" data-panel="upload">
         <article class="panel">
           <div class="panel-head">
-            <h2>Upload &amp; analyze</h2>
-            <span class="chip" id="upload-collector-chip">collector offline</span>
+            <h2 data-i18n="upload.title">Upload &amp; analyze</h2>
+            <span class="chip" id="upload-collector-chip" data-i18n="upload.collectorOffline">collector offline</span>
             <span class="chip" id="db-path-chip">SQLite</span>
           </div>
-          <p class="hint">
-            Drop a <strong>.jsonl</strong> session log to parse into the database, or an
-            <strong>.exe / .dll</strong> sample to save it for later. Samples are <strong>not</strong>
-            run automatically — use <strong>Run</strong> in the table below. Starting the dashboard
-            auto-launches the collector (<code>run --watch-sysmon</code>) in a new elevated console
-            on Windows (approve UAC).
+          <p class="hint" data-i18n="upload.hint">
+            Drop a .jsonl session log to parse into the database, or an .exe / .dll sample to save it for later.
+            Samples are not run automatically — use Run in the table below.
           </p>
           <p id="upload-collector-banner" class="hint upload-banner hidden">
-            Collector offline — approve the UAC prompt or click
-            <button type="button" class="linkish" id="start-collector-btn">Start collector</button>
-            to launch <code>run --watch-sysmon</code> with admin rights.
+            <span data-i18n="upload.banner">Collector offline — approve the UAC prompt or click Start collector.</span>
+            <button type="button" class="linkish" id="start-collector-btn" data-i18n="upload.startCollector">Start collector</button>
           </p>
           <div class="upload-controls">
             <label class="field">
-              <span>Target PID (optional, for injectors)</span>
-              <input id="upload-target-pid" type="number" min="1" placeholder="e.g. notepad PID" />
+              <span data-i18n="upload.targetPid">Target PID (optional, for injectors)</span>
+              <input id="upload-target-pid" type="number" min="1" data-i18n-placeholder="upload.targetPidPlaceholder" placeholder="e.g. notepad PID" />
             </label>
           </div>
-          <div id="upload-dropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="Upload file">
-            <p class="upload-title">Drag &amp; drop file here</p>
-            <p class="upload-subtitle">or click to choose · .jsonl · .exe · .dll · max 64 MiB</p>
+          <div id="upload-dropzone" class="upload-dropzone" tabindex="0" role="button" data-i18n-aria="upload.dropAria" aria-label="Upload file">
+            <p class="upload-title" data-i18n="upload.dropTitle">Drag &amp; drop file here</p>
+            <p class="upload-subtitle" data-i18n="upload.dropSubtitle">or click to choose · .jsonl · .exe · .dll · max 64 MiB</p>
             <input id="upload-input" type="file" accept=".jsonl,.exe,.dll,application/octet-stream" hidden />
           </div>
-          <p id="upload-status" class="hint upload-status">No upload yet.</p>
+          <p id="upload-status" class="hint upload-status" data-i18n="upload.statusNone">No upload yet.</p>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>File</th>
-                  <th>Kind</th>
-                  <th>Status</th>
-                  <th>Report</th>
-                  <th>Actions</th>
-                  <th>SHA256</th>
+                  <th data-i18n="upload.th.time">Time</th>
+                  <th data-i18n="upload.th.file">File</th>
+                  <th data-i18n="upload.th.kind">Kind</th>
+                  <th data-i18n="upload.th.status">Status</th>
+                  <th data-i18n="upload.th.actions">Actions</th>
+                  <th data-i18n="upload.th.sha256">SHA256</th>
                 </tr>
               </thead>
               <tbody id="uploads-body"></tbody>
@@ -365,36 +373,36 @@
       <section class="tab-panel" data-panel="files">
         <article class="panel">
           <div class="panel-head">
-            <h2>File drops &amp; triage</h2>
-            <span class="chip" id="collector-status-chip">collector offline</span>
+            <h2 data-i18n="files.title">File drops &amp; triage</h2>
+            <span class="chip" id="collector-status-chip" data-i18n="upload.collectorOffline">collector offline</span>
           </div>
           <div class="runtime-controls">
             <label class="toggle">
               <input id="file-drop-toggle" type="checkbox" checked />
-              <span>Watch folders for new files</span>
+              <span data-i18n="files.watchFolders">Watch folders for new files</span>
             </label>
             <label class="toggle">
               <input id="auto-api-toggle" type="checkbox" />
-              <span>Auto API analysis on drop</span>
+              <span data-i18n="files.autoApi">Auto API analysis on drop</span>
             </label>
-            <p id="runtime-hint" class="hint">
-              Requires an active <code>run</code> session with Frida. Copy a <strong>new</strong> .exe, then click <strong>Analyze APIs</strong> to spawn it under injection hooks.
+            <p id="runtime-hint" class="hint" data-i18n="files.hint.offline">
+              Start python -m noirlycan_telemetry run in a terminal, then toggle watch here.
             </p>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>Path</th>
-                  <th>Score</th>
-                  <th>PE</th>
-                  <th>Signed</th>
-                  <th>Entropy</th>
-                  <th>SHA256</th>
-                  <th>Reasons</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th data-i18n="files.th.time">Time</th>
+                  <th data-i18n="files.th.path">Path</th>
+                  <th data-i18n="files.th.score">Score</th>
+                  <th data-i18n="files.th.pe">PE</th>
+                  <th data-i18n="files.th.signed">Signed</th>
+                  <th data-i18n="files.th.entropy">Entropy</th>
+                  <th data-i18n="files.th.sha256">SHA256</th>
+                  <th data-i18n="files.th.reasons">Reasons</th>
+                  <th data-i18n="files.th.status">Status</th>
+                  <th data-i18n="files.th.action">Action</th>
                 </tr>
               </thead>
               <tbody id="triage-body"></tbody>
@@ -406,16 +414,16 @@
       <section class="tab-panel" data-panel="events">
         <article class="panel">
           <div class="panel-head">
-            <h2>Event stream</h2>
-            <span class="chip" id="event-count-label">0 events</span>
+            <h2 data-i18n="events.title">Event stream</h2>
+            <span class="chip" id="event-count-label" data-i18n="events.count" data-i18n-vars='{"count":0}'>0 events</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Timestamp</th>
-                  <th>Summary</th>
+                  <th data-i18n="events.th.type">Type</th>
+                  <th data-i18n="events.th.timestamp">Timestamp</th>
+                  <th data-i18n="events.th.summary">Summary</th>
                 </tr>
               </thead>
               <tbody id="events-body"></tbody>
@@ -427,19 +435,19 @@
       <section class="tab-panel" data-panel="chains">
         <article class="panel">
           <div class="panel-head">
-            <h2>Injection chains</h2>
-            <span class="chip" id="chain-count-chip">0 chains</span>
+            <h2 data-i18n="chains.title">Injection chains</h2>
+            <span class="chip" id="chain-count-chip" data-i18n="chains.chip.zero">0 chains</span>
           </div>
-          <p class="hint">Actor→target paths derived from findings in the active session. <strong>Recursive</strong> = 2+ hops (A→B→C). Depth 1 is a single cross-process inject edge.</p>
+          <p class="hint" data-i18n="chains.hint">Actor→target paths derived from findings in the active session.</p>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Depth</th>
-                  <th>Recursive</th>
-                  <th>PID path</th>
-                  <th>Images</th>
-                  <th>Techniques</th>
+                  <th data-i18n="chains.th.depth">Depth</th>
+                  <th data-i18n="chains.th.recursive">Recursive</th>
+                  <th data-i18n="chains.th.pidPath">PID path</th>
+                  <th data-i18n="chains.th.images">Images</th>
+                  <th data-i18n="chains.th.techniques">Techniques</th>
                 </tr>
               </thead>
               <tbody id="chains-body"></tbody>
@@ -451,25 +459,86 @@
       <section class="tab-panel" data-panel="sessions">
         <article class="panel">
           <div class="panel-head">
-            <h2>Log sessions</h2>
-            <span class="chip" id="file-count">0 files</span>
+            <h2 data-i18n="sessions.title">Log sessions</h2>
+            <span class="chip" id="file-count" data-i18n="status.files" data-i18n-vars='{"count":0}'>0 files</span>
           </div>
-          <p class="hint">Click a session row to load it into the dashboard.</p>
+          <p class="hint" data-i18n="sessions.hint">Click a session row to open its findings.</p>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>File</th>
-                  <th>Modified</th>
-                  <th>Events</th>
-                  <th>Findings</th>
-                  <th>Critical</th>
-                  <th>Size</th>
+                  <th data-i18n="sessions.th.file">File</th>
+                  <th data-i18n="sessions.th.modified">Modified</th>
+                  <th data-i18n="sessions.th.events">Events</th>
+                  <th data-i18n="sessions.th.findings">Findings</th>
+                  <th data-i18n="sessions.th.critical">Critical</th>
+                  <th data-i18n="sessions.th.size">Size</th>
                 </tr>
               </thead>
               <tbody id="files-body"></tbody>
             </table>
           </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="corpus">
+        <article class="panel">
+          <div class="panel-head">
+            <h2 data-i18n="corpus.title">Corpus analytics</h2>
+            <span class="chip" id="corpus-sample-chip" data-i18n="corpus.chip" data-i18n-vars='{"count":0}'>0 sessions</span>
+          </div>
+          <p class="hint" data-i18n="corpus.hint">Cross-session metrics from all JSONL logs. Reclassify replays primitives with current rules.</p>
+          <div class="corpus-actions">
+            <button type="button" id="corpus-refresh-btn" class="btn" data-i18n="corpus.refresh">Refresh corpus</button>
+            <button type="button" id="reclassify-btn" class="btn secondary" data-i18n="corpus.reclassify">Reclassify active session</button>
+            <label class="corpus-write-toggle">
+              <input type="checkbox" id="reclassify-write-sidecar" />
+              <span data-i18n="corpus.writeSidecar">Write sidecar JSONL</span>
+            </label>
+          </div>
+          <section class="cards" id="corpus-metric-cards"></section>
+          <div class="grid-two">
+            <article class="panel">
+              <div class="panel-head">
+                <h3 data-i18n="corpus.techniques">Technique distribution</h3>
+              </div>
+              <div id="corpus-techniques" class="rank-list"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <h3 data-i18n="corpus.dbFindings">SQLite stored findings</h3>
+                <span class="chip" id="corpus-db-chip" data-i18n="corpus.dbChip" data-i18n-vars='{"rows":0,"sessions":0}'>0 rows</span>
+              </div>
+              <section class="cards corpus-db-metrics" id="corpus-db-metric-cards"></section>
+              <div id="corpus-db-techniques" class="rank-list"></div>
+            </article>
+          </div>
+          <div class="grid-two">
+            <article class="panel">
+              <div class="panel-head">
+                <h3 data-i18n="corpus.sessions">Sessions in corpus</h3>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th data-i18n="corpus.th.session">Session</th>
+                      <th data-i18n="corpus.th.findings">Findings</th>
+                      <th data-i18n="corpus.th.detected">Detected</th>
+                      <th data-i18n="corpus.th.maxScore">Max score</th>
+                    </tr>
+                  </thead>
+                  <tbody id="corpus-sessions-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+          <article class="panel">
+            <div class="panel-head">
+              <h3 data-i18n="corpus.reclassifyResult">Reclassify result</h3>
+            </div>
+            <pre id="reclassify-output" class="code-block corpus-output" data-i18n="corpus.reclassifyEmpty">Run reclassify on the active session to compare with logged findings.</pre>
+          </article>
         </article>
       </section>
     </div>
@@ -655,7 +724,7 @@
             <pre id="modal-evidence" class="code-block"></pre>
           </div>
           <div class="modal-block full">
-            <h3>Primitives</h3>
+            <h3 data-i18n="modal.primitives">Primitives</h3>
             <div id="modal-primitives" class="table-wrap"></div>
           </div>
           <div class="modal-block full">
@@ -665,7 +734,9 @@
         </div>
       </form>
     </dialog>
+  </div>
+{% endblock %}
 
-    <script src="{% static 'dashboard.js' %}?v={{ asset_version }}"></script>
-  </body>
-</html>
+{% block footer %}
+  <script src="{% static 'dashboard.js' %}?v={{ asset_version }}"></script>
+{% endblock %}

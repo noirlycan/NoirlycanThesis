@@ -4,30 +4,46 @@ from __future__ import annotations
 
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .evasion import summarize_evasion_signals
 from .injection_graph import chains_from_findings
-from .log_store import read_jsonl
+from .log_store import count_jsonl_lines, list_log_files, read_jsonl, resolve_logs_dir
 from .technique_classifier import InjectionTechnique, classification_from_dict
 
+if TYPE_CHECKING:
+    from .analysis_db import AnalysisDatabase
 
-def analyze_session(path: Path) -> dict[str, Any]:
-    events = read_jsonl(path)
-    findings: list[dict[str, Any]] = []
-    evasion_signals: list[dict[str, Any]] = []
-    primitives = 0
+
+def _empty_session_state() -> dict[str, Any]:
+    return {
+        "finding_rows": [],
+        "evasion_signals": [],
+        "events": 0,
+        "primitives": 0,
+    }
+
+
+def _apply_events_to_state(state: dict[str, Any], events: list[dict[str, Any]]) -> None:
     for event in events:
         event_type = event.get("type")
         value = event.get("value", {})
         if not isinstance(value, dict):
             value = {}
+        state["events"] += 1
         if event_type == "finding":
-            findings.append(_normalize_finding_row(value))
+            state["finding_rows"].append(_normalize_finding_row(value))
         elif event_type == "primitive":
-            primitives += 1
+            state["primitives"] += 1
         elif event_type == "evasion":
-            evasion_signals.append(value)
+            state["evasion_signals"].append(value)
+
+
+def _finalize_session_report(path: Path, state: dict[str, Any]) -> dict[str, Any]:
+    findings = list(state.get("finding_rows") or [])
+    evasion_signals = list(state.get("evasion_signals") or [])
+    primitives = int(state.get("primitives") or 0)
+    events = int(state.get("events") or 0)
 
     technique_counts: Counter[str] = Counter()
     severity_counts: Counter[str] = Counter()
@@ -45,7 +61,7 @@ def analyze_session(path: Path) -> dict[str, Any]:
     return {
         "session": path.name,
         "path": str(path),
-        "events": len(events),
+        "events": events,
         "findings": len(findings),
         "primitives": primitives,
         "injection_detected": len(findings) > 0,
@@ -59,6 +75,59 @@ def analyze_session(path: Path) -> dict[str, Any]:
         "evasion": summarize_evasion_signals(evasion_signals),
         "top_findings": findings[:5],
     }
+
+
+def analyze_session(
+    path: Path,
+    *,
+    database: AnalysisDatabase | None = None,
+) -> dict[str, Any]:
+    resolved = path.resolve()
+    cached_state: dict[str, Any] | None = None
+    if database is not None:
+        cached_state = database.load_cached_session_state(resolved)
+
+    if cached_state is not None and not cached_state.pop("_incremental", False):
+        report = _finalize_session_report(resolved, cached_state)
+        cached_state["_lines_processed"] = cached_state.get("_lines_processed") or count_jsonl_lines(resolved)
+        return report
+
+    if cached_state is not None:
+        after_line = int(cached_state.pop("_lines_processed", 0) or 0)
+        state = {
+            "finding_rows": list(cached_state.get("finding_rows") or []),
+            "evasion_signals": list(cached_state.get("evasion_signals") or []),
+            "events": int(cached_state.get("events") or 0),
+            "primitives": int(cached_state.get("primitives") or 0),
+        }
+        new_events = read_jsonl(resolved, after_line=after_line)
+        _apply_events_to_state(state, new_events)
+    else:
+        state = _empty_session_state()
+        _apply_events_to_state(state, read_jsonl(resolved))
+
+    state["_lines_processed"] = count_jsonl_lines(resolved)
+    if database is not None:
+        database.store_cached_session_state(resolved, state)
+    return _finalize_session_report(resolved, state)
+
+
+def analyze_corpus(
+    logs_dir: Path | str | None = None,
+    *,
+    limit: int | None = None,
+    database: AnalysisDatabase | None = None,
+) -> dict[str, Any]:
+    """Aggregate metrics across multiple JSONL session logs (corpus-level view)."""
+    directory = resolve_logs_dir(logs_dir)
+    paths = list_log_files(directory)
+    if limit is not None and limit > 0:
+        paths = paths[:limit]
+    reports = [analyze_session(path, database=database) for path in paths]
+    summary = aggregate_batch_reports(reports)
+    summary["logs_dir"] = str(directory)
+    summary["session_files"] = [path.name for path in paths]
+    return summary
 
 
 def aggregate_batch_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:

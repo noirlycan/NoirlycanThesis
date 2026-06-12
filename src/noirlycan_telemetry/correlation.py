@@ -8,7 +8,7 @@ from pathlib import Path, PureWindowsPath
 from .execution_analysis import analyze_execution, operational_kind_count
 from .injection_graph import InjectionGraph
 from .process_resolve import image_for_pid as resolve_image_for_pid
-from .classifier_config import load_classifier_config
+from .classifier_config import ClassifierRulesConfig, load_classifier_config, resolve_config_path
 from .technique_classifier import apply_classification
 from .models import (
     FileEvent,
@@ -45,6 +45,22 @@ class Correlator:
         self.network_connections: dict[int, list[NetworkConnectionEvent]] = defaultdict(list)
         self._pid_image_cache: dict[int, str] = {}
         self._injection_graph = InjectionGraph()
+        self._rules_config: ClassifierRulesConfig | None = None
+        self._rules_config_mtime: float = -1.0
+        self._chain_buckets: dict[tuple[int, int | None], list[MemoryPrimitive]] = defaultdict(list)
+
+    def reload_rules_config(self) -> ClassifierRulesConfig:
+        """Reload classifier rules when `.classifier_rules.json` changes."""
+        path = resolve_config_path(self.logs_dir)
+        mtime = path.stat().st_mtime if path.exists() else 0.0
+        if self._rules_config is None or mtime != self._rules_config_mtime:
+            self._rules_config = load_classifier_config(self.logs_dir)
+            self._rules_config_mtime = mtime
+        return self._rules_config
+
+    def effective_minimum_score(self, rules_config: ClassifierRulesConfig) -> int:
+        """Apply both CLI/runtime override and persisted classifier config."""
+        return max(self.minimum_score, rules_config.minimum_score)
 
     def add_file(self, event: FileEvent) -> None:
         if event.path:
@@ -70,8 +86,10 @@ class Correlator:
     def add_primitive(self, event: MemoryPrimitive) -> list[Finding]:
         enriched = self._enrich_primitive(event)
         self.primitives.append(enriched)
+        chain_key = (enriched.actor_pid, enriched.target_pid)
+        self._chain_buckets[chain_key].append(enriched)
         self._expire(enriched.timestamp)
-        return self._find_injection_chains(enriched)
+        return self._evaluate_chain(chain_key, enriched)
 
     def add_network_connection(self, event: NetworkConnectionEvent) -> NetworkConnectionEvent | None:
         self._expire(event.timestamp)
@@ -80,80 +98,78 @@ class Correlator:
         self.network_connections[event.pid].append(event)
         return event
 
-    def _find_injection_chains(self, latest: MemoryPrimitive) -> list[Finding]:
-        grouped: dict[tuple[int, int | None], list[MemoryPrimitive]] = defaultdict(list)
-        for primitive in self.primitives:
-            if primitive.actor_pid == latest.actor_pid and primitive.target_pid == latest.target_pid:
-                grouped[(primitive.actor_pid, primitive.target_pid)].append(primitive)
+    def _evaluate_chain(self, chain_key: tuple[int, int | None], latest: MemoryPrimitive) -> list[Finding]:
+        primitives = self._chain_buckets.get(chain_key, [])
+        if not primitives:
+            return []
 
+        actor_pid, target_pid = chain_key
         findings: list[Finding] = []
-        rules_config = load_classifier_config(self.logs_dir)
-        for (actor_pid, target_pid), primitives in grouped.items():
-            kinds = {primitive.kind for primitive in primitives}
-            if operational_kind_count(kinds) < rules_config.minimum_operational_kinds:
-                continue
-            if rules_config.ignore_same_process_findings and actor_pid == target_pid:
-                continue
-            if rules_config.require_cross_process_findings and (
-                target_pid is None or target_pid == actor_pid
-            ):
-                continue
-            if not _has_temporal_consistency(primitives):
-                continue
-            if not _has_memory_congruence(primitives):
-                continue
+        rules_config = self.reload_rules_config()
+        minimum_score = self.effective_minimum_score(rules_config)
+        kinds = {primitive.kind for primitive in primitives}
+        if operational_kind_count(kinds) < rules_config.minimum_operational_kinds:
+            return findings
+        if rules_config.ignore_same_process_findings and actor_pid == target_pid:
+            return findings
+        if rules_config.require_cross_process_findings and (
+            target_pid is None or target_pid == actor_pid
+        ):
+            return findings
+        if not _has_temporal_consistency(primitives):
+            return findings
+        if not _has_memory_congruence(primitives):
+            return findings
 
-            related_process = self.processes_by_pid.get(actor_pid)
-            related_file = self._related_file_for_process(related_process)
-            actor_image = self._resolve_process_image(actor_pid, primitives, related_process)
-            target_image = self._resolve_process_image(target_pid, primitives, None)
-            score, evidence = self._score(primitives, related_process, related_file)
-            if actor_image:
-                evidence["actor_image"] = actor_image
-            if target_image:
-                evidence["target_image"] = target_image
-            minimum_score = rules_config.minimum_score
-            if score < minimum_score:
-                continue
-            execution_meta = analyze_execution(primitives)
-            title = (
-                "Probable process injection chain"
-                if execution_meta["execution_confirmed"]
-                else "Probable injection staging chain"
+        related_process = self.processes_by_pid.get(actor_pid)
+        related_file = self._related_file_for_process(related_process)
+        actor_image = self._resolve_process_image(actor_pid, primitives, related_process)
+        target_image = self._resolve_process_image(target_pid, primitives, None)
+        score, evidence = self._score(primitives, related_process, related_file)
+        if actor_image:
+            evidence["actor_image"] = actor_image
+        if target_image:
+            evidence["target_image"] = target_image
+        if score < minimum_score:
+            return findings
+        execution_meta = analyze_execution(primitives)
+        title = (
+            "Probable process injection chain"
+            if execution_meta["execution_confirmed"]
+            else "Probable injection staging chain"
+        )
+        previous_score = self._reported_chain_scores.get(chain_key, 0)
+        if score <= previous_score:
+            return findings
+        self._reported_chain_scores[chain_key] = score
+        if score >= NETWORK_WATCH_MIN_SCORE and target_pid is not None:
+            self._network_watch_until[target_pid] = latest.timestamp + timedelta(
+                seconds=NETWORK_WATCH_SECONDS
             )
-            chain_key = (actor_pid, target_pid)
-            previous_score = self._reported_chain_scores.get(chain_key, 0)
-            if score <= previous_score:
-                continue
-            self._reported_chain_scores[chain_key] = score
-            if score >= NETWORK_WATCH_MIN_SCORE and target_pid is not None:
-                self._network_watch_until[target_pid] = latest.timestamp + timedelta(
-                    seconds=NETWORK_WATCH_SECONDS
-                )
-            finding = Finding(
-                timestamp=latest.timestamp,
-                severity=_severity(score),
-                title=title,
-                description=_describe(
-                    primitives,
-                    related_process,
-                    related_file,
-                    actor_image=actor_image,
-                    target_image=target_image,
-                ),
-                actor_pid=actor_pid,
-                target_pid=target_pid,
-                primitives=tuple(sorted(primitives, key=lambda item: item.timestamp)),
-                related_file=related_file,
-                related_process=related_process,
+        finding = Finding(
+            timestamp=latest.timestamp,
+            severity=_severity(score),
+            title=title,
+            description=_describe(
+                primitives,
+                related_process,
+                related_file,
                 actor_image=actor_image,
                 target_image=target_image,
-                score=score,
-                evidence=evidence,
-            )
-            finding = apply_classification(finding, logs_dir=self.logs_dir)
-            finding = self._injection_graph.add_finding(finding)
-            findings.append(finding)
+            ),
+            actor_pid=actor_pid,
+            target_pid=target_pid,
+            primitives=tuple(sorted(primitives, key=lambda item: item.timestamp)),
+            related_file=related_file,
+            related_process=related_process,
+            actor_image=actor_image,
+            target_image=target_image,
+            score=score,
+            evidence=evidence,
+        )
+        finding = apply_classification(finding, logs_dir=self.logs_dir)
+        finding = self._injection_graph.add_finding(finding)
+        findings.append(finding)
         return findings
 
     def _active_network_watch_pids(self, now: datetime) -> set[int]:
@@ -307,7 +323,16 @@ class Correlator:
     def _expire(self, now: datetime) -> None:
         cutoff = now - self.window
         while self.primitives and self.primitives[0].timestamp < cutoff:
-            self.primitives.popleft()
+            expired = self.primitives.popleft()
+            bucket_key = (expired.actor_pid, expired.target_pid)
+            bucket = self._chain_buckets.get(bucket_key)
+            if bucket:
+                try:
+                    bucket.remove(expired)
+                except ValueError:
+                    pass
+                if not bucket:
+                    del self._chain_buckets[bucket_key]
         self.files_by_path = {
             path: event for path, event in self.files_by_path.items() if event.timestamp >= cutoff
         }

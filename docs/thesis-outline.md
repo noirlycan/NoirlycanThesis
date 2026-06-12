@@ -123,7 +123,11 @@ Mục cuối: **Scientific Claims** — chia rõ claim được/không được 
 ## Chương 5 — Phương pháp
 
 ### 5.1. Tổng quan pipeline
-- Sơ đồ Mermaid trong
+- Sơ đồ đầy đủ (paper + Noirlycan + so sánh):
+  [architecture-diagrams.md](architecture-diagrams.md).
+- Slide 1 trang FigJam:
+  [architecture-diagrams-slide.md](architecture-diagrams-slide.md).
+- Đối chiếu chi tiết:
   [report-asiaccs25-comparison.md §3.2](report-asiaccs25-comparison.md).
 
 ### 5.2. Định nghĩa primitive — kế thừa paper
@@ -158,7 +162,9 @@ Mục cuối: **Scientific Claims** — chia rõ claim được/không được 
 ## Chương 6 — Thiết kế và hiện thực
 
 ### 6.1. Kiến trúc tổng thể
-- Module map (bảng trong báo cáo so sánh).
+- Sơ đồ phân lớp, module map, sequence diagram:
+  [architecture-diagrams.md §2](architecture-diagrams.md).
+- Module map bổ sung: [report-asiaccs25-comparison.md](report-asiaccs25-comparison.md).
 
 ### 6.2. Collector
 - `cli.py`, `collector_runtime.py`, `frida_manager.py`, `sysmon.py`,

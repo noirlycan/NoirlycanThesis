@@ -28,6 +28,9 @@ from .analysis_db import AnalysisDatabase
 from .analysis_queue import drain_analysis_queue, enqueue_analysis
 from .collector_launcher import clear_collector_pid, register_collector_pid
 from .batch_runner import run_batch, write_batch_report
+from .classifier_config import ensure_classifier_config
+from .reclassify import reclassify_session, write_reclassified_report
+from .session_analytics import analyze_corpus
 from .collector_runtime import (
     JsonlWriter,
     create_monitor_or_none as _create_monitor_or_none,
@@ -67,6 +70,10 @@ def main(argv: list[str] | None = None) -> int:
         return command_batch(args)
     if args.command == "compare":
         return command_compare(args)
+    if args.command == "corpus":
+        return command_corpus(args)
+    if args.command == "reclassify":
+        return command_reclassify(args)
     parser.print_help()
     return 2
 
@@ -153,6 +160,28 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--virustotal", action="store_true", help="Query VirusTotal (requires VT_API_KEY)")
     compare.add_argument("--vt-delay", type=float, default=15.0, help="Delay between VT API calls")
     compare.add_argument("--logs-dir", type=Path, help="Directory for per-sample JSONL sessions")
+
+    corpus = subparsers.add_parser(
+        "corpus",
+        help="Aggregate injection metrics across all JSONL sessions in logs/",
+    )
+    corpus.add_argument("--logs-dir", type=Path, help="Directory containing session-*.jsonl files")
+    corpus.add_argument("--limit", type=int, default=None, help="Maximum number of recent sessions to include")
+    corpus.add_argument("--output", type=Path, help="Optional JSON report output path")
+
+    reclassify = subparsers.add_parser(
+        "reclassify",
+        help="Re-run correlation/classification on a JSONL session with current rules",
+    )
+    reclassify.add_argument("session", help="Session log name or path")
+    reclassify.add_argument("--logs-dir", type=Path, help="Logs directory")
+    reclassify.add_argument("--minimum-score", type=int, default=50, help="Minimum finding score")
+    reclassify.add_argument("--output", type=Path, help="Optional JSON report output path")
+    reclassify.add_argument(
+        "--write",
+        choices=["sidecar", "in_place"],
+        help="Write regenerated findings to JSONL (sidecar or in-place with .bak backup)",
+    )
     return parser
 
 
@@ -189,6 +218,35 @@ def command_batch(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_reclassify(args: argparse.Namespace) -> int:
+    report = reclassify_session(
+        args.session,
+        logs_dir=args.logs_dir,
+        minimum_score=args.minimum_score,
+        write=args.write or False,
+    )
+    if args.output is not None:
+        write_reclassified_report(report, args.output)
+        print(f"[+] Reclassify report written to {args.output}")
+    if report.get("written_path"):
+        print(f"[+] Reclassified JSONL written to {report['written_path']}")
+    print(json.dumps(report, indent=2, sort_keys=True, default=str))
+    return 0
+
+
+def command_corpus(args: argparse.Namespace) -> int:
+    from .analysis_db import AnalysisDatabase
+
+    database = AnalysisDatabase(args.logs_dir) if args.logs_dir else AnalysisDatabase()
+    report = analyze_corpus(args.logs_dir, limit=args.limit, database=database)
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(f"[+] Corpus report written to {args.output}")
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
 def command_compare(args: argparse.Namespace) -> int:
     report = run_compare_batch(
         args.input,
@@ -215,6 +273,7 @@ def command_run(args: argparse.Namespace) -> int:
     _TRIAGE_PENDING.clear()
     writer = _create_writer(args)
     logs_dir = _logs_dir_from_writer(writer)
+    ensure_classifier_config(logs_dir)
     correlator = Correlator(minimum_score=args.minimum_score, logs_dir=logs_dir)
     monitor = _create_monitor_or_none()
     if monitor is not None:
@@ -288,8 +347,9 @@ def command_spawn(args: argparse.Namespace) -> int:
         print("Install the 'frida' Python package first", file=sys.stderr)
         return 2
 
-    correlator = Correlator(minimum_score=args.minimum_score)
     writer = _create_writer(args)
+    logs_dir = _logs_dir_from_writer(writer)
+    correlator = Correlator(minimum_score=args.minimum_score, logs_dir=logs_dir)
     monitor = _create_monitor_or_none()
     if monitor is None:
         return 2
@@ -634,6 +694,9 @@ def _process_sysmon_batch(
     def file_handler(event: FileEvent, corr: Correlator, out: JsonlWriter) -> None:
         _handle_file_event(event, corr, out, args=args, logs_dir=logs_dir)
 
+    def process_handler(event: ProcessEvent, corr: Correlator, out: JsonlWriter) -> None:
+        _maybe_triage_process_image(event, corr, out)
+
     _process_sysmon_batch_core(
         sysmon,
         correlator,
@@ -641,6 +704,7 @@ def _process_sysmon_batch(
         monitor,
         auto_attach,
         file_handler=file_handler,
+        process_handler=process_handler,
     )
 
 

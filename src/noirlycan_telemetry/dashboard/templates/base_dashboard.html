@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Noirlycan Telemetry{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'dashboard.css' %}?v={{ asset_version }}" />
+    {% block extrahead %}{% endblock %}
+  </head>
+  <body class="noirlycan-dashboard">
+    <header class="dashboard-topbar">
+      <div class="dashboard-topbar-inner">
+        <a class="dashboard-brand" href="/">
+          <span class="dashboard-brand-mark" aria-hidden="true"></span>
+          <span class="dashboard-brand-text">Noirlycan</span>
+        </a>
+        <nav class="dashboard-topnav" aria-label="Main">
+          <a href="/" class="dashboard-topnav-link active" data-i18n="nav.dashboard">Dashboard</a>
+          <a href="/admin/" class="dashboard-topnav-link subtle" data-i18n="nav.admin" title="Django user admin only">Users</a>
+        </nav>
+      </div>
+    </header>
+    <main class="dashboard-main">
+      {% block content %}{% endblock %}
+    </main>
+    {% block footer %}{% endblock %}
+  </body>
+</html>

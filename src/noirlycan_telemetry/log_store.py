@@ -58,17 +58,28 @@ def list_log_files(logs_dir: Path | str | None = None) -> list[Path]:
         (
             path
             for path in directory.glob("*.jsonl")
-            if path.is_file()
+            if path.is_file() and ".reclassified." not in path.name
         ),
         key=lambda item: item.stat().st_mtime,
         reverse=True,
     )
 
 
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
+def count_jsonl_lines(path: Path) -> int:
+    count = 0
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                count += 1
+    return count
+
+
+def read_jsonl(path: Path, *, after_line: int = 0) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
+            if after_line and line_number <= after_line:
+                continue
             text = line.strip()
             if not text:
                 continue
@@ -80,6 +91,10 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
                 payload.setdefault("_line", line_number)
                 events.append(payload)
     return events
+
+
+def invalidate_log_cache(path: Path) -> None:
+    _summary_cache.pop(str(path.resolve()), None)
 
 
 @dataclass(frozen=True)
