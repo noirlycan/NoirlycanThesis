@@ -1,0 +1,42 @@
+version: "3.9"
+
+# Noirlycan microservices — shared logs volume, dashboard + storage + analysis.
+# Collector agent (Frida/Sysmon) chạy trên Windows VM, không container hóa.
+
+services:
+  storage-api:
+    build: .
+    command: python -m noirlycan_telemetry.services.storage.api --host 0.0.0.0 --port 8780
+    ports:
+      - "8780:8780"
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - NOIRLYCAN_LOGS_DIR=/app/logs
+
+  analysis-api:
+    build: .
+    command: python -m noirlycan_telemetry.services.analysis.api --host 0.0.0.0 --port 8781
+    ports:
+      - "8781:8781"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - storage-api
+    environment:
+      - NOIRLYCAN_LOGS_DIR=/app/logs
+
+  dashboard-api:
+    build: .
+    command: python -m noirlycan_telemetry.cli dashboard --host 0.0.0.0 --port 8765 --no-auto-collector
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - storage-api
+      - analysis-api
+    environment:
+      - NOIRLYCAN_LOGS_DIR=/app/logs
+      - NOIRLYCAN_STORAGE_URL=http://storage-api:8780
+      - NOIRLYCAN_ANALYSIS_URL=http://analysis-api:8781

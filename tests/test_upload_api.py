@@ -5,9 +5,9 @@ from pathlib import Path
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from noirlycan_telemetry.analysis_db import AnalysisDatabase
-from noirlycan_telemetry.analysis_queue import load_analysis_queue
-from noirlycan_telemetry.dashboard import make_client
+from noirlycan_telemetry.services.storage.infrastructure.analysis_db import AnalysisDatabase
+from noirlycan_telemetry.services.collector.application.analysis_queue import load_analysis_queue
+from noirlycan_telemetry.services.dashboard import make_client
 
 
 def test_upload_jsonl_parses_into_database(tmp_path: Path) -> None:

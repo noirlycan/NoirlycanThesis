@@ -97,46 +97,48 @@ flowchart LR
 
 Prototype lab Windows 10/11: **kế thừa lõi 2/3 primitive**, mở rộng file provenance, dual telemetry, dashboard.
 
-### 2.1. Sơ đồ phân lớp
+### 2.1. Sơ đồ phân lớp (Clean Architecture + microservices)
 
 ```mermaid
 flowchart TB
   subgraph win [Windows Lab VM]
     subgraph sensors [Lớp cảm biến]
       SM["Sysmon kernel<br/>EID 1·3·7·8·10·11·15"]
-      FR["Frida user-mode<br/>windows_injection_hooks.js"]
+      FR["Frida user-mode<br/>frida_hooks/windows_injection_hooks.js"]
       FW["FileDropWatcher"]
     end
 
-    subgraph collector [Collector]
-      LOOP["cli.py · collector_runtime.py<br/>run · spawn · batch"]
-      AQ["analysis_queue.py"]
-      RT["runtime_config.py · .runtime.json"]
+    subgraph collector_svc [Service: collector]
+      LOOP["cli.py · collector_runtime<br/>run · spawn · batch"]
+      AQ["analysis_queue"]
+      RT["runtime_config · .runtime.json"]
     end
 
-    subgraph analysis [Phân tích]
-      TRI["triage.py — static"]
-      COR["correlation.py"]
+    subgraph kernel [Domain kernel/]
+      ENT["entities/models"]
+      PRIM["analysis/primitives"]
+      COR["services/analysis/domain/correlation.py"]
       subgraph paper_core [Lõi paper]
         R23N["2-of-3"]
         MEMN["Memory congruence"]
         TMPN["Temporal ordering"]
       end
-      CLS["technique_classifier.py<br/>36 techniques"]
-      NET["network.py — beacon watch"]
+      CLS["classification/technique_classifier"]
+      MAN["classification/api_manifest"]
+      NET["network_policy"]
     end
 
-    subgraph persist [Persistence]
+    subgraph persist [Service: storage]
       JSONL["log_store — session-*.jsonl"]
       SQLITE["analysis_db — noirlycan.db"]
       CACHE["jsonl_analytics_cache"]
       RULES[".classifier_rules.json"]
     end
 
-    subgraph present [Presentation]
+    subgraph present [Service: dashboard]
       API["Django REST /api/*"]
       WS["WebSocket live_sync"]
-      UI["Dashboard — 10 tabs EN/VI"]
+      UI["Dashboard — tabs EN/VI"]
       OFF["corpus · reclassify · compare"]
     end
   end
@@ -146,9 +148,10 @@ flowchart TB
   FR --> LOOP
   LOOP --> AQ
   AQ -->|spawn| FR
-  FW --> TRI --> COR
+  FW --> TRI2[triage] --> COR
   LOOP --> COR
   paper_core --> COR
+  MAN --> FR
   COR --> CLS
   COR --> NET
   COR -->|Finding| JSONL
@@ -164,23 +167,27 @@ flowchart TB
   RT <--> LOOP
 ```
 
-### 2.2. Module map (Chương 6)
+**Chế độ triển khai:** Monolith (`noirlycan-telemetry run` + `dashboard`) hoặc `docker compose` (storage :8780, analysis :8781, dashboard :8765). Xem [`clean-architecture-plan.md`](clean-architecture-plan.md).
 
-| Module | Vai trò | Kết nối |
-|--------|---------|---------|
-| `cli.py` | Entry: run, spawn, dashboard, corpus, reclassify | → collector_runtime, log_store |
-| `collector_runtime.py` | Vòng lặp, JsonlWriter, drain Frida/Sysmon | → correlation, sysmon, frida_manager |
-| `sysmon.py` | Đọc Event Log Sysmon | → correlator |
-| `frida_manager.py` | Attach/spawn, primitive bridge | → correlator |
-| `file_watch.py` | Poll thư mục lab | → triage, analysis_queue |
-| `correlation.py` | Lõi 2/3 + scoring + network watch | ← paper methodology |
-| `injection_api_manifest.py` | PAPER_API_CLASSES | ← paper Appendix |
-| `technique_classifier.py` | Rule cascade 36 kỹ thuật | extension |
-| `log_store.py` | Đọc/ghi JSONL, aggregate | → dashboard views |
-| `analysis_db.py` | SQLite uploads, findings, cache | → dashboard views |
-| `session_analytics.py` | Corpus metrics | → /api/corpus |
-| `reclassify.py` | Replay JSONL offline | → /api/reclassify |
-| `dashboard/` | Django + Daphne :8765 | REST + WebSocket |
+### 2.2. Module map (Chương 5 luận văn)
+
+| Module | Đường dẫn | Vai trò |
+|--------|-----------|---------|
+| `cli.py` | root | Composition root: run, spawn, dashboard, corpus, reclassify |
+| `collector_runtime.py` | `services/collector/application/` | Vòng lặp, JsonlWriter, drain Frida/Sysmon |
+| `sysmon.py` | `services/collector/infrastructure/` | Đọc Event Log Sysmon |
+| `frida_manager.py` | `services/collector/infrastructure/` | Attach/spawn, primitive bridge |
+| `file_watch.py` | `services/collector/infrastructure/` | Poll thư mục lab |
+| `correlation.py` | `services/analysis/domain/` | Lõi 2/3 + scoring + network watch |
+| `primitives.py` | `kernel/analysis/` | `operational_kind_count`, `analyze_execution` |
+| `api_manifest.py` | `kernel/classification/` | `PAPER_API_CLASSES` |
+| `technique_classifier.py` | `kernel/classification/` | Rule cascade kỹ thuật |
+| `models.py` | `kernel/entities/` | Domain entities |
+| `log_store.py` | `services/storage/infrastructure/` | Đọc/ghi JSONL |
+| `analysis_db.py` | `services/storage/infrastructure/` | SQLite uploads, cache |
+| `session_analytics.py` | `services/analysis/domain/` | Corpus metrics |
+| `reclassify.py` | `services/analysis/domain/` | Replay JSONL offline |
+| `dashboard/` | `services/dashboard/` | Django + Daphne :8765 |
 
 ### 2.3. Luồng dữ liệu — file-drop loader
 
@@ -245,8 +252,8 @@ flowchart TB
   end
 
   subgraph inner [Lõi paper — replication]
-    EC2["injection_api_manifest.py"]
-    COR2["correlation.py 2/3 rule"]
+    EC2["kernel/classification/api_manifest.py"]
+    COR2["services/analysis/domain/correlation.py"]
     TEST["tests/test_correlation.py"]
   end
 
@@ -263,8 +270,8 @@ flowchart TB
 | Mục tiêu | Prevalence injection quy mô lớn | Lab: file → process → injection |
 | Instrumentation | 1 lớp custom tracer (sandbox) | Frida user + Sysmon kernel |
 | Điểm bắt đầu | Process trong sandbox | File trên đĩa (E11 + watcher) |
-| Lõi detection | 2/3 + congruence + temporal | **Kế thừa** `correlation.py` |
-| API classes | Equivalence classes đầy đủ | **Kế thừa** `injection_api_manifest.py` |
+| Lõi detection | 2/3 + congruence + temporal | **Kế thừa** `services/analysis/domain/correlation.py` |
+| API classes | Equivalence classes đầy đủ | **Kế thừa** `kernel/classification/api_manifest.py` |
 | Phân loại kỹ thuật | ~12 kỹ thuật | 36 enum + rule cascade |
 | Static analysis | Không | triage PE/entropy/signature |
 | Vận hành | Batch offline | CLI real-time + dashboard |
@@ -278,10 +285,10 @@ flowchart TB
 | Thành tố paper | Module repo | File |
 |----------------|-------------|------|
 | 3 operational primitive | `PrimitiveKind` | `models.py` |
-| API equivalence class | `PAPER_API_CLASSES` | `injection_api_manifest.py` |
-| Quy tắc 2/3 | `operational_kind_count >= 2` | `correlation.py`, `execution_analysis.py` |
-| Memory congruence | `_has_memory_congruence()` | `correlation.py` |
-| Temporal ordering | `_has_temporal_consistency()` | `correlation.py` |
+| API equivalence class | `PAPER_API_CLASSES` | `kernel/classification/api_manifest.py` |
+| Quy tắc 2/3 | `operational_kind_count >= 2` | `correlation.py`, `kernel/analysis/primitives.py` |
+| Memory congruence | `_has_memory_congruence()` | `services/analysis/domain/correlation.py` |
+| Temporal ordering | `_has_temporal_consistency()` | `services/analysis/domain/correlation.py` |
 | File provenance | `add_file`, `created_from_file` | `correlation.py`, `file_watch.py` |
 | Technique labeling | `InjectionTechnique` + rules | `technique_classifier.py` |
 

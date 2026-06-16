@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from noirlycan_telemetry.runtime_config import (
+from noirlycan_telemetry.services.collector.application.runtime_config import (
     is_collector_online,
     load_runtime_config,
     runtime_config_payload,

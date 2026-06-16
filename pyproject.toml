@@ -25,6 +25,9 @@ dev = [
 
 [project.scripts]
 noirlycan-telemetry = "noirlycan_telemetry.cli:main"
+noirlycan-storage = "noirlycan_telemetry.services.storage.api:main"
+noirlycan-analysis = "noirlycan_telemetry.services.analysis.api:main"
+noirlycan-collector-health = "noirlycan_telemetry.services.collector.api:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -32,6 +35,6 @@ where = ["src"]
 [tool.setuptools.package-data]
 noirlycan_telemetry = [
   "frida_hooks/*.js",
-  "dashboard/templates/*",
-  "dashboard/static/**",
+  "services/dashboard/templates/*",
+  "services/dashboard/static/**",
 ]

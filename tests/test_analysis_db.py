@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from noirlycan_telemetry.analysis_db import AnalysisDatabase, sha256_file
+from noirlycan_telemetry.services.storage.infrastructure.analysis_db import AnalysisDatabase, sha256_file
 
 
 def test_ingest_jsonl_persists_findings(tmp_path: Path) -> None:

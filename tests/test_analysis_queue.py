@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from noirlycan_telemetry.analysis_queue import (
+from noirlycan_telemetry.services.collector.application.analysis_queue import (
     drain_analysis_queue,
     enqueue_analysis,
     load_analysis_queue,

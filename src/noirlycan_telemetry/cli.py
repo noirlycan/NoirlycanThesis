@@ -13,25 +13,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .correlation import Correlator
-from .dashboard.server import run_dashboard
-from .frida_manager import FridaInjectionMonitor
-from .file_watch import FileDropWatcher, default_watch_paths
-from .log_store import new_session_log_path
-from .runtime_config import (
-    load_runtime_config,
-    mark_collector_stopped,
-    save_runtime_config,
-    touch_collector_heartbeat,
+from noirlycan_telemetry.kernel.entities.models import FileEvent, ProcessEvent
+from noirlycan_telemetry.services.analysis.domain.batch_runner import run_batch, write_batch_report
+from noirlycan_telemetry.services.analysis.domain.classifier_config import ensure_classifier_config
+from noirlycan_telemetry.services.analysis.domain.correlation import Correlator
+from noirlycan_telemetry.services.analysis.domain.reclassify import (
+    reclassify_session,
+    write_reclassified_report,
 )
-from .analysis_db import AnalysisDatabase
-from .analysis_queue import drain_analysis_queue, enqueue_analysis
-from .collector_launcher import clear_collector_pid, register_collector_pid
-from .batch_runner import run_batch, write_batch_report
-from .classifier_config import ensure_classifier_config
-from .reclassify import reclassify_session, write_reclassified_report
-from .session_analytics import analyze_corpus
-from .collector_runtime import (
+from noirlycan_telemetry.services.analysis.domain.sandbox_compare import default_vt_api_key, run_compare_batch
+from noirlycan_telemetry.services.analysis.domain.session_analytics import analyze_corpus
+from noirlycan_telemetry.services.collector.application.analysis_queue import (
+    drain_analysis_queue,
+    enqueue_analysis,
+)
+from noirlycan_telemetry.services.collector.application.collector_launcher import (
+    clear_collector_pid,
+    register_collector_pid,
+)
+from noirlycan_telemetry.services.collector.application.collector_runtime import (
     JsonlWriter,
     create_monitor_or_none as _create_monitor_or_none,
     create_sysmon_or_none as _create_sysmon_or_none,
@@ -40,10 +40,23 @@ from .collector_runtime import (
     process_sysmon_batch as _process_sysmon_batch_core,
     safe_attach as _safe_attach,
 )
-from .models import FileEvent, ProcessEvent
-from .sandbox_compare import default_vt_api_key, run_compare_batch
-from .sysmon import SysmonPoller
-from .triage import FileTriage, is_interesting_path, triage_file
+from noirlycan_telemetry.services.collector.application.runtime_config import (
+    load_runtime_config,
+    mark_collector_stopped,
+    save_runtime_config,
+    touch_collector_heartbeat,
+)
+from noirlycan_telemetry.services.collector.infrastructure.file_watch import FileDropWatcher, default_watch_paths
+from noirlycan_telemetry.services.collector.infrastructure.frida_manager import FridaInjectionMonitor
+from noirlycan_telemetry.services.collector.infrastructure.sysmon import SysmonPoller
+from noirlycan_telemetry.services.collector.infrastructure.triage import (
+    FileTriage,
+    is_interesting_path,
+    triage_file,
+)
+from noirlycan_telemetry.services.dashboard.server import run_dashboard
+from noirlycan_telemetry.services.storage.infrastructure.analysis_db import AnalysisDatabase
+from noirlycan_telemetry.services.storage.infrastructure.log_store import new_session_log_path
 
 _SESSION_TRIAGED_PATHS: set[str] = set()
 _SESSION_TRIAGED_SHA: dict[str, str] = {}
@@ -235,7 +248,7 @@ def command_reclassify(args: argparse.Namespace) -> int:
 
 
 def command_corpus(args: argparse.Namespace) -> int:
-    from .analysis_db import AnalysisDatabase
+    from noirlycan_telemetry.services.storage.infrastructure.analysis_db import AnalysisDatabase
 
     database = AnalysisDatabase(args.logs_dir) if args.logs_dir else AnalysisDatabase()
     report = analyze_corpus(args.logs_dir, limit=args.limit, database=database)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from noirlycan_telemetry.dashboard import make_client
+from noirlycan_telemetry.services.dashboard import make_client
 
 
 def test_runtime_api_toggle(tmp_path: Path) -> None:

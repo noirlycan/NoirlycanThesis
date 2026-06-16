@@ -50,16 +50,29 @@ file-dropping loader:
 configs/
   sysmon-noirlycan.xml              Minimal Sysmon config for the lab
 src/noirlycan_telemetry/
-  cli.py                            CLI entry point
-  correlation.py                    File/process/injection correlation logic
-  frida_manager.py                  Frida orchestration and event conversion
-  sysmon.py                         Sysmon Operational log reader
-  triage.py                         Static triage for newly observed files
+  cli.py                            Composition root (monolith mode)
+  kernel/                           Domain layer (shared)
+    entities/models.py              Finding, MemoryPrimitive, …
+    analysis/primitives.py          operational_kind_count, analyze_execution
+    classification/
+      api_manifest.py               PAPER_API_CLASSES (ASIA CCS 2025)
+      technique_classifier.py       Rule-based technique detection
+  services/
+    collector/                      Sysmon, Frida, file watch, triage
+    analysis/domain/                correlation.py, reclassify, session_analytics
+    storage/infrastructure/         log_store, analysis_db
+    dashboard/                      Django REST + WebSocket UI
   frida_hooks/windows_injection_hooks.js
-                                   Windows API hooks for injection telemetry
+  contracts/events.py               Inter-service wire format
 tests/
   test_correlation.py               Synthetic correlation tests
+docs/
+  clean-architecture-plan.md        Clean Architecture + microservices
+  architecture-diagrams.md          Thesis diagrams
+docker-compose.yml                  Optional microservices deployment
 ```
+
+See [`docs/clean-architecture-plan.md`](docs/clean-architecture-plan.md) for service boundaries and deployment modes.
 
 ## Windows 10/11 lab setup
 

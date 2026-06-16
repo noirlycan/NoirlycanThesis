@@ -1,8 +1,11 @@
 # Outline luận văn thạc sĩ — Noirlycan
 
-> *"Validating and Extending the 2-of-3 Operational-Primitive Detection of
-> Process Injection (Di Pietro et al., 2025) with File-Provenance Telemetry
-> in a Windows 10/11 Laboratory."*
+> **Bản luận văn đầy đủ (theo format UET):** xem thư mục [`thesis/`](../thesis/README.md).
+
+> **Tên đề tài chính thức:** *Tăng cường phát hiện mã độc dưới các hình thức né tránh*
+>
+> *Căn cứ phương pháp:* Di Pietro et al., ASIA CCS 2025 — 2-of-3 operational primitive.
+> *Artifact:* Noirlycan Telemetry (`thesis/`).
 
 **Định dạng:** ACM/IEEE-style master thesis, ~60–80 trang.
 **Ngôn ngữ:** Tiếng Anh (khuyến nghị — phù hợp citation) hoặc tiếng Việt theo
@@ -133,7 +136,7 @@ Mục cuối: **Scientific Claims** — chia rõ claim được/không được 
 ### 5.2. Định nghĩa primitive — kế thừa paper
 - 3 primitive + lý do loại CONTEXT_READ khỏi đếm.
 - Bảng API equivalence class — xem
-  [injection_api_manifest.py](../src/noirlycan_telemetry/injection_api_manifest.py).
+  [injection_api_manifest.py](../src/noirlycan_telemetry/kernel/classification/api_manifest.py).
 
 ### 5.3. Quy tắc 2-of-3
 - Phát biểu chính thức: `∃ k₁ ≠ k₂ ∈ {ALLOCATE, WRITE, EXECUTE}` quan sát trên
@@ -146,7 +149,7 @@ Mục cuối: **Scientific Claims** — chia rõ claim được/không được 
 
 ### 5.5. Temporal ordering (sau D3 fix)
 - Reject mọi đảo bậc allocate/write/execute; cho phép allocate lặp.
-- Mã: [correlation._has_temporal_consistency](../src/noirlycan_telemetry/correlation.py).
+- Mã: [correlation._has_temporal_consistency](../src/noirlycan_telemetry/services/analysis/domain/correlation.py).
 
 ### 5.6. Mở rộng: File provenance
 - Sysmon Event 11 → static triage (SHA256, PE, signature, entropy) → liên kết

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from noirlycan_telemetry.log_store import (
+from noirlycan_telemetry.services.storage.infrastructure.log_store import (
     _dedupe_findings,
     aggregate_events,
     default_logs_dir,
@@ -246,7 +246,7 @@ def test_aggregate_logs_falls_back_when_selected_log_missing(tmp_path: Path) -> 
         json.dumps({"type": "finding", "value": {"severity": "low"}}) + "\n",
         encoding="utf-8",
     )
-    from noirlycan_telemetry.log_store import aggregate_logs
+    from noirlycan_telemetry.services.storage.infrastructure.log_store import aggregate_logs
 
     result = aggregate_logs(tmp_path, selected="session-deleted.jsonl")
     assert result["active_log"] == "session-real.jsonl"
@@ -255,7 +255,7 @@ def test_aggregate_logs_falls_back_when_selected_log_missing(tmp_path: Path) -> 
 def test_aggregate_logs_empty_dir_with_stale_selection_returns_none(
     tmp_path: Path,
 ) -> None:
-    from noirlycan_telemetry.log_store import aggregate_logs
+    from noirlycan_telemetry.services.storage.infrastructure.log_store import aggregate_logs
 
     result = aggregate_logs(tmp_path, selected="anything.jsonl")
     assert result["active_log"] is None

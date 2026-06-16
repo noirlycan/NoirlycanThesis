@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from noirlycan_telemetry.injection_api_manifest import PAPER_INJECTION_APIS, REPO_REQUIRED_APIS
+from noirlycan_telemetry.kernel.classification.api_manifest import PAPER_INJECTION_APIS, REPO_REQUIRED_APIS
 
 
 def _hook_script() -> str:

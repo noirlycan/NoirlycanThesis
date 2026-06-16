@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from noirlycan_telemetry.injection_api_manifest import REPO_REQUIRED_APIS
+from noirlycan_telemetry.kernel.classification.api_manifest import REPO_REQUIRED_APIS
 
 ROOT = Path(__file__).resolve().parents[1]
 JS = ROOT / "src" / "noirlycan_telemetry" / "frida_hooks" / "windows_injection_hooks.js"

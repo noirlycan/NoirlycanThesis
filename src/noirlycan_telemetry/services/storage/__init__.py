@@ -1,0 +1,1 @@
+"""Storage microservice — JSONL + SQLite."""

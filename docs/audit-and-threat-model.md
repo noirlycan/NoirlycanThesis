@@ -18,8 +18,8 @@ của luận văn — đủ formal cho hội đồng.
 | Khía cạnh | Cách kiểm chứng |
 |-----------|-----------------|
 | Quy tắc phương pháp | Đọc paper §3 + artifact `Sap4Sec/process-injection` (analyzer rules) |
-| Implementation repo | Đọc trực tiếp `correlation.py`, `execution_analysis.py`, `technique_classifier.py`, `injection_api_manifest.py`, `models.py` |
-| API equivalence classes | Đối chiếu danh sách trong [injection_api_manifest.py](../src/noirlycan_telemetry/injection_api_manifest.py) `PAPER_API_CLASSES` với Table 1 của paper |
+| Implementation repo | Đọc trực tiếp `services/analysis/domain/correlation.py`, `kernel/analysis/primitives.py`, `kernel/classification/technique_classifier.py`, `kernel/classification/api_manifest.py`, `kernel/entities/models.py` |
+| API equivalence classes | Đối chiếu danh sách trong [api_manifest.py](../src/noirlycan_telemetry/kernel/classification/api_manifest.py) `PAPER_API_CLASSES` với Table 1 của paper |
 | Quy tắc 2/3 | Kiểm `_find_injection_chains()` + test `test_requires_two_distinct_primitives` |
 | Memory congruence | Kiểm `_has_memory_congruence` + test `test_rejects_unrelated_memory_ranges` |
 | Temporal ordering | Kiểm `_has_temporal_consistency` |

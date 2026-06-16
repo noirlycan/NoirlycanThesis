@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from noirlycan_telemetry.models import FileEvent
-from noirlycan_telemetry.sysmon import SysmonUnavailable, _evt_query_error, parse_sysmon_xml
+from noirlycan_telemetry.kernel.entities.models import FileEvent
+from noirlycan_telemetry.services.collector.infrastructure.sysmon import SysmonUnavailable, _evt_query_error, parse_sysmon_xml
 
 
 class _AccessDeniedError(Exception):
