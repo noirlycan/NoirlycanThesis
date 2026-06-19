@@ -8,6 +8,7 @@ from .bootstrap import configure
 _STATIC_ASSETS = (
     "dashboard.css",
     "dashboard.js",
+    "logo.svg",
     "vendor/chart.umd.js",
 )
 

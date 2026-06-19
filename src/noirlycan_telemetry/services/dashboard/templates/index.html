@@ -89,16 +89,15 @@
 
       <nav class="tabs" id="view-tabs" role="tablist">
         <button type="button" class="tab active" data-tab="overview" role="tab" aria-selected="true" data-i18n="tab.overview">Overview</button>
-        <button type="button" class="tab" data-tab="rules" role="tab" aria-selected="false" data-i18n="tab.rules">Rules</button>
         <button type="button" class="tab" data-tab="findings" role="tab" aria-selected="false" data-i18n="tab.findings">Findings</button>
-        <button type="button" class="tab" data-tab="network" role="tab" aria-selected="false" data-i18n="tab.network">Network</button>
-        <button type="button" class="tab" data-tab="primitives" role="tab" aria-selected="false" data-i18n="tab.primitives">Primitives</button>
-        <button type="button" class="tab" data-tab="upload" role="tab" aria-selected="false" data-i18n="tab.upload">Upload</button>
-        <button type="button" class="tab" data-tab="files" role="tab" aria-selected="false" data-i18n="tab.files">File drops</button>
-        <button type="button" class="tab" data-tab="events" role="tab" aria-selected="false" data-i18n="tab.events">Event stream</button>
         <button type="button" class="tab" data-tab="chains" role="tab" aria-selected="false" data-i18n="tab.chains">Injection chains</button>
         <button type="button" class="tab" data-tab="sessions" role="tab" aria-selected="false" data-i18n="tab.sessions">Sessions</button>
-        <button type="button" class="tab" data-tab="corpus" role="tab" aria-selected="false" data-i18n="tab.corpus">Corpus</button>
+        {% if is_admin %}
+        <span class="tab-divider" aria-hidden="true"></span>
+        <button type="button" class="tab tab-admin" data-tab="rules" role="tab" aria-selected="false" data-i18n="tab.rules">Rules</button>
+        <button type="button" class="tab tab-admin" data-tab="upload" role="tab" aria-selected="false" data-i18n="tab.upload">Upload</button>
+        <button type="button" class="tab tab-admin" data-tab="files" role="tab" aria-selected="false" data-i18n="tab.files">File drops</button>
+        {% endif %}
       </nav>
 
       <section class="tab-panel active" data-panel="overview">
@@ -276,55 +275,6 @@
         </article>
       </section>
 
-      <section class="tab-panel" data-panel="network">
-        <article class="panel">
-          <div class="panel-head">
-            <h2 data-i18n="network.title">Network activity</h2>
-            <span class="chip" data-i18n="network.chip">post-HIGH beacon watch</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="network.th.time">Time</th>
-                  <th data-i18n="network.th.pid">PID</th>
-                  <th data-i18n="network.th.image">Image</th>
-                  <th data-i18n="network.th.endpoint">Endpoint</th>
-                  <th data-i18n="network.th.protocol">Protocol</th>
-                  <th data-i18n="network.th.beacon">Beacon?</th>
-                </tr>
-              </thead>
-              <tbody id="network-body"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
-
-      <section class="tab-panel" data-panel="primitives">
-        <article class="panel">
-          <div class="panel-head">
-            <h2 data-i18n="primitives.title">Injection primitives</h2>
-            <span class="chip" data-i18n="primitives.chip">Frida allocate / write / execute</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="primitives.th.time">Time</th>
-                  <th data-i18n="primitives.th.kind">Kind</th>
-                  <th data-i18n="primitives.th.api">API</th>
-                  <th data-i18n="primitives.th.actor">Actor</th>
-                  <th data-i18n="primitives.th.target">Injection target</th>
-                  <th data-i18n="primitives.th.address">Address</th>
-                  <th data-i18n="primitives.th.size">Size</th>
-                </tr>
-              </thead>
-              <tbody id="primitives-body"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
-
       <section class="tab-panel" data-panel="upload">
         <article class="panel">
           <div class="panel-head">
@@ -411,27 +361,6 @@
         </article>
       </section>
 
-      <section class="tab-panel" data-panel="events">
-        <article class="panel">
-          <div class="panel-head">
-            <h2 data-i18n="events.title">Event stream</h2>
-            <span class="chip" id="event-count-label" data-i18n="events.count" data-i18n-vars='{"count":0}'>0 events</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="events.th.type">Type</th>
-                  <th data-i18n="events.th.timestamp">Timestamp</th>
-                  <th data-i18n="events.th.summary">Summary</th>
-                </tr>
-              </thead>
-              <tbody id="events-body"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
-
       <section class="tab-panel" data-panel="chains">
         <article class="panel">
           <div class="panel-head">
@@ -479,9 +408,8 @@
             </table>
           </div>
         </article>
-      </section>
 
-      <section class="tab-panel" data-panel="corpus">
+        <!-- Corpus analytics merged into Sessions tab -->
         <article class="panel">
           <div class="panel-head">
             <h2 data-i18n="corpus.title">Corpus analytics</h2>
@@ -541,6 +469,61 @@
           </article>
         </article>
       </section>
+
+      <!-- Hidden panels kept for JS compatibility (no tab buttons) -->
+      <section class="tab-panel" data-panel="network" style="display:none">
+        <article class="panel">
+          <div class="panel-head"><h2 data-i18n="network.title">Network activity</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th data-i18n="network.th.time">Time</th>
+                <th data-i18n="network.th.pid">PID</th>
+                <th data-i18n="network.th.image">Image</th>
+                <th data-i18n="network.th.endpoint">Endpoint</th>
+                <th data-i18n="network.th.protocol">Protocol</th>
+                <th data-i18n="network.th.beacon">Beacon?</th>
+              </tr></thead>
+              <tbody id="network-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+      <section class="tab-panel" data-panel="primitives" style="display:none">
+        <article class="panel">
+          <div class="panel-head"><h2 data-i18n="primitives.title">Injection primitives</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th data-i18n="primitives.th.time">Time</th>
+                <th data-i18n="primitives.th.kind">Kind</th>
+                <th data-i18n="primitives.th.api">API</th>
+                <th data-i18n="primitives.th.actor">Actor</th>
+                <th data-i18n="primitives.th.target">Injection target</th>
+                <th data-i18n="primitives.th.address">Address</th>
+                <th data-i18n="primitives.th.size">Size</th>
+              </tr></thead>
+              <tbody id="primitives-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+      <section class="tab-panel" data-panel="events" style="display:none">
+        <article class="panel">
+          <div class="panel-head"><h2 data-i18n="events.title">Event stream</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th data-i18n="events.th.type">Type</th>
+                <th data-i18n="events.th.timestamp">Timestamp</th>
+                <th data-i18n="events.th.summary">Summary</th>
+              </tr></thead>
+              <tbody id="events-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+      <section class="tab-panel" data-panel="corpus" style="display:none"></section>
     </div>
 
     <dialog id="rule-editor-modal" class="modal">

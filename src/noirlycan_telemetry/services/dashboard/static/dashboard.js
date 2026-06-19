@@ -2392,7 +2392,7 @@ function switchTab(tabName) {
   if (tabName === "chains") {
     renderInjectionChainsFromStats(chainsStatsSource());
   }
-  if (tabName === "corpus") {
+  if (tabName === "corpus" || tabName === "sessions") {
     loadCorpus({ force: !state.corpus });
   }
   if (state.session) {

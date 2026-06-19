@@ -116,6 +116,8 @@ def _static_asset_version() -> str:
 
 
 def index(request: HttpRequest) -> HttpResponse:
+    user = request.user
+    is_admin = user.is_authenticated and (user.is_staff or user.is_superuser)
     response = render(
         request,
         "index.html",
@@ -123,6 +125,7 @@ def index(request: HttpRequest) -> HttpResponse:
             "asset_version": _static_asset_version(),
             "template_version": "standalone-v1",
             "title": "Telemetry",
+            "is_admin": is_admin,
         },
     )
     response["Cache-Control"] = "no-store"

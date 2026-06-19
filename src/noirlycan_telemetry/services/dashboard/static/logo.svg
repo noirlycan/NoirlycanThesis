@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00d4aa"/>
+      <stop offset="100%" stop-color="#539bf5"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="8" y1="8" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00d4aa" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#539bf5" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#0f1923"/>
+  <rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="url(#g1)" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Shield outline -->
+  <path d="M16 5 L25 9 V17 C25 22 21 26 16 28 C11 26 7 22 7 17 V9 Z" fill="none" stroke="url(#g1)" stroke-width="1.8" stroke-linejoin="round"/>
+  <!-- Inner eye / scan lines -->
+  <circle cx="16" cy="15" r="4" fill="none" stroke="url(#g2)" stroke-width="1.5"/>
+  <circle cx="16" cy="15" r="1.5" fill="url(#g1)"/>
+  <!-- Scan pulse arcs -->
+  <path d="M11 11 Q13 9 16 9" fill="none" stroke="#00d4aa" stroke-width="1" stroke-opacity="0.5" stroke-linecap="round"/>
+  <path d="M21 19 Q19 21 16 21" fill="none" stroke="#539bf5" stroke-width="1" stroke-opacity="0.5" stroke-linecap="round"/>
+</svg>
