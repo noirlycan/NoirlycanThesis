@@ -2463,7 +2463,7 @@ function setupDelegatedClicks() {
     document.getElementById("filter-pid").value = pid;
     document.getElementById("filter-type").value = "network";
     applyFilters();
-    switchTab("network");
+    switchTab("findings");
   });
 
   document.getElementById("uploads-body")?.addEventListener("click", (event) => {

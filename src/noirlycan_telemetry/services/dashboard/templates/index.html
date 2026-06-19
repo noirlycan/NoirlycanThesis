@@ -273,6 +273,28 @@
             </table>
           </div>
         </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2 data-i18n="network.title">Network activity</h2>
+            <span class="chip" data-i18n="network.chip">post-HIGH beacon watch</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="network.th.time">Time</th>
+                  <th data-i18n="network.th.pid">PID</th>
+                  <th data-i18n="network.th.image">Image</th>
+                  <th data-i18n="network.th.endpoint">Endpoint</th>
+                  <th data-i18n="network.th.protocol">Protocol</th>
+                  <th data-i18n="network.th.beacon">Beacon?</th>
+                </tr>
+              </thead>
+              <tbody id="network-body"></tbody>
+            </table>
+          </div>
+        </article>
       </section>
 
       <section class="tab-panel" data-panel="upload">
@@ -471,24 +493,7 @@
       </section>
 
       <!-- Hidden panels kept for JS compatibility (no tab buttons) -->
-      <section class="tab-panel" data-panel="network" style="display:none">
-        <article class="panel">
-          <div class="panel-head"><h2 data-i18n="network.title">Network activity</h2></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th data-i18n="network.th.time">Time</th>
-                <th data-i18n="network.th.pid">PID</th>
-                <th data-i18n="network.th.image">Image</th>
-                <th data-i18n="network.th.endpoint">Endpoint</th>
-                <th data-i18n="network.th.protocol">Protocol</th>
-                <th data-i18n="network.th.beacon">Beacon?</th>
-              </tr></thead>
-              <tbody id="network-body"></tbody>
-            </table>
-          </div>
-        </article>
-      </section>
+      <section class="tab-panel" data-panel="network" style="display:none"></section>
       <section class="tab-panel" data-panel="primitives" style="display:none">
         <article class="panel">
           <div class="panel-head"><h2 data-i18n="primitives.title">Injection primitives</h2></div>
