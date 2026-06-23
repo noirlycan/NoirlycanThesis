@@ -1,18 +1,38 @@
 #!/usr/bin/env bash
 # Ghép luận văn đầy đủ → thesis/luan-van-day-du.md
+# Bố cục: UET (Công văn 139/ĐT) + HTW/IMRAD (Nguyễn Việt Hà, Khoa CNTT UET)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 OUT="$ROOT/luan-van-day-du.md"
+
+python3 "$ROOT/assemble-htw.py"
+
 {
+  cat "$ROOT/00-bia-chinh.md"
+  echo -e "\n---\n"
   cat "$ROOT/00-front-matter.md"
   echo -e "\n---\n"
+  cat "$ROOT/01-muc-luc.md"
+  echo -e "\n---\n"
+  cat "$ROOT/02-danh-muc-viet-tat.md"
+  echo -e "\n---\n"
+  cat "$ROOT/danh-muc-bang.md"
+  echo -e "\n---\n"
+  cat "$ROOT/danh-muc-hinh.md"
+  echo -e "\n---\n"
   cat "$ROOT/chapters/01-mo-dau.md"
-  for f in "$ROOT/chapters"/0{2..8}-*.md; do
-    echo -e "\n---\n"
-    cat "$f"
-  done
+  echo -e "\n---\n"
+  cat "$ROOT/chapters/02-co-so-ly-thuyet.md"
+  echo -e "\n---\n"
+  cat "$ROOT/chapters/_assembled/03-phuong-phap-htw.md"
+  echo -e "\n---\n"
+  cat "$ROOT/chapters/_assembled/04-thiet-ke-htw.md"
+  echo -e "\n---\n"
+  cat "$ROOT/chapters/_assembled/05-thuc-nghiem-htw.md"
   echo -e "\n---\n"
   cat "$ROOT/ket-luan.md"
+  echo -e "\n---\n"
+  cat "$ROOT/danh-muc-cong-trinh.md"
   echo -e "\n---\n"
   cat "$ROOT/tai-lieu-tham-khao.md"
   echo -e "\n---\n"

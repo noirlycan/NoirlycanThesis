@@ -1,28 +1,32 @@
 # CHƯƠNG 6. ĐÁNH GIÁ THỰC NGHIỆM
 
-Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc dưới các hình thức né tránh* thông qua artifact Noirlycan, căn cứ phương pháp [4]. Phạm vi đánh giá **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — được tác giả chứng minh tăng recall ~21,2 % trên subset injection — **không được hiện thực** trong luận văn. Do đó, luận văn **không** so sánh recall với paper trên cùng dataset 56.340 mẫu và **không** claim số liệu prevalence 16,5 % hay 21,2 % của [4]. Thay vào đó, đánh giá tập trung: (1) kiểm chứng quy tắc 2-of-3 và biến thể E1/E2 qua test tổng hợp; (2) case study section-mapping — biến thể dominant trong [4]; (3) đánh giá định tính provenance E3; (4) phân tích thiết kế telemetry kép E4; (5) protocol Frida fidelity (E6 liên quan).
+Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc dưới các hình thức né tránh* thông qua artifact Noirlycan, căn cứ [4]. Phạm vi **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — tăng recall ~21,2 % — **không** được hiện thực; luận văn **không** so sánh recall với paper trên dataset 56.340 mẫu. Đánh giá tập trung năm trục: (1) kiểm chứng 2-of-3 và biến thể E1/E2 qua test; (2) case study section-mapping; (3) provenance E3; (4) telemetry kép E4; (5) protocol Frida fidelity (E6).
 
 ---
 
 ## 6.1. Câu hỏi nghiên cứu đánh giá (RQ1–RQ5)
 
+Mỗi RQ ánh xạ tới một hoặc nhiều nhóm né tránh E1–E6 (Chương 2) và tới một loại bằng chứng khả thi (test, case study, đánh giá thiết kế).
+
 **Bảng 6.1.** Câu hỏi đánh giá và ánh xạ nhóm né tránh
 
 | ID | Câu hỏi | Nhóm né tránh | Tiêu chí thành công |
 |----|---------|---------------|---------------------|
-| **RQ1** | Hiện thực [4] có phát hiện biến thể API (E1) và gộp bước (E2) không? | E1, E2 | Test correlation pass; section-mapping score ≥ 70 |
-| **RQ2** | Telemetry kép Sysmon+Frida có bổ sung khi Frida miss (E4)? | E4 | Thiết kế + config E8/E10; case thiếu số liệu syscall thuần |
+| **RQ1** | Hiện thực [4] có phát hiện biến thể API (E1) và gộp bước (E2)? | E1, E2 | Test correlation pass; section-mapping score ≥ 70 |
+| **RQ2** | Telemetry kép Sysmon+Frida có bổ sung khi Frida miss (E4)? | E4 | Thiết kế + config E8/E10; case thiếu syscall thuần |
 | **RQ3** | Pipeline provenance có gắn file-drop với injection (E3)? | E3 | Finding chứa `related_file`, metadata triage |
 | **RQ4** | Classifier có nhận diện kỹ thuật né tránh hiện đại? | E1, E2 | 20 test classifier pass; đúng technique label |
 | **RQ5** | Frida có đủ trung thực (fidelity) cho kết luận khoa học? | E6 | Protocol `frida-fidelity.md`; drop-rate trên VM |
 
-**RQ không áp dụng cho E5:** né sandbox/VM cần module anti-evasion [4] §6 — **out-of-scope**. Số liệu ablation của [4] được trích dẫn là **upper bound** lý thuyết, không phải kết quả luận văn.
+**E5 out-of-scope:** cần module anti-evasion [4] §6. Số liệu ablation [4] được trích dẫn là **upper bound** lý thuyết.
 
 ---
 
 ## 6.2. Môi trường và phương pháp đo
 
 ### 6.2.1. Môi trường thí nghiệm
+
+Môi trường đảm bảo tái lập: cấu hình YAML/XML đi kèm mã nguồn, phụ thuộc Python khoá qua `uv.lock`. VM cô lập, snapshot–rollback giữa các lần chạy loader.
 
 | Thành phần | Cấu hình |
 |------------|----------|
@@ -32,18 +36,13 @@ Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát h
 | Collector | `noirlycan-telemetry` 0.x, Python 3.11 |
 | Test runner | `uv run pytest` hoặc `python -m pytest` |
 
-Ground truth trên unit test: **do tác giả luận văn gắn nhãn** — primitive và kỹ thuật kỳ vọng được mô tả trực tiếp trong assertion. Đây là mối đe dọa *internal validity* (mục 6.6).
+Ground truth do tác giả gắn nhãn — rủi ro *internal validity* (xem 6.6); test phát biểu theo *specification* [4] (2-of-3, equivalence class, congruence, temporal), không theo implementation, giảm thiểu lệ thuộc.
 
 ### 6.2.2. Loại đánh giá
 
-1. **Unit test tổng hợp** — mô phỏng chuỗi API/primitive không cần chạy malware thật.
-2. **Case study có cấu trúc** — section-mapping tương đương *neurevt* [4].
-3. **Case study mở rộng** — `test_aes_loader_chain_upgrades_to_critical` mô phỏng loader lab thực.
-4. **Baseline signature** — rule cố định A→W→E API names so với correlator 2-of-3.
-5. **Đánh giá định tính** — provenance, dashboard (RQ3).
-6. **Protocol fidelity** — benchmark Frida (RQ5), kết quả điền trên VM.
+Sáu loại bằng chứng, từ chặt chẽ tới định tính: (1) Unit test tổng hợp chuỗi API/primitive (CI Linux); (2) Case study section-mapping tương đương *neurevt* [4]; (3) Case study mở rộng `test_aes_loader_chain_upgrades_to_critical`; (4) Baseline signature A→W→E so với correlator 2-of-3; (5) Đánh giá định tính provenance/dashboard (RQ3); (6) Protocol fidelity Frida (RQ5).
 
-Dataset PoC-Bench (5 loader) và Paper-Subset (100 mẫu Sap4Sec) nêu trong outline — **chưa hoàn thiện** cho luận văn bản này; kết quả định lượng chính dựa trên 31 test methodology.
+Dataset PoC-Bench (5 loader) và Paper-Subset (100 mẫu Sap4Sec) **chưa hoàn thiện**; kết quả định lượng dựa trên 31 test methodology.
 
 ---
 
@@ -51,7 +50,7 @@ Dataset PoC-Bench (5 loader) và Paper-Subset (100 mẫu Sap4Sec) nêu trong out
 
 ### 6.3.1. Cấu trúc bộ test
 
-Hai file cốt lõi:
+Hai file tách theo trách nhiệm: correlation rules và classification, phản ánh hai tầng — phát hiện sự kiện đáng ngờ rồi gán nhãn MITRE.
 
 ```bash
 uv run pytest tests/test_correlation.py tests/test_ired_team_classifier.py -v
@@ -69,6 +68,8 @@ Kết quả: **31 passed, 0 failed**.
 
 ### 6.3.2. Chi tiết `test_correlation.py` (11 test)
 
+Bộ test bao phủ *positive path* và *negative path*. Test reject quan trọng vì 2-of-3 nhạy: thiếu congruence hoặc temporal sẽ bùng phát FP.
+
 | Test | Mục đích | RQ |
 |------|----------|-----|
 | `test_requires_two_distinct_primitives` | Một primitive W — **không** finding | RQ1 |
@@ -85,6 +86,8 @@ Kết quả: **31 passed, 0 failed**.
 
 ### 6.3.3. Chi tiết `test_ired_team_classifier.py` (20 test — trích)
 
+Hai mươi test biên soạn theo *ired.team* và ATT&CK, gồm biến thể chi tiết (PoolParty, Process Ghosting) lẫn cổ điển (DLL injection, thread hijack), tránh over-fit.
+
 | Test (rút gọn) | Kỹ thuật kỳ vọng |
 |----------------|-------------------|
 | `test_early_bird_apc_classification` | `early_bird_apc_injection` |
@@ -98,7 +101,7 @@ Kết quả: **31 passed, 0 failed**.
 | `test_instrumentation_callback_classification` | `instrumentation_callback` |
 | … | (10 test bổ sung APC, fiber, window, doppelgänging, …) |
 
-Toàn bộ 20 test **pass** — RQ4 đạt trên tập rule synthetic.
+20 test **pass** — RQ4 đạt trên tập rule synthetic; không tương đương precision/recall trên malware thực (xem 6.9).
 
 ---
 
@@ -106,16 +109,16 @@ Toàn bộ 20 test **pass** — RQ4 đạt trên tập rule synthetic.
 
 ### 6.4.1. Bối cảnh [4]
 
-Paper [4] §3.5 và case study *neurevt* mô tả biến thể Process Hollowing dominant: thay `VirtualAllocEx` + `WriteProcessMemory` bằng `NtCreateSection` + `NtMapViewOfSection` (remote map executable). Execute qua `SetThreadContext` + `ResumeThread`. Đây là ví dụ điển hình **E2 — gộp bước allocate/write**.
+Paper [4] §3.5 (case study *neurevt*) mô tả biến thể Process Hollowing dominant: thay `VirtualAllocEx` + `WriteProcessMemory`, malware mở section bằng `NtCreateSection` rồi map vào process đích bằng `NtMapViewOfSection` với `PAGE_EXECUTE_READWRITE`; thực thi qua `SetThreadContext` + `ResumeThread` trên thread `CREATE_SUSPENDED`. Đây là **E2 — gộp bước allocate/write**: một `NtMapViewOfSection` thay hai bước, né signature đếm đủ ba API.
 
 ### 6.4.2. Thiết lập test
 
 Test `test_detects_section_mapping_write_execute_chain` mô phỏng:
 
 1. **File drop:** `loader.exe` trong Temp, unsigned, entropy 7,2.
-2. **Process:** PID 1337, `CREATE_SUSPENDED`, parent explorer.
-3. **Primitive W:** `NtMapViewOfSection` → `msedge.exe` PID 4242, address 0x200000, protection EXECUTE_READWRITE.
-4. **Primitive E:** `ResumeThread`, address None.
+2. **Process:** PID 1337, cờ `CREATE_SUSPENDED`, parent `explorer.exe`.
+3. **Primitive W:** `NtMapViewOfSection` → target `msedge.exe` PID 4242, address 0x200000, `PAGE_EXECUTE_READWRITE`.
+4. **Primitive E:** `ResumeThread`, address None — yêu cầu correlator kế thừa target từ context.
 
 ### 6.4.3. Kết quả
 
@@ -131,17 +134,11 @@ Test `test_detects_section_mapping_write_execute_chain` mô phỏng:
 | Baseline signature A→W→E | **FAIL** (thiếu VirtualAllocEx, WriteProcessMemory) |
 | Correlator 2-of-3 | **PASS** |
 
-Kết luận: phương pháp [4] hiện thực trong Noirlycan **phát hiện được** biến thể dominant mà rule signature cố định bỏ sót — trực tiếp phục vụ RQ1 và mục tiêu chống E2.
+Noirlycan **phát hiện** biến thể dominant mà rule signature bỏ sót — phục vụ RQ1, chống E2. Metadata (`related_file`, `evidence.section_mapping`) đủ để analyst phục dựng câu chuyện tấn công.
 
 ### 6.4.4. Case study mở rộng — AES loader lab
 
-`test_aes_loader_chain_upgrades_to_critical` mô phỏng chuỗi thực tế từ loader `aes_decrypt_loader.exe` → Edge:
-
-- Nhiều `NtWriteVirtualMemory`, `NtMapViewOfSection`, `GetThreadContext`, `SetThreadContext`.
-- Score tăng dần: staging < 70 → sau execute **≥ 85 (CRITICAL)**.
-- Technique: `process_hollowing_section`, `execution_confirmed: true`.
-
-Chứng minh correlator **upgrade** finding khi primitive mới làm tăng score — phù hợp vận hành real-time.
+`test_aes_loader_chain_upgrades_to_critical` mô phỏng chuỗi từ `aes_decrypt_loader.exe` → Edge với `NtWriteVirtualMemory`, `NtMapViewOfSection`, `GetThreadContext`, `SetThreadContext` đan xen (pattern shellcode AES). Score tăng dần: staging dưới 70, sau execute xác nhận finding **upgrade ≥ 85 (CRITICAL)**; technique `process_hollowing_section`, `execution_confirmed: true`. Correlator **upgrade** finding khi primitive mới tăng score thay vì tạo finding rời rạc — phù hợp real-time, giảm alert fatigue.
 
 ---
 
@@ -149,19 +146,11 @@ Chứng minh correlator **upgrade** finding khi primitive mới làm tăng score
 
 ### 6.5.1. RQ1 — E1/E2 (methodology [4])
 
-**Kết luận: ĐẠT.**
-
-Bằng chứng:
-
-- 11/11 test correlation pass.
-- Quy tắc 2-of-3, congruence, temporal khớp audit `docs/audit-and-threat-model.md` (✅ cho các mục 2.1–2.6 sau fix D1–D3).
-- Section-mapping score ≥ 70.
-
-Hạn chế: test synthetic; chưa chạy 100 mẫu Sap4Sec trên VM (kế hoạch PoC-Bench).
+**ĐẠT.** 11/11 test correlation pass; 2-of-3, congruence, temporal khớp audit sau fix D1–D3; section-mapping score ≥ 70. Hạn chế: test synthetic; RQ1 áp dụng cho *specification correctness*, không cho *real-world recall*.
 
 ### 6.5.2. RQ2 — E4 (telemetry kép)
 
-**Kết luận: MỘT PHẦN — thiết kế đạt, số liệu syscall thuần chưa đủ.**
+**MỘT PHẦN — thiết kế đạt, số liệu syscall thuần chưa đủ.**
 
 **Bảng 6.4.** Đánh giá E4
 
@@ -170,42 +159,22 @@ Hạn chế: test synthetic; chưa chạy 100 mẫu Sap4Sec trên VM (kế hoạ
 | Sysmon E8 CreateRemoteThread trong config | ✅ | Kernel callback |
 | Sysmon E10 ProcessAccess | ✅ | OpenProcess cross-process |
 | Parser ghi TelemetryEvent raw | ✅ | JSONL |
-| Thí nghiệm A/B: có/không Frida + sample syscall | ❌ Chưa | Cần driver `frida-fidelity` + sample unhooked |
-| Congruence khi chỉ Sysmon | ❌ Không | Thiếu address — đúng thiết kế |
+| Thí nghiệm A/B Frida + sample syscall | ❌ | Cần driver `frida-fidelity` + sample unhooked |
+| Congruence khi chỉ Sysmon | ❌ | Thiếu address — đúng thiết kế |
 
-Luận văn claim **phòng thủ sâu** (defense-in-depth), không claim thay thế Frida bằng Sysmon cho 2-of-3.
+Luận văn claim **defense-in-depth**, không thay Frida bằng Sysmon cho 2-of-3. Sysmon E10/E8 cho tín hiệu cross-process nhưng không có địa chỉ buffer; vai trò *backstop* khi Frida bị né.
 
 ### 6.5.3. RQ3 — E3 (provenance)
 
-**Kết luận: MỘT PHẦN — đạt trên test và thiết kế pipeline.**
-
-Bằng chứng:
-
-- `test_detects_section_mapping_write_execute_chain`: `related_file` khớp loader.
-- `test_resolves_target_image_from_child_process`: lineage process.
-- Pipeline: FileDropWatcher / Sysmon E11 → triage → `add_process(created_from_file)` → scoring +10.
-
-Chưa có metric định lượng *thời gian FileCreate → Finding* trên N mẫu thật — đề xuất cho bản mở rộng.
+**MỘT PHẦN.** `test_detects_section_mapping_write_execute_chain`: `related_file` khớp loader; `test_resolves_target_image_from_child_process`: lineage qua ProcessEvent. Pipeline FileDropWatcher / Sysmon E11 → triage → `add_process(created_from_file)` → scoring +10. Chưa có metric *thời gian FileCreate → Finding* trên N mẫu thật.
 
 ### 6.5.4. RQ4 — Classifier
 
-**Kết luận: ĐẠT trên tập 20 test.**
-
-- Bao phủ kỹ thuật [4]: hollowing, APC, DLL, reflective, doppelgänging.
-- Mở rộng: PoolParty, Ghosting precursor, instrumentation callback.
-- **Chưa** có precision/recall trên ground-truth dataset 12 kỹ thuật paper — classifier đánh giá bằng test rule-level.
+**ĐẠT trên 20 test.** Bao phủ kỹ thuật [4] (hollowing, APC, DLL, reflective, doppelgänging); mở rộng PoolParty, Ghosting, instrumentation callback. Chưa có precision/recall trên ground-truth dataset.
 
 ### 6.5.5. RQ5 — Frida fidelity
 
-**Kết luận: CHƯA HOÀN TẤT — protocol sẵn, bảng kết quả VM cần điền.**
-
-Protocol `docs/experiments/frida-fidelity.md` định nghĩa:
-
-- Driver spawn mẫu benign + injection PoC;
-- Đo số primitive Frida vs ground-truth hook count;
-- Drop-rate = missed / expected.
-
-Giả định M5 (audit): overhead Frida chấp nhận được cho lab; **chưa** publish bảng số trong luận văn bản này.
+**CHƯA HOÀN TẤT — protocol sẵn, bảng kết quả VM cần điền.** Protocol `docs/experiments/frida-fidelity.md`: driver spawn benign + injection PoC; đo primitive Frida so với ground-truth ETW kernel; drop-rate = missed / expected theo họ API. Giả định M5: overhead Frida chấp nhận được cho lab. Phát biểu hiện ở mức "đủ minh hoạ phương pháp".
 
 ---
 
@@ -213,11 +182,11 @@ Giả định M5 (audit): overhead Frida chấp nhận được cho lab; **chưa
 
 ### 6.6.1. Baseline định nghĩa
 
-**Baseline Σ:** detector rule-based yêu cầu quan sát **lần lượt** ba API:
+**Baseline Σ:** detector rule-based quan sát **lần lượt** ba API trên cùng `(actor, target)` trong cửa sổ thời gian, không equivalence class, không 2-of-3:
 
 $$\texttt{VirtualAllocEx} \rightarrow \texttt{WriteProcessMemory} \rightarrow \texttt{CreateRemoteThread}$$
 
-trên cùng `(actor, target)` trong cửa sổ thời gian (không có equivalence class, không 2-of-3).
+Đại diện rule SIEM/EDR dạng "string match API name" phổ biến.
 
 ### 6.6.2. Kết quả so sánh
 
@@ -232,7 +201,7 @@ trên cùng `(actor, target)` trong cửa sổ thời gian (không có equivalen
 | Chỉ WriteProcessMemory | FAIL | FAIL | Cả hai đúng (FP tránh) |
 | WRITE + EXECUTE unrelated mem | FAIL | FAIL | Congruence |
 
-Noirlycan **strictly dominates** baseline trên các biến thể E1/E2 trong bảng — cốt lõi lập luận *tăng cường phát hiện dưới né tránh*.
+Noirlycan dominates baseline trên E1/E2. Hai dòng cuối cả hai FAIL là kết quả mong muốn — giữ specificity.
 
 ---
 
@@ -253,7 +222,7 @@ Noirlycan **strictly dominates** baseline trên các biến thể E1/E2 trong b�
 | Dashboard analyst | ❌ | ✅ |
 | Recursive chain 2 % | ✅ Báo cáo | ⚠️ Graph only |
 
-**Trung thực khoa học:** Recall trên malware thật trong lab **có thể thấp hơn** [4] vì thiếu E5 — malware phát hiện VM có thể **không inject**, và Noirlycan sẽ không có finding. Đây không phải lỗi implementation 2-of-3 mà là **gap phạm vi** đã khai báo Chương 3.
+Recall malware thật **có thể thấp hơn** [4] vì thiếu E5 (malware phát hiện VM có thể không inject) — **gap phạm vi** đã khai báo (Chương 3). Luận văn mở rộng [4] ở ba điểm: endpoint real-time, provenance E3, dashboard.
 
 ---
 
@@ -286,39 +255,29 @@ Noirlycan **strictly dominates** baseline trên các biến thể E1/E2 trong b�
 
 ### 6.9.1. Internal validity
 
-- Ground truth test do tác giả viết — rủi ro bias nhưng phù hợp kiểm chứng specification [4].
-- Một số edge case (ResumeThread không address) vẫn làm congruence suy yếu (D1 partial).
+Ground truth do tác giả viết — rủi ro confirmation bias, nhưng phù hợp mục đích kiểm chứng specification [4]. Edge case ResumeThread không address làm congruence suy yếu (D1 partial); giảm thiểu bằng kế thừa target qua context process.
 
 ### 6.9.2. External validity
 
-- Chỉ Windows 10/11 user-mode; không Windows Server, không kernel injection.
-- Không E5 → không generalize recall malware anti-VM như [4].
-- Lab cô lập — không đại diện enterprise EDR.
+Chỉ Windows 10/11 user-mode; không Server, không kernel injection. Không E5 → không generalize recall malware anti-VM. FP rate trên enterprise có thể khác.
 
 ### 6.9.3. Construct validity
 
-- Frida thay đổi timing — có thể ảnh hưởng race APC; fidelity benchmark (RQ5) nhằm đo mức này.
-- Score 0–100 là heuristic lab, **không** calibrated trên FP/FN thực tế lớn.
+Frida thay đổi timing — có thể ảnh hưởng race condition trong APC injection; fidelity benchmark (RQ5) đo mức ảnh hưởng. Score 0–100 là heuristic lab, chưa calibrated trên FP/FN quy mô lớn; ngưỡng HIGH/CRITICAL có thể cần điều chỉnh thực địa.
 
 ### 6.9.4. Conclusion validity
 
-Luận văn **không** claim:
+**Không** claim: thay thế sandbox/EDR thương mại; số liệu [4] trên 56.340 mẫu; phát hiện đầy đủ dưới E5/E6/kernel.
 
-- Thay thế sandbox/EDR thương mại;
-- Số liệu thống kê [4];
-- Phát hiện đầy đủ dưới E5/E6/kernel.
-
-Luận văn **có thể** claim (với evidence Chương 6):
-
-- Hiện thực có kiểm chứng 2-of-3 + equivalence [4] trên Windows lab;
-- Tăng cường so với baseline signature trên E1/E2;
-- Extension provenance và telemetry kép cho E3/E4 ở mức thiết kế + test.
+**Claim được** (với evidence Chương 6): hiện thực kiểm chứng 2-of-3 + equivalence [4] trên Windows lab; tăng cường so với baseline signature trên E1/E2; extension provenance và telemetry kép cho E3/E4 ở mức thiết kế + test.
 
 ---
 
 ## 6.10. Hạn chế và hướng bổ sung
 
-1. **E5:** Tích hợp subset anti-evasion [4] (timing patch, env check) — ưu tiên hướng phát triển Kết luận.
+Theo thứ tự ưu tiên triển khai:
+
+1. **E5:** Tích hợp subset anti-evasion [4] (timing patch, env check, masking artifact VM).
 2. **PoC-Bench:** Năm loader (section-map, shellcode, APC, reflective, hollowing) chạy trên VM với JSONL ground truth.
 3. **Paper-Subset:** 100 mẫu Sap4Sec — đo agreement với log paper.
 4. **E4 benchmark:** Sample direct-syscall so session Frida on/off.
@@ -341,7 +300,7 @@ Luận văn **có thể** claim (với evidence Chương 6):
 | PE + unsigned | +5 +10 |
 | **Tổng (cap 100)** | **≥ 70** |
 
-Test assertion `findings[0].score >= 70` — không yêu cầu CRITICAL (85) vì thiếu full context hijack như `test_aes_loader_chain_upgrades_to_critical`.
+Assertion `score >= 70` — không yêu cầu CRITICAL (85) vì thiếu full context hijack. Phản ánh *graded severity*: HIGH cho bằng chứng đủ alert; CRITICAL chỉ cho chuỗi đủ A/W/E và context overlap.
 
 ## 6.12. Classifier — ma trận kỹ thuật đã kiểm (20 test)
 
@@ -370,48 +329,42 @@ Test assertion `findings[0].score >= 70` — không yêu cầu CRITICAL (85) vì
 | 19 | process_hollowing_classic | E2 — unmap + write |
 | 20 | pe_injection / entrypoint | E2 — patch EP |
 
-Không có test riêng cho **E5** — classifier không chạy nếu sample không inject.
+Không có test E5 — classifier không có cơ hội chạy nếu sample không inject.
 
 ## 6.13. Đánh giá E5 — thừa nhận hạn chế (bắt buộc)
 
-Paper [4] §6 mô tả module anti-evasion tích hợp trong sandbox QEMU:
+Paper [4] §6 mô tả module anti-evasion sandbox QEMU gồm: patch timing (`Sleep`, `GetTickCount`, `QueryPerformanceCounter`); che artifact VM (registry `HKLM\HARDWARE\Description\System` chứa "VBOX/VMware", MAC prefix hypervisor, `vmtoolsd.exe`); ablation **+21,2 %** mẫu injection.
 
-- Patch timing (`Sleep`, `GetTickCount`) để né delay-based detection.
-- Che giấu artifact VM (registry, MAC, process list).
-- Ablation: **+21,2 %** mẫu injection được phát hiện nhờ anti-evasion so với sandbox thuần.
+Noirlycan **`kernel/analysis/evasion.py`** chỉ phát hiện và log signal (`IsDebuggerPresent`, `NtQueryInformationProcess` với `ProcessDebugPort`) — **không** patch giá trị trả về. Do đó: (1) malware E5 trong VM có thể **thoát sớm** → zero finding; (2) không replicate được 16,5 % prevalence hay 21,2 % sandbox gap; (3) RQ **cố ý bỏ qua E5** (Chương 3 §3.6).
 
-Noirlycan **`kernel/analysis/evasion.py`** chỉ phát hiện và log signal (vd. `IsDebuggerPresent`, `NtQueryInformationProcess`) — **không** patch, **không** fake environment. Do đó:
-
-1. Malware E5 trong lab VM có thể **thoát sớm** → zero primitive → zero finding.
-2. Luận văn **không thể** replicate số liệu 16,5 % prevalence hay 21,2 % sandbox gap.
-3. RQ đánh giá **cố ý bỏ qua E5** — không phải oversight mà ranh giới đề tài (Chương 3 §3.6).
-
-Hướng phát triển: port subset anti-evasion Sap4Sec hoặc ETW-only mode — nêu ở Kết luận.
+Hướng phát triển: port subset anti-evasion Sap4Sec hoặc chế độ ETW-only giảm dấu vết Frida.
 
 ## 6.14. Đánh giá định tính dashboard và JSONL
 
-Trên session lab thực (không nằm trong CI Linux):
-
-- JSONL chứa đủ chuỗi `file` → `sysmon` (E1) → `primitive` → `finding`.
-- Dashboard tab Findings hiển thị `related_file.path`, SHA256, technique badge.
-- Export JSONL phục vụ lưu trữ evidence — reproducibility Phụ lục C.
-
-Đây bổ sung RQ3 ở mức **qualitative acceptance** cho luận văn thạc sĩ.
+Trên session lab thực: JSONL chứa đủ chuỗi `file` → `sysmon` → `primitive` → `finding`, replay offline; dashboard Findings hiển thị `related_file.path`, SHA256, technique badge — analyst nắm tình huống dưới 30 giây; export JSONL phục vụ lưu trữ evidence (Phụ lục C). Bổ sung RQ3 ở mức *qualitative acceptance*; đánh giá định lượng cần khảo sát người dùng — vượt phạm vi.
 
 ## 6.15. Công thức metric (định nghĩa cho mở rộng tương lai)
-
-Khi PoC-Bench hoàn thiện, sẽ áp dụng:
 
 $$\mathrm{Precision} = \frac{TP}{TP + FP}, \quad \mathrm{Recall} = \frac{TP}{TP + FN}$$
 
 $$\mathrm{F1} = \frac{2 \cdot \mathrm{Precision} \cdot \mathrm{Recall}}{\mathrm{Precision} + \mathrm{Recall}}$$
 
-- **TP:** finding score ≥ threshold, ground truth injection = true.
-- **FP:** finding, ground truth benign.
-- **FN:** không finding, ground truth injection.
+**TP:** finding score ≥ threshold, ground truth injection = true. **FP:** finding trên sample benign. **FN:** không sinh finding trên sample injection. Hiện chỉ có TP synthetic trong 31 test (không có FP/FN corpus); không điền số Precision/Recall giả.
 
-Hiện tại chỉ có TP synthetic trong 31 test (không FP/FN corpus). Luận văn **trung thực** không điền số Precision/Recall giả.
+## 6.16. Kiểm chứng giả thuyết H1–H5
 
-## 6.16. Tóm tắt chương
+**Bảng 6.11.** Kết quả kiểm chứng giả thuyết (theo [14], [15])
 
-Chương 6 đánh giá Noirlycan theo RQ1–RQ5: **31 test tự động pass** (`test_correlation.py` + `test_ired_team_classifier.py`) xác nhận methodology [4] chống E1/E2; case study **section-mapping** đạt score ≥ 70 và vượt baseline signature; classifier pass 20 test biến thể hiện đại (RQ4). Provenance E3 và telemetry kép E4 đạt **một phần** — pipeline và test có, metric quy mô chưa đủ. **E5 (anti-sandbox) không triển khai** — hạn chế then chốt so với [4], recall lab không so sánh được 21,2 % sandbox miss. Frida fidelity (RQ5) còn protocol. Kết quả phù hợp luận văn thạc sĩ *tăng cường phát hiện dưới E1–E4* với ranh giới claim rõ ràng; thảo luận sâu hơn ở Chương 7.
+| Giả thuyết | Kết luận | Bằng chứng | Ghi chú |
+|------------|----------|------------|---------|
+| **H1** | **Chấp nhận** | 11 test `test_correlation.py`; NT API variants | E1: equivalence class hoạt động |
+| **H2** | **Chấp nhận** | `test_detects_section_mapping_write_execute_chain`, score ≥ 70 | E2: 2-of-3 đủ với W+E |
+| **H3** | **Chấp nhận một phần** | `test_file_drop_links_to_injection_finding`, dashboard qualitative | Chưa có metric forensic quy mô |
+| **H4** | **Chưa đủ số liệu** | Config Sysmon E8/E10; thiết kế Bảng 3.9 | Cần loader direct-syscall |
+| **H5** | **Chưa kiểm chứng** | Protocol Phụ lục E | Chờ benchmark VM Windows |
+
+H1–H3 đủ kết luận luận văn đạt mục tiêu *tăng cường E1–E3*; H4–H5 là điều kiện cần cho claim đầy đủ E4/E6.
+
+## 6.17. Tóm tắt chương
+
+Chương 6 đánh giá Noirlycan theo RQ1–RQ5 và **kiểm chứng H1–H5**: **31 test pass** xác nhận methodology [4] chống E1/E2 (**H1, H2 chấp nhận**); case study **section-mapping** đạt score ≥ 70, vượt baseline; classifier pass 20 test biến thể (RQ4). Provenance E3 (**H3 một phần**) và telemetry kép E4 (**H4 chưa đủ số liệu**). **E5 không triển khai** — recall lab không so sánh được với 21,2 %. Frida fidelity (**H5 chưa kiểm chứng**) ở mức protocol. Kết quả phù hợp luận văn thạc sĩ *tăng cường phát hiện dưới E1–E4*; định hướng tiếp theo ở Chương 7.

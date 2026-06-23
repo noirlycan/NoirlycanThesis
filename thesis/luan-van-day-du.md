@@ -1,6 +1,24 @@
+# TRANG BÌA
+
+*(Theo mẫu Phụ lục 1 — Công văn 139/ĐT UET; in chữ nhũ đủ dấu Tiếng Việt, khổ A4)*
+
+**ĐẠI HỌC QUỐC GIA HÀ NỘI**  
+**TRƯỜNG ĐẠI HỌC CÔNG NGHỆ**
+
+**PHAN VINH CƠ**
+
+## TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC DƯỚI CÁC HÌNH THỨC NÉ TRÁNH
+
+**LUẬN VĂN THẠC SĨ**  
+**KỸ THUẬT MÁY TÍNH** *(điền ngành học vị được công nhận)*
+
+---
+
+---
+
 # TRANG PHỤ BÌA
 
-*(Theo mẫu Phụ lục 2 — điền thông tin cá nhân trước khi in)*
+*(Theo mẫu Phụ lục 2 — Công văn 139/ĐT UET)*
 
 **ĐẠI HỌC QUỐC GIA HÀ NỘI**  
 **TRƯỜNG ĐẠI HỌC CÔNG NGHỆ**
@@ -10,27 +28,57 @@
 ## TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC DƯỚI CÁC HÌNH THỨC NÉ TRÁNH
 
 Ngành: Công nghệ thông tin  
-Chuyên ngành: *(điền)*  
-Mã số: *(điền)*
+Chuyên ngành: An toàn thông tin *(điều chỉnh nếu khác)*  
+Mã số: *(điền mã số chuyên ngành — xem phòng Đào tạo)*
 
 **LUẬN VĂN THẠC SĨ**  
-**KỸ THUẬT MÁY TÍNH** *(điền ngành chính thức)*
+**KỸ THUẬT MÁY TÍNH** *(điền ngành học vị được công nhận)*
 
-**NGƯỜI HƯỚNG DẪN KHOA HỌC:** *(Chức danh, họ tên)*
+**NGƯỜI HƯỚNG DẪN KHOA HỌC:** …………………………………… *(Chức danh, họ tên)*
 
 ---
 
 # LỜI CAM ĐOAN
 
-Tôi xin cam đoan luận văn thạc sĩ *Tăng cường phát hiện mã độc dưới các hình thức né tránh* là công trình nghiên cứu của riêng tôi dưới sự hướng dẫn của *(tên giáo viên hướng dẫn)*. Các kết quả, ý tưởng và tài liệu trích dẫn đã được nêu rõ nguồn gốc. Phương pháp phát hiện process injection căn cứ chính vào công trình Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [4]; phần hiện thực tham chiếu repository `NoirlycanThesis`.
+Tôi xin cam đoan luận văn thạc sĩ *Tăng cường phát hiện mã độc dưới các hình thức né tránh* là công trình nghiên cứu của riêng tôi dưới sự hướng dẫn của **……………………………………** *(Chức danh, họ tên GVHD)*. Các kết quả, ý tưởng và tài liệu trích dẫn đã được nêu rõ nguồn gốc theo quy định trích dẫn [n] trong ngoặc vuông. Phương pháp phát hiện process injection căn cứ chính vào công trình Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [4]; phần hiện thực tham chiếu repository `NoirlycanThesis` [13].
 
 Tôi xin cam đoan không sao chép, trích dẫn sai hoặc sử dụng tài liệu của người khác mà không ghi nguồn. Mọi sai sót là trách nhiệm của tôi.
+
+Hà Nội, ngày …… tháng …… năm 2026
 
 *(Chữ ký, họ tên)*
 
 ---
 
+---
+
+# MỤC LỤC
+
+*(Tạo tự động trong Word: Tham chiếu → Mục lục. Cấu trúc HTW/IMRAD [16] + UET [2].)*
+
+| Phần | Trang |
+|------|------:|
+| Trang bìa / Phụ bìa / Lời cam đoan | |
+| Mục lục | |
+| Danh mục ký hiệu, viết tắt | |
+| Danh mục bảng / hình | |
+| **MỞ ĐẦU — Đặt vấn đề** | |
+| **Chương 1.** Cơ sở lý thuyết | |
+| **Chương 2.** Phương pháp tăng cường phát hiện | |
+| **Chương 3.** Thiết kế và hiện thực hệ thống Noirlycan | |
+| **Chương 4.** Thực nghiệm, kết quả và so sánh đánh giá | |
+| **KẾT LUẬN** | |
+| Danh mục công trình KH của tác giả | |
+| Tài liệu tham khảo | |
+| Phụ lục | |
+
+---
+
+---
+
 # DANH MỤC CÁC KÝ HIỆU VÀ CHỮ VIẾT TẮT
+
+*(Xếp theo thứ tự ABC — Công văn 139/ĐT UET §1.4)*
 
 | Viết tắt | Tiếng Anh | Tiếng Việt |
 |----------|-----------|------------|
@@ -55,50 +103,87 @@ Tôi xin cam đoan không sao chép, trích dẫn sai hoặc sử dụng tài li
 - $A$, $W$, $E$: ba operational primitive *allocate*, *write*, *execute*.
 - $\text{addr}(p)$, $\text{size}(p)$: địa chỉ và kích thước gắn với primitive $p$.
 - Hai khoảng nhớ $[a, a+s)$ và $[b, b+s')$ *chồng nhau* khi $a < b+s'$ và $b < a+s$.
+- Phương trình đánh số dạng (x.y) đặt sát lề phải trong ngoặc đơn — thống nhất xuyên suốt luận văn.
 
 ---
 
-# MỞ ĐẦU
+---
 
-## 1.1. Lý do chọn đề tài
+# DANH MỤC CÁC BẢNG
 
-Trong bối cảnh an ninh mạng hiện đại, mã độc Windows không còn giới hạn ở việc che giấu *nội dung* tĩnh — mã hóa payload, packer, obfuscation chuỗi — mà ngày càng chủ động **né tránh phát hiện** ở tầng hành vi động. Các hình thức né tránh này bao gồm: thay thế API tương đương để lách rule cứng của EDR/AV; gộp hoặc ẩn các bước trung gian trong chuỗi injection; inject payload vào tiến trình hợp pháp để che nguồn gốc (attribution); phát hiện sandbox hoặc debugger rồi ngừng hành vi độc hại; gọi syscall trực tiếp hoặc unhook thư viện hệ thống để bỏ qua instrumentation user-mode [4], [6], [8]. Trong số các kỹ thuật hành vi then chốt, **process injection** (MITRE ATT&CK T1055 [9]) đóng vai trò đặc biệt: malware thực thi payload dưới danh nghĩa tiến trình đã có uy tín như `explorer.exe`, `msedge.exe`, hoặc binary đã ký số, khiến các phương pháp phát hiện dựa trên signature API đơn lẻ hoặc sandbox thiếu lớp chống né tránh dễ bỏ sót [4], [9].
+*(Cấu trúc HTW: 4 chương nội dung + Mở đầu M.x. Chạy `./build-full.sh` sau khi sửa nguồn.)*
 
-Công trình *Can You Run My Code? A Close Look at Process Injection in Windows Malware* của Di Pietro, D'Elia và Querzoni, công bố tại ASIA CCS 2025 [4] — **căn cứ khoa học chính** của luận văn này — cung cấp bằng chứng thực nghiệm quy mô lớn về mức độ phổ biến và độ phức tạp của injection trong malware thực tế. Tác giả phân tích **56.340 mẫu malware** thu thập trong giai đoạn 2017–2023 và ước lượng khoảng **16,5 %** số mẫu thể hiện hành vi injection. Con số này cho thấy injection không phải kỹ thuật hiếm mà là thành phần cấu trúc của hệ sinh thái mã độc Windows hiện đại. Đáng chú ý hơn, paper chỉ ra rằng **21,2 %** các mẫu injection trong tập nghiên cứu bị các sandbox phổ biến bỏ sót khi thiếu cơ chế chống né tránh môi trường phân tích — malware có thể phát hiện VM, timing bất thường, hoặc thiếu thành phần người dùng thực rồi *không thực hiện* injection trong môi trường lab, dẫn đến đánh giá thấp sai lệch về prevalence thực tế [4], [6].
+| Số | Tên bảng (tóm tắt) |
+|----|---------------------|
+| M.1–M.6 | Mở đầu: né tránh, giả thuyết, đóng góp, bố cục |
+| 1.1–1.6 | Chương 1 — Cơ sở lý thuyết |
+| 2.1–2.24+ | Chương 2 — Threat model + phương pháp (ghép tự động) |
+| 3.1–3.4 | Chương 3 — Thiết kế & hiện thực |
+| 4.1–4.35+ | Chương 4 — Related work + thực nghiệm + thảo luận |
 
-Để đối phó các hình thức né tránh bằng biến thể triển khai (thay API, gộp bước), paper [4] đề xuất abstraction **operational primitive** gồm ba thao tác ngữ nghĩa trên bộ nhớ nạn nhân: *allocate* (chuẩn bị vùng thực thi), *write* (đặt payload), và *execute* (kích hoạt thực thi). Mỗi primitive được ánh xạ vào một **lớp tương đương API** (*equivalence class*) — ví dụ `VirtualAllocEx`, `NtAllocateVirtualMemory`, `NtCreateSection` đều thuộc lớp *allocate*. Quy tắc **ít nhất hai trong ba primitive** (*2-of-3*), kết hợp **đồng nhất vùng nhớ** (*memory range congruence*) và **thứ tự thời gian** (*temporal ordering*), cho phép phát hiện injection mà không phụ thuộc vào chuỗi API cụ thể — đây là điểm then chốt để giảm false negative khi malware né signature bằng cách thay `CreateRemoteThread` bằng `NtCreateThreadEx`, hoặc thay cặp `VirtualAllocEx` + `WriteProcessMemory` bằng `NtCreateSection` + `NtMapViewOfSection` [4], [7].
+*Điền cột Trang sau khi xuất Word. Chi tiết từng bảng: tìm `**Bảng X.Y**` trong `luan-van-day-du.md`.*
 
-Tuy nhiên, paper [4] triển khai framework phân tích trên **sandbox QEMU batch** với mục tiêu nghiên cứu quy mô dataset và thống kê prevalence, chưa cung cấp pipeline vận hành cho **phòng lab Windows endpoint** — môi trường mà analyst thực tế thường điều tra sự cố. Trong lab Windows, mã độc thường kết hợp thêm các hình thức né tránh không được paper xử lý đầy đủ trong artifact công khai: **file-drop loader** (thả executable xuống đĩa, spawn, rồi inject cross-process) để che attribution; **direct syscall** hoặc unhooking `ntdll.dll` để né hook user-mode; và **anti-instrumentation** nhắm vào Frida hoặc debugger. Paper có module anti-evasion tích hợp cho sandbox (bypass timing check, env fingerprint) [4], nhưng module này chưa được chuyển thành giải pháp vận hành trên host Windows thông thường.
+---
 
-Xuất phát từ khoảng trống trên, luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh* nhằm:
+---
 
-1. **Áp dụng và hiện thực hóa** phương pháp chống biến thể API của [4] trên endpoint lab Windows 10/11 thông qua hệ thống **Noirlycan Telemetry**;
-2. **Bổ sung lớp phòng thủ kernel** (Sysmon) khi hook user-mode (Frida) bị né bởi direct syscall hoặc unhooking;
-3. **Tăng cường truy vết nguồn gốc** file → process → injection để đối phó né tránh bằng inject vào tiến trình sạch;
-4. **Đánh giá có kiểm chứng** trên kịch bản injection biến thể (section-mapping, APC, reflective DLL, PoolParty, v.v.) với ground truth do tác giả luận văn xây dựng.
+# DANH MỤC CÁC HÌNH VẼ, ĐỒ THỊ
 
-Đề tài có ý nghĩa thực tiễn đối với các phòng lab an ninh mạng tại Việt Nam và khu vực: cung cấp công cụ mã nguồn mở, có tài liệu threat model formal, giúp sinh viên và researcher tái lập phương pháp [4] mà không phụ thuộc sandbox đóng hoặc EDR thương mại. Đồng thời, luận văn cam kết **trung thực khoa học** về phạm vi: các nhóm né tránh ngoài khả năng hiện thực (đặc biệt E5 — anti-sandbox/VM) được khai báo rõ, không mở rộng claim vượt evidence thí nghiệm.
+*(Đầu đề hình ghi phía dưới hình; đánh số gắn số chương — Công văn 139/ĐT UET.)*
 
-## 1.2. Phân loại hình thức né tránh trong phạm vi đề tài
+| Số | Tên hình |
+|----|----------|
+| 1.1 | Trust boundary: Frida + Sysmon → correlator (conceptual; bản SVG đầy đủ tại `docs/design/architecture-comparison-template.svg`) |
+| 2.1 | Literature map — vị trí luận văn trong không gian nghiên cứu |
+| 4.1 | So sánh pipeline batch [4] (QEMU) và pipeline Noirlycan (lab Windows real-time) |
+| 5.1 | Kiến trúc Clean Architecture / microservices Noirlycan *(chèn từ FigJam hoặc `docs/architecture-diagrams.md` khi xuất Word)* |
 
-Luận văn tổ chức các hình thức né tránh liên quan trực tiếp process injection thành **sáu nhóm E1–E6** (Bảng 1.1). Phân loại này thống nhất với threat model formal (Chương 3) và ma trận mitigation trong hệ thống Noirlycan. Mỗi nhóm mô tả *cách malware né phát hiện* và *cơ chế tăng cường* mà luận văn đề xuất — không phải mọi nhóm đều nằm trong phạm vi hiện thực đầy đủ.
+*Cột Trang: điền sau khi chèn hình vào Word.*
 
-**Bảng 1.1.** Hình thức né tránh và cơ chế đối phó của luận văn
+---
 
-| Nhóm | Tên | Mô tả | Cơ chế tăng cường phát hiện | Phạm vi luận văn |
-|------|-----|-------|----------------------------|------------------|
-| E1 | Biến thể API | Thay Win32 bằng NT API tương đương: `CreateRemoteThread` → `NtCreateThreadEx`; `VirtualAllocEx` → `NtAllocateVirtualMemory` | Lớp tương đương API + quy tắc 2-of-3 theo [4] | Trong phạm vi |
-| E2 | Gộp/ẩn bước | Section mapping (`NtCreateSection` + `NtMapViewOfSection`) gộp allocate+write; Mockingjay khai thác vùng RWX có sẵn, bỏ allocate riêng | Quy tắc 2-of-3 (chỉ cần ≥2 primitive); classifier section-mapping | Trong phạm vi |
-| E3 | Né attribution | Inject vào tiến trình hợp pháp; file-drop loader che nguồn; không tạo process “lạ” dễ bị chặn | Sysmon lineage (Event 1) + file provenance (Event 11) + static triage | Trong phạm vi (extension) |
-| E4 | Né hook user-mode | Direct syscall stub, unhooking `ntdll`, patch ETW/AMSI | Sysmon kernel callback (Event 8, 10) fallback khi Frida miss | Trong phạm vi (một phần) |
-| E5 | Né sandbox/VM | Timing check, env fingerprint, kiểm CPUID/Hypervisor — malware *không chạy* injection trong lab | Paper [4] tích hợp anti-evasion; ablation +21,2 % phát hiện | **Ngoài phạm vi hiện thực** |
-| E6 | Né instrumentation | Anti-Frida, anti-debug, phát hiện agent rồi abort hoặc đổi hành vi | `spawn` mode; khai báo limitation; ưu tiên Sysmon fallback | Hạn chế; không chủ động đối phó |
+---
 
-Nhóm **E5** cần được làm rõ đặc biệt theo nguyên tắc trung thực khoa học. Paper [4] báo cáo rằng khoảng 21,2 % mẫu injection trong dataset bị sandbox bỏ sót vì malware phát hiện môi trường phân tích và *từ chối thực thi* payload injection — đây là dạng né tránh *passive* (không inject) chứ không phải né rule sau khi đã inject. Paper giải quyết bằng module anti-evasion tích hợp (patch timing, giả lập môi trường). Luận văn **không hiện thực** module anti-evasion tương đương; hệ thống Noirlycan chỉ *ghi nhận* tín hiệu evasion (`kernel/analysis/evasion.py`) mà không bypass. Hệ quả: các kết luận prevalence và recall của luận văn **không được** so sánh trực tiếp với số liệu 16,5 % / 21,2 % của paper trên cùng điều kiện thí nghiệm. E5 được nêu trong threat model và hướng phát triển (Kết luận), không phải claim đóng góp hiện tại.
+# MỞ ĐẦU — ĐẶT VẤN ĐỀ
 
-Nhóm **E4** nằm trong phạm vi *một phần*: khi malware direct-syscall, Frida hook user-mode miss toàn bộ đối số API — mất khả năng memory congruence chi tiết. Tuy nhiên, Sysmon driver (kernel-mode) vẫn ghi **CreateRemoteThread** (Event 8) và **ProcessAccess** (Event 10) qua callback kernel, không phụ thuộc hook `ntdll` [10]. Noirlycan kết hợp hai lớp telemetry theo ma trận tin cậy (Hình 1.1 — mô tả trong Chương 5) để giảm false negative khi E4 xảy ra, dù mất granularity so với trace đầy đủ của paper.
+*(Cấu trúc theo Nguyễn Việt Hà — HTW: bối cảnh → nội dung nghiên cứu → bố cục; khuôn IMRAD [16].)*
 
-**Bảng 1.2.** Mối quan hệ giữa nhóm né tránh và kỹ thuật injection điển hình
+## 1.1. Bối cảnh nghiên cứu
+
+Mã độc Windows hiện đại chủ động **né tránh phát hiện** ở tầng hành vi động: thay thế API tương đương để lách rule EDR/AV; gộp các bước trong chuỗi tiêm mã; tiêm vào tiến trình hợp pháp để che attribution; phát hiện sandbox/debugger rồi ngừng hành vi; gọi syscall trực tiếp hoặc gỡ hook (unhooking) để bỏ qua instrumentation user-mode [4], [6], [8]. **Tiêm mã liên tiến trình** (process injection, MITRE ATT&CK T1055 [9]) đóng vai trò then chốt: malware thực thi payload dưới danh nghĩa tiến trình uy tín như `explorer.exe` hoặc binary đã ký số, khiến signature API đơn lẻ dễ bỏ sót [4], [9].
+
+Công trình *Can You Run My Code?* tại ASIA CCS 2025 [4] — **căn cứ khoa học chính** — phân tích **56.340 mẫu** giai đoạn 2017–2023, ước lượng ~**16,5 %** thể hiện injection, và chỉ ra **21,2 %** bị sandbox bỏ sót do *evasion thụ động* (malware từ chối thực thi trong môi trường phân tích) [4], [6].
+
+Paper [4] đề xuất abstraction **operational primitive** gồm ba thao tác: *allocate* (chuẩn bị vùng thực thi), *write* (đặt payload), *execute* (kích hoạt). Mỗi primitive ánh xạ vào **lớp tương đương API**: `VirtualAllocEx`, `NtAllocateVirtualMemory`, `NtCreateSection` thuộc *allocate*; `WriteProcessMemory`, `NtWriteVirtualMemory`, `NtMapViewOfSection` thuộc *write*; `CreateRemoteThread`, `NtCreateThreadEx`, `QueueUserAPC`, `SetThreadContext` thuộc *execute*. Quy tắc **2-of-3** kết hợp **memory range congruence** và **temporal ordering** (allocate → write → execute) cho phép phát hiện injection không phụ thuộc chuỗi API cụ thể, giảm false negative khi malware thay biến thể API [4], [7].
+
+Tuy nhiên, [4] triển khai trên **sandbox QEMU batch**, chưa có pipeline cho **lab Windows endpoint** — nơi malware kết hợp **file-drop loader**, **direct syscall**/unhooking `ntdll`, **anti-instrumentation** nhắm Frida/debugger.
+
+Từ đó, luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh* nhằm: (1) **hiện thực hóa** phương pháp chống biến thể API [4] trên endpoint lab Windows 10/11 qua **Noirlycan Telemetry**; (2) **bổ sung lớp kernel** (Sysmon) khi Frida bị né; (3) **truy vết nguồn gốc** file → process → injection để đối phó inject vào tiến trình sạch; (4) **đánh giá có kiểm chứng** trên kịch bản biến thể (section-mapping, APC, reflective DLL, PoolParty) với ground truth tự xây.
+
+Đề tài cung cấp công cụ mã nguồn mở, có threat model formal, giúp tái lập [4] không phụ thuộc sandbox đóng hay EDR thương mại. Luận văn cam kết **trung thực khoa học**: nhóm ngoài phạm vi (E5) khai báo rõ.
+
+## 1.2. Nội dung nghiên cứu trong luận văn
+
+### 1.2.1. Phân loại hình thức né tránh trong phạm vi đề tài
+
+Luận văn tổ chức các hình thức né tránh thành **sáu nhóm E1–E6** (Bảng M.1), thống nhất với threat model (Chương 2).
+
+**Bảng M.1.** Hình thức né tránh và cơ chế đối phó của luận văn
+
+| Nhóm | Tên | Mô tả | Cơ chế tăng cường phát hiện | Phạm vi |
+|------|-----|-------|----------------------------|---------|
+| E1 | Biến thể API | `CreateRemoteThread` → `NtCreateThreadEx`; `VirtualAllocEx` → `NtAllocateVirtualMemory` | Lớp tương đương API + quy tắc 2-of-3 [4] | Trong phạm vi |
+| E2 | Gộp/ẩn bước | Section mapping gộp allocate+write; Mockingjay khai thác RWX có sẵn | Quy tắc 2-of-3 (≥2 primitive); classifier section-mapping | Trong phạm vi |
+| E3 | Né attribution | Inject vào tiến trình hợp pháp; file-drop loader che nguồn | Sysmon lineage (E1) + file provenance (E11) + static triage | Trong phạm vi (extension) |
+| E4 | Né hook user-mode | Direct syscall stub, unhooking `ntdll`, patch ETW/AMSI | Sysmon kernel callback (E8, E10) fallback khi Frida miss | Trong phạm vi (một phần) |
+| E5 | Né sandbox/VM | Timing check, env fingerprint, CPUID — malware *không chạy* injection | Paper [4] có anti-evasion; ablation +21,2 % | **Ngoài phạm vi hiện thực** |
+| E6 | Né instrumentation | Anti-Frida, anti-debug, phát hiện agent rồi abort | `spawn` mode; khai báo limitation; ưu tiên Sysmon fallback | Hạn chế |
+
+**E5**: rule 2-of-3 chỉ bắt khi malware *thực sự* phát primitive; nếu từ chối thực thi thì rule không có gì để đánh giá. Luận văn **không hiện thực** anti-evasion; Noirlycan chỉ *ghi nhận* tín hiệu (`kernel/analysis/evasion.py`). Hệ quả: prevalence/recall **không** so sánh trực tiếp với 16,5 %/21,2 % của paper.
+
+**E4** trong phạm vi *một phần*: khi direct-syscall, Frida miss đối số API; Sysmon kernel-mode vẫn ghi **CreateRemoteThread** (Event 8) và **ProcessAccess** (Event 10) qua callback `PsSetCreateThreadNotifyRoutine`, `ObRegisterCallbacks`, không phụ thuộc hook `ntdll` [10].
+
+**Bảng M.2.** Mối quan hệ giữa nhóm né tránh và kỹ thuật injection điển hình
 
 | Kỹ thuật injection | E1 | E2 | E3 | E4 | E5 | E6 |
 |--------------------|----|----|----|----|----|-----|
@@ -109,33 +194,49 @@ Nhóm **E4** nằm trong phạm vi *một phần*: khi malware direct-syscall, F
 | Process Ghosting/Herpaderping | ✓ | ✓ | ✓ | ✓ | | |
 | PoolParty / Mockingjay | | ✓ | ✓ | ✓ | | |
 
-Ký hiệu ✓: kỹ thuật thường khai thác hình thức né tránh tương ứng.
+Hầu hết kỹ thuật injection hiện đại khai thác đồng thời nhiều nhóm né tránh, nên giải pháp đơn lớp khó đạt recall cao.
 
 ## 1.3. Mục tiêu nghiên cứu
 
 ### 1.3.1. Mục tiêu tổng quát
 
-Tăng cường khả năng phát hiện mã độc Windows sử dụng process injection và các hình thức né tránh E1–E4 trong phòng lab Windows 10/11, căn cứ phương pháp operational primitive và quy tắc 2-of-3 của Di Pietro et al. [4], thông qua hiện thực hóa và mở rộng có kiểm chứng trên hệ thống Noirlycan Telemetry.
+Tăng cường phát hiện mã độc Windows dùng process injection và né tránh E1–E4 trong lab Windows 10/11, căn cứ operational primitive và 2-of-3 [4], qua hiện thực và mở rộng có kiểm chứng trên Noirlycan.
 
 ### 1.3.2. Mục tiêu cụ thể
 
-**RO1 — Hiện thực hóa lõi phương pháp [4].** Xây dựng bộ quy tắc phát hiện gồm: (a) ba operational primitive *allocate*, *write*, *execute*; (b) lớp tương đương API theo `PAPER_API_CLASSES` trong artifact [11]; (c) quy tắc 2-of-3 trên cùng cặp `(actor_pid, target_pid)`; (d) memory range congruence; (e) temporal ordering. Lớp thu thập gồm Frida hooks (`windows_injection_hooks.js`) và correlator Python (`services/analysis/domain/correlation.py`). Tiêu chí thành công: unit test khớp case study section-mapping (Neurevt) mô tả trong paper §3.5 [4].
+**RO1 — Hiện thực hóa lõi phương pháp [4].** Xây bộ quy tắc gồm: ba operational primitive; lớp tương đương API theo `PAPER_API_CLASSES` [11]; 2-of-3 trên cùng `(actor_pid, target_pid)`; memory range congruence; temporal ordering. Tiêu chí: unit test khớp case section-mapping (Neurevt) trong [4] §3.5.
 
-**RO2 — Kiến trúc telemetry kép chống E4.** Thiết kế pipeline **Sysmon ∪ Frida**: Frida cung cấp đối số API chi tiết cho congruence; Sysmon kernel (Event 1, 7, 8, 10, 11) fallback khi user-mode hook bị bypass. Đánh giá drop-rate Frida và tỷ lệ phát hiện bổ sung nhờ Sysmon trên subset loader direct-syscall (nếu có trong benchmark).
+**RO2 — Telemetry kép chống E4.** Pipeline **Sysmon ∪ Frida**: Frida cung cấp đối số API cho congruence; Sysmon kernel (Event 1, 7, 8, 10, 11) fallback khi user-mode hook bị bypass.
 
-**RO3 — Pipeline provenance chống E3.** Mở rộng paper [4] theo hướng lab Windows: liên kết Sysmon Event 11 (FileCreate) → static triage (SHA256, PE header, entropy, chữ ký Authenticode) → ProcessCreate lineage → Finding injection. Mục tiêu: analyst truy ngược từ phát hiện inject tới file nguồn trên đĩa, hỗ trợ điều tra sau sự cố.
+**RO3 — Pipeline provenance chống E3.** Mở rộng [4]: Sysmon Event 11 (FileCreate) → static triage (SHA256, PE header, entropy, Authenticode) → ProcessCreate lineage → Finding, giúp truy ngược về file nguồn.
 
-**RO4 — Đánh giá trên benchmark biến thể injection.** Xây dựng bộ loader PoC (section-mapping, shellcode, APC, reflective DLL, hollowing precursor) và chạy trên subset artifact Sap4Sec/process-injection [11]. Đo precision, recall, F1 cho phát hiện chain; precision phân loại kỹ thuật (21+ enum trong `InjectionTechnique`).
+**RO4 — Đánh giá trên benchmark biến thể.** Xây loader PoC (section-mapping, shellcode, APC, reflective DLL, hollowing precursor) và chạy trên subset Sap4Sec [11]. Đo precision, recall, F1 cho phát hiện chain; precision phân loại kỹ thuật.
 
-**RO5 — Tài liệu hóa threat model và ranh giới claim.** Formal hóa đối thủ (C1–C7), out-of-scope (O1–O7), giả định (M1–M6), ma trận E1–E6 ↔ mitigation. Phân tách rõ claim được phép (E1–E4) và claim **không được** (E5 anti-evasion đầy đủ; prevalence 56k mẫu của paper).
+**RO5 — Threat model và ranh giới claim.** Formal hóa đối thủ (C1–C7), out-of-scope (O1–O7), giả định (M1–M6), ma trận E1–E6 ↔ mitigation.
+
+### 1.3.3. Giả thuyết nghiên cứu
+
+Luận văn định vị là **nghiên cứu ứng dụng** — giả thuyết nhắm **kiểm chứng phạm vi mở rộng** và **giới hạn ứng dụng** của [4] [14], [15].
+
+**Bảng M.3.** Giả thuyết nghiên cứu và cách kiểm chứng
+
+| ID | Giả thuyết | Kiểm chứng | Kết quả sơ bộ |
+|----|------------|------------|---------------|
+| **H1** | 2-of-3 + equivalence class [4] phát hiện chain khi biến thể API (E1) | Unit test correlation | **Chấp nhận** (31 test) |
+| **H2** | 2-of-3 phát hiện injection khi gộp bước (E2, section-mapping) | `test_detects_section_mapping_write_execute_chain` | **Chấp nhận** (score ≥ 70) |
+| **H3** | Provenance file → process → finding tăng truy vết (E3) | Case study file-drop; `related_file` | **Chấp nhận một phần** |
+| **H4** | Sysmon ∪ Frida giảm FN khi Frida bị né (E4) | Thiết kế E8/E10; benchmark syscall | **Chưa đủ số liệu** |
+| **H5** | Frida hook trung thực ≥ 99 % call (M5) | `frida-fidelity.md` | **Chưa chạy trên VM** |
+
+**Loại trừ:** anti-evasion E5 — out-of-scope hiện thực; chỉ trích dẫn 21,2 % làm động lực.
 
 ## 1.4. Đối tượng và phạm vi nghiên cứu
 
 ### 1.4.1. Đối tượng nghiên cứu
 
-- **Mã độc/loader Windows user-mode** sử dụng process injection kèm hình thức né tránh E1–E4, đặc biệt biến thể section-mapping và file-drop.
-- **Phương pháp phát hiện** operational primitive, equivalence class, quy tắc 2-of-3, memory congruence, temporal ordering theo [4].
-- **Hệ thống Noirlycan Telemetry** — artifact hiện thực luận văn: collector Python, Frida hooks, Sysmon poller, correlator, technique classifier, dashboard Flask [13].
+- **Mã độc/loader Windows user-mode** dùng process injection kèm né tránh E1–E4.
+- **Phương pháp phát hiện** operational primitive, equivalence class, 2-of-3, memory congruence, temporal ordering [4].
+- **Hệ thống Noirlycan Telemetry** [13]: collector, Frida hooks, Sysmon poller, correlator, classifier, dashboard.
 
 ### 1.4.2. Phạm vi trong luận văn
 
@@ -143,62 +244,69 @@ Tăng cường khả năng phát hiện mã độc Windows sử dụng process i
 |-----------|---------------|
 | Hệ điều hành | Windows 10/11 (64-bit), lab VM cô lập |
 | Chế độ malware | User-mode; cross-process và self-inject |
-| Né tránh | E1 (biến thể API), E2 (gộp bước), E3 (attribution — extension), E4 (syscall/unhook — fallback Sysmon) |
+| Né tránh | E1, E2, E3 (extension), E4 (fallback Sysmon) |
 | Telemetry | Sysmon (config `sysmon-noirlycan.xml`), Frida 16.x, static triage |
-| Kỹ thuật injection | 21+ kỹ thuật trong taxonomy (paper [4] + iRed.team + mở rộng PoolParty/Mockingjay) |
+| Kỹ thuật injection | 21+ kỹ thuật (paper [4] + iRed.team + PoolParty/Mockingjay) |
 | Đánh giá | PoC-Bench tự xây; subset Paper-Subset; Benign-Baseline; protocol Frida fidelity |
 
 ### 1.4.3. Phạm vi ngoài luận văn
 
 | Khía cạnh | Ngoài phạm vi | Lý do |
 |-----------|---------------|-------|
-| E5 — Anti-sandbox/VM đầy đủ | Không hiện thực bypass | Paper [4] có module riêng; vượt phạm vi thesis engineering |
-| E6 — Anti-Frida chủ động | Chỉ limitation + spawn | Đối thủ có thể detect agent; không ship countermeasure |
-| Injection kernel-mode | Không | Sysmon/Frida user-mode không đủ; paper cũng tập trung user-mode |
-| Prevalence 56.340 mẫu | Không tái lập quy mô | Luận văn tập trung replication có kiểm chứng + extension lab |
-| EDR thương mại | Không so sánh trực tiếp | Đóng source; chỉ tham chiếu công trình liên quan |
+| E5 — Anti-sandbox/VM | Không hiện thực bypass | Paper [4] có module riêng; vượt phạm vi |
+| E6 — Anti-Frida chủ động | Chỉ limitation + spawn | Không ship countermeasure |
+| Injection kernel-mode | Không | Sysmon/Frida user-mode không đủ |
+| Prevalence 56.340 mẫu | Không tái lập quy mô | Tập trung replication + extension lab |
+| EDR thương mại | Không so sánh trực tiếp | Đóng source |
 | Windows Server / ARM | Không | Chưa validate ngoài desktop lab |
 
-Luận văn **không** tuyên bố Noirlycan thay thế sandbox quy mô lớn của [4] hay EDR production. Phạm vi là **phòng lab có kiểm chứng** — nơi phương pháp [4] được áp dụng, mở rộng provenance, và đánh giá trên ground truth kiểm soát.
+Luận văn **không** tuyên bố Noirlycan thay thế sandbox [4] hay EDR production.
+
+### 1.4.4. Đối tượng độc giả và động cơ
+
+**Độc giả** [15]: hội đồng luận văn thạc sĩ CNTT/ATTT; nhà nghiên cứu và sinh viên lab malware; kỹ sư SOC/DFIR. Giả định đã biết Windows cơ bản, MITRE ATT&CK, process/thread.
+
+**Động cơ:** khoảng cách giữa nghiên cứu injection quy mô lớn [4] và nhu cầu phòng lab cần công cụ mã nguồn mở, tái lập được trên Windows.
+
+**Tính khả thi** [14]: artifact Sap4Sec [11], Noirlycan, VM Windows sẵn có; Sysmon/Frida miễn phí. Rủi ro Frida bị anti-instrumentation được kiểm soát qua fidelity protocol (RO5) và fallback Sysmon (RO2).
 
 ## 1.5. Phương pháp nghiên cứu
 
-Luận văn kết hợp năm phương pháp bổ trợ nhau:
+Luận văn kết hợp năm phương pháp:
 
-**1. Nghiên cứu tài liệu.** Khảo sát có hệ thống công trình nền tảng: Di Pietro et al. [4] (căn cứ chính); Klein et al. [7] (ba bước allocate/write/execute); Starink et al. [12] (behavior graph, memory congruence); khảo sát né tránh sandbox [6], anti-analysis [8]; MITRE ATT&CK T1055 [9]; tài liệu Sysmon [10] và Frida [5]; artifact Sap4Sec/process-injection [11].
+**1. Nghiên cứu tài liệu.** Di Pietro et al. [4]; Klein et al. [7]; Starink et al. [12]; né tránh sandbox [6], anti-analysis [8]; MITRE T1055 [9]; Sysmon [10], Frida [5]; Sap4Sec [11].
 
-**2. Phân tích threat model.** Chuyển hóa `docs/audit-and-threat-model.md` thành Chương 3 formal: tài sản (A1–A3), năng lực đối thủ (C1–C7), out-of-scope (O1–O7), giả định môi trường (E1–E6 trong threat model — khác với nhóm né tránh E1–E6), giả định phương pháp (M1–M6), ma trận threat T1–T9.
+**2. Phân tích threat model.** Chuyển `docs/audit-and-threat-model.md` thành threat model **Chương 2**: A1–A3, C1–C7, O1–O7, M1–M6, ma trận T1–T9.
 
-**3. Thiết kế và hiện thực hệ thống.** Áp dụng phương pháp [4] vào kiến trúc Noirlycan (Chương 5–6): `kernel/classification/api_manifest.py` (equivalence classes), `windows_injection_hooks.js` (Frida), `services/analysis/domain/correlation.py` (2-of-3 engine), `kernel/classification/technique_classifier.py` (21+ kỹ thuật), `file_watch.py` + static triage (provenance extension). Đối chiếu implementation với paper qua audit doc — ghi nhận deviation (D1–D8) và fix có chọn lọc.
+**3. Thiết kế và hiện thực.** Áp dụng [4] vào Noirlycan (**Chương 3**): `kernel/classification/api_manifest.py`, `windows_injection_hooks.js`, `services/analysis/domain/correlation.py` (2-of-3 engine), `technique_classifier.py`, `file_watch.py` + static triage. Audit doc ghi deviation (D1–D8).
 
-**4. Thực nghiệm và đánh giá.** (a) Unit test correlation (31+ case); (b) PoC-Bench loader tự viết; (c) subset 100 mẫu artifact paper; (d) Benign-Baseline 50 chương trình hợp pháp; (e) Frida fidelity protocol — so sánh event Frida với ground truth. Metrics: precision, recall, F1; thời gian provenance; drop-rate Frida.
+**4. Thực nghiệm và đánh giá** (**Chương 4**): unit test correlation (31+ case); PoC-Bench loader tự viết; subset 100 mẫu artifact paper; Benign-Baseline 50 chương trình hợp pháp; Frida fidelity protocol. Metrics: precision, recall, F1; drop-rate Frida.
 
-**5. Thảo luận và phản biện khoa học.** Phân tích hạn chế construct validity (Frida overhead), external validity (chỉ Windows 10/11 lab), và deviation so với paper. Không che giấu E5 out-of-scope hay inflation recall do thiếu anti-evasion.
+**5. Thảo luận.** Hạn chế construct validity (Frida overhead), external validity (chỉ Windows 10/11 lab), deviation so với paper.
 
-**Bảng 1.3.** Ánh xạ phương pháp nghiên cứu với câu hỏi đánh giá (Chương 6)
+**Bảng M.4.** Ánh xạ phương pháp nghiên cứu với câu hỏi đánh giá (Chương 4)
 
-| Phương pháp | Câu hỏi phục vụ |
-|-------------|-----------------|
-| Audit code-vs-paper | RQ1: Implementation có khớp artifact [4]? |
-| PoC-Bench + Paper-Subset | RQ2: Phát hiện được loader biến thể? |
-| Provenance pipeline | RQ3: Extension E3 có giá trị forensic? |
-| Frida fidelity | RQ4: Frida đủ trung thực cho kết luận? |
+| Phương pháp | Câu hỏi / Giả thuyết phục vụ |
+|-------------|------------------------------|
+| Audit code-vs-paper | RQ1 / H1, H2 |
+| PoC-Bench + Paper-Subset | RQ2 |
+| Provenance pipeline | RQ3 / H3 |
+| Frida fidelity | RQ5 / H5 |
+| Telemetry kép | RQ2 / H4 |
 
 ## 1.6. Những đóng góp của luận văn
 
-Luận văn đóng góp năm nhóm, phân tách rõ replication [4] và extension lab:
+**Đóng góp 1 — Chống biến thể API (E1) và gộp bước (E2).** Hiện thực có kiểm chứng lõi 2-of-3 + equivalence class [4] trên Frida/Sysmon, 31+ unit test bao phủ APC, section-mapping, PoolParty/Ghosting precursor, reflective DLL, thread hijack. Deviation (D1–D3) được audit; fix temporal ordering, `lpStartAddress` cải thiện fidelity.
 
-**Đóng góp 1 — Tăng cường chống né tránh biến thể API (E1) và gộp bước (E2).** Hiện thực có kiểm chứng lõi 2-of-3 + equivalence class của [4] trên Frida/Sysmon, với 31+ unit test bao phủ APC, section-mapping, PoolParty precursor, Ghosting precursor, reflective DLL, thread hijack. Deviation so với paper (D1–D3) được audit và khai báo; một số fix (temporal ordering, `lpStartAddress` cho execute primitive) cải thiện fidelity.
+**Đóng góp 2 — Chống né hook user-mode (E4).** Telemetry kép: Sysmon kernel callback bắt CreateRemoteThread/ProcessAccess khi Frida miss do direct syscall/unhooking. Ma trận tin cậy formal hóa ranh giới bypass.
 
-**Đóng góp 2 — Tăng cường chống né hook user-mode (E4).** Kiến trúc telemetry kép: Sysmon kernel callback bắt CreateRemoteThread/ProcessAccess khi Frida miss do direct syscall hoặc unhooking. Ma trận tin cậy theo lớp (kernel vs user) formal hóa ranh giới bypass — tránh claim sai “Frida miss = mù hoàn toàn”.
+**Đóng góp 3 — Chống né attribution (E3).** Pipeline `file → static triage → process lineage → Finding` — extension không có trong artifact batch [4]. Dashboard Flask hỗ trợ điều tra tương tác.
 
-**Đóng góp 3 — Tăng cường chống né attribution (E3).** Pipeline `file mới trên đĩa → static triage → process lineage → injection Finding` — extension không có trong artifact batch sandbox của [4], phục vụ workflow analyst lab Windows. Dashboard Flask hỗ trợ điều tra tương tác (Overview, Findings, Primitives, Network).
+**Đóng góp 4 — Công cụ lab mã nguồn mở.** CLI collector, JSONL session log, reclassify, corpus analytics, config Sysmon tái lập, Dockerfile analyzer offline [13].
 
-**Đóng góp 4 — Công cụ lab mã nguồn mở.** CLI collector, JSONL session log, reclassify, corpus analytics, config Sysmon tái lập, Dockerfile analyzer offline. Artifact phục vụ giáo dục và nghiên cứu tái lập [4] tại môi trường UET/lab Việt Nam [13].
+**Đóng góp 5 — Threat model và ranh giới claim.** Ma trận E1–E6 ↔ mitigation; **không** claim E5, prevalence 56k mẫu, hay thay thế EDR.
 
-**Đóng góp 5 — Threat model và ranh giới claim khoa học.** Ma trận E1–E6 ↔ mitigation; scientific claims §3.8 audit: **không** claim anti-evasion E5, **không** claim prevalence 56k mẫu, **không** claim thay thế EDR. E5 explicitly out-of-scope với hướng phát triển (ETW Threat Intelligence, anti-evasion module).
-
-**Bảng 1.4.** So sánh đóng góp luận văn với paper [4]
+**Bảng M.5.** So sánh đóng góp luận văn với paper [4]
 
 | Khía cạnh | Paper [4] | Luận văn (Noirlycan) |
 |-----------|-----------|----------------------|
@@ -210,105 +318,76 @@ Luận văn đóng góp năm nhóm, phân tách rõ replication [4] và extensio
 | Phân loại kỹ thuật | 12 kỹ thuật chính | 21+ enum + rule catalog |
 | Công khai | Sap4Sec/process-injection | NoirlycanThesis repo [13] |
 
+Luận văn **bổ sung** chứ không cạnh tranh: paper mạnh về quy mô và anti-evasion, luận văn mạnh về provenance, telemetry kép và taxonomy mở rộng.
+
 ## 1.7. Bố cục luận văn
 
-Luận văn gồm phần mở đầu, bảy chương nội dung, kết luận, tài liệu tham khảo và phụ lục, trình bày theo format Trường Đại học Công nghệ — ĐHQGHN [2].
+Luận văn tuân **IMRAD** và hướng dẫn HTW [16]; đáp ứng bố cục UET [2]. Với định hướng **ứng dụng công nghệ**, chương Phương pháp gộp threat model và pipeline detection; có chương riêng **Thiết kế và hiện thực**.
 
-**Phần mở đầu** (tài liệu hiện tại) trình bày lý do chọn đề tài, phân loại né tránh E1–E6, mục tiêu RO1–RO5, đối tượng/phạm vi, phương pháp nghiên cứu, đóng góp và bố cục.
+- **Mở đầu** — bối cảnh, E1–E6, RO1–RO5, H1–H5, phạm vi, đóng góp.
+- **Chương 1 — Cơ sở lý thuyết** — Windows, injection, primitive, Sysmon, Frida.
+- **Chương 2 — Phương pháp** — bài toán, threat model, pipeline 2-of-3 [4], provenance, telemetry kép.
+- **Chương 3 — Thiết kế và hiện thực** — Clean Architecture, module Noirlycan, Frida hooks, correlator, dashboard.
+- **Chương 4 — Thực nghiệm và so sánh** — môi trường, dữ liệu, kết quả (31 test), case section-mapping, so sánh [4], thảo luận.
+- **Kết luận** — xuất xứ, phương pháp, kết quả, hạn chế, hướng tiếp theo [16].
 
-**Chương 1 — Cơ sở lý thuyết** (`02-co-so-ly-thuyet.md`) cung cấp nền tảng kỹ thuật: mô hình tiến trình Windows, virtual memory, lớp Win32/NT API; định nghĩa process injection và operational primitive [7], [4]; phân loại chi tiết E1–E6; taxonomy 10+ kỹ thuật injection; Sysmon events và Frida instrumentation.
-
-**Chương 2 — Công trình liên quan** đặt [4] làm trục trung tâm, so sánh với Klein [7], Starink [12], sandbox/EDR, khảo sát evasion [6], [8]. Làm rõ vị trí luận văn: replication + extension lab, không cạnh tranh nghiên cứu prevalence.
-
-**Chương 3 — Threat model và giả định** formal hóa đối thủ, tài sản, trust boundary, ma trận E1–E6, scientific claims. Nêu rõ E5 out-of-scope và O7 (sandbox-aware evasion).
-
-**Chương 4 — Phương pháp tăng cường phát hiện** mô tả pipeline Noirlycan kế thừa [4]: equivalence classes, 2-of-3, memory congruence, temporal ordering; extension file provenance; technique classifier; sơ đồ kiến trúc (Hình 4.1 tham chiếu `docs/design/architecture-comparison-template.svg`).
-
-**Chương 5 — Thiết kế và hiện thực** chi tiết module: collector, Frida hooks, correlator, static triage, dashboard, injection graph cho chuỗi đệ quy (~2 % prevalence paper [4]).
-
-**Chương 6 — Đánh giá thực nghiệm** trả lời RQ1–RQ4: bảng precision/recall, confusion matrix phân loại kỹ thuật, Frida fidelity, giá trị forensic provenance. Không claim số liệu 21,2 % sandbox miss vì thiếu anti-evasion E5.
-
-**Chương 7 — Thảo luận và hạn chế** phân tích deviation D1–D8, construct/external validity, so sánh với Sigma rule và sandbox baseline, hướng ETW thay Frida.
-
-**Kết luận** tóm tắt đóng góp RO1–RO5, nhấn mạnh ranh giới E5, đề xuất tích hợp anti-evasion và ETW Threat Intelligence.
-
-**Phụ lục** gồm: (A) bảng đầy đủ API equivalence classes từ `kernel/classification/api_manifest.py`; (B) cấu hình Sysmon; (C) hướng dẫn tái lập VM và hash mẫu; (D) mã loader PoC; (E) protocol Frida fidelity.
-
-**Bảng 1.5.** Tóm tắt nội dung các chương
-
-| Chương | Tiêu đề | Nội dung chính |
-|--------|---------|----------------|
-| Mở đầu | — | Đề tài, E1–E6, mục tiêu, phạm vi, phương pháp |
-| 1 | Cơ sở lý thuyết | Windows, injection, primitive, Sysmon, Frida |
-| 2 | Công trình liên quan | [4] trung tâm, so sánh related work |
-| 3 | Threat model | E1–E6, C/O/M assumptions, claims |
-| 4 | Phương pháp | 2-of-3, provenance, classifier |
-| 5 | Hiện thực | Noirlycan modules |
-| 6 | Đánh giá | RQ1–RQ4, metrics |
-| 7 | Thảo luận | Hạn chế, E5, hướng phát triển |
-| Kết luận | — | Tóm tắt, đóng góp, tương lai |
-
-Luận văn sử dụng hệ thống trích dẫn số trong ngoặc vuông [n], tham chiếu chéo bảng và hình theo quy ước UET (Bảng X.Y, Hình X.Y). Tài liệu tham khảo đầy đủ tại `tai-lieu-tham-khao.md`, với [4] là nguồn được trích dẫn nhiều nhất xuyên suốt các chươn.
+Luận văn dùng trích dẫn `[n]` theo UET [2]. Bảng **M.x** trong Mở đầu; **Chương.x** trong các chương. [4] là nguồn trích dẫn nhiều nhất.
 
 ---
 
 # CHƯƠNG 1. CƠ SỞ LÝ THUYẾT
 
-Chương này trình bày nền tảng lý thuyết phục vụ luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh*. Nội dung bao gồm: mô hình tiến trình và bộ nhớ ảo Windows; định nghĩa process injection trong bối cảnh né tránh phát hiện; phân loại sáu nhóm né tránh E1–E6; phương pháp operational primitive và quy tắc 2-of-3 theo Di Pietro et al. [4]; taxonomy chi tiết hơn mười kỹ thuật injection; và hai công cụ telemetry trung tâm — Sysmon (kernel) và Frida (user-mode). Các khái niệm ở đây được tham chiếu xuyên suốt Chương 2 (công trình liên quan), Chương 3 (threat model), Chương 4 (phương pháp) và Chương 5 (hiện thực Noirlycan).
+Chương này trình bày nền tảng lý thuyết: mô hình tiến trình và bộ nhớ ảo Windows; định nghĩa process injection; sáu nhóm né tránh E1–E6; phương pháp **operational primitive** và quy tắc **2-of-3** [4] — căn cứ khoa học chính của correlator Noirlycan; taxonomy kỹ thuật injection; và hai công cụ telemetry Sysmon (kernel) và Frida (user-mode). Chi tiết API ở Phụ lục A.
 
 ## 1.1. Mô hình tiến trình Windows và bối cảnh injection
 
 ### 1.1.1. Process, thread và không gian địa chỉ
 
-Trên Windows, **process** (*tiến trình*) là container cô lập gồm không gian địa chỉ ảo riêng, handle table, security context (token), và ít nhất một **thread** (*luồng*) thực thi. Mỗi thread có ngữ cảnh riêng: thanh ghi CPU, stack, và con trỏ tới **Thread Environment Block** (TEB). Process được mô tả bởi **Process Environment Block** (PEB) — cấu trúc user-mode chứa thông tin loader, danh sách module đã map, và tham số command line [7].
+Trên Windows, **process** là container cô lập gồm không gian địa chỉ ảo riêng, handle table, security context (token), và ít nhất một **thread**. Kernel đảm bảo cô lập qua phân trang phần cứng và chuyển **CR3** khi context switch; truy cập cross-process bắt buộc qua API kernel với handle hợp lệ. Mỗi thread có tập thanh ghi (`RIP`, `RSP`, …), stack riêng, và con trỏ tới **Thread Environment Block** (TEB). Process được mô tả bởi **Process Environment Block** (PEB) chứa loader data (`PEB_LDR_DATA`), command line, biến môi trường, cờ debug [7].
 
-Kernel quản lý process qua **EPROCESS** (kernel structure) và expose capability cho user-mode qua Win32 API (`kernel32.dll`, `kernelbase.dll`) và **Native API** (`ntdll.dll`). Hầu hết thao tác injection của malware đi qua Native API hoặc syscall tương ứng, vì lớp Win32 thường là wrapper mỏng gọi xuống `ntdll` [4], [7].
+Kernel quản lý process qua **EPROCESS** và expose capability qua hai lớp: **Win32 API** (`kernel32.dll`, `kernelbase.dll`, `user32.dll`) là wrapper documented, và **Native API** (`ntdll.dll`) gồm `Nt*`/`Zw*` là syscall stub. Hầu hết injection đi qua Native API hoặc `syscall` trực tiếp với System Service Number (SSN), lách rule signature viết cho tên Win32 [4], [7].
 
-**Bảng 1.1.** Thành phần chính của mô hình tiến trình Windows liên quan injection
+**Bảng 1.1.** Thành phần mô hình tiến trình Windows liên quan injection
 
 | Thành phần | Vai trò | Liên quan injection |
 |------------|---------|---------------------|
-| PEB | Metadata process, loader data | Reflective DLL, module stomping đọc/ghi PEB |
+| PEB | Metadata process, loader data | Reflective DLL, module stomping |
 | TEB | Ngữ cảnh thread, stack | APC queue, thread hijack |
-| VAD (Virtual Address Descriptor) | Mô tả vùng nhớ ảo | Allocate/map section tạo VAD mới |
+| VAD (Virtual Address Descriptor) | Mô tả vùng nhớ ảo | Allocate/map tạo VAD mới |
 | Handle table | Quản lý handle process/thread | `OpenProcess` với `PROCESS_VM_WRITE` |
-| Token / integrity level | Kiểm soát truy cập | UAC, cross-session injection hạn chế |
+| Token / integrity level | Kiểm soát truy cập | UAC, cross-session injection |
 | Section object | Shared memory kernel | `NtCreateSection`, `NtMapViewOfSection` |
+
+**VAD** là vết kernel duy nhất cho mọi vùng nhớ ảo private — kể cả khi malware unhook user-mode, VAD vẫn forensic được qua Volatility. **Token** và integrity level quyết định một process Medium có thể inject sang process High hay không (cần `SeDebugPrivilege`).
 
 ### 1.1.2. Process injection như hành vi né tránh attribution
 
-**Process injection** (MITRE T1055 [9]) là họ kỹ thuật đưa mã thực thi vào **address space của tiến trình khác** (cross-process) hoặc cùng tiến trình (self-inject), rồi kích hoạt thực thi mà không tạo image file hợp lệ trên đĩa cho payload. Mục tiêu của attacker không chỉ là thực thi code mà còn **né tránh phát hiện ở tầng attribution**: sau injection, tiến trình hiển thị trên Task Manager vẫn là nạn nhân hợp pháp (`msedge.exe`, `svchost.exe`, …), che giấu nguồn gốc thực sự của hành vi độc hại [4], [3].
+**Process injection** (MITRE T1055 [9]) là họ kỹ thuật đưa mã thực thi vào address space của tiến trình khác hoặc tự inject, kích hoạt thực thi mà không tạo image file hợp lệ trên đĩa. Mục tiêu là **né attribution**: tiến trình hiển thị vẫn là process hợp pháp (`msedge.exe`, `svchost.exe`, …), nhưng hành vi mạng/file/registry của payload bị quy cho nạn nhân. Rule dựa trên image path, signing certificate, hoặc reputation hash đều thất bại [4], [3].
 
-Di Pietro et al. [4] ước lượng **16,5 %** mẫu malware trong dataset 2017–2023 có injection — con số đủ lớn để coi injection là vector then chốt, không phải edge case. Paper cũng chỉ ra xu hướng malware chuyển từ classic remote thread sang **section-mapping** và **process hollowing** biến thể — các kỹ thuật vừa inject vừa né rule signature cố định (E1, E2).
+Di Pietro và cộng sự [4] ước lượng **16,5 %** mẫu malware (dataset 2017–2023) có ít nhất một hành vi injection. Paper cũng chỉ ra xu hướng dịch chuyển từ classic remote thread sang **section-mapping** và **process hollowing** biến thể (E1, E2 ở mục 1.4), phản ánh áp lực từ EDR có hook user-mode.
 
 ### 1.1.3. Chuỗi hành vi điển hình: file-drop → spawn → inject
 
-Trong phòng lab Windows, loader thường không chỉ inject mà kết hợp **file-drop** (E3):
+Loader thường kết hợp **file-drop** (E3): (1) ghi `.exe`/`.dll` xuống thư mục staging user-writable (`%TEMP%`, `%APPDATA%`, ProgramData); (2) `CreateProcess`/`ShellExecute` spawn — kèm `CREATE_SUSPENDED` cho Early Bird/hollowing; (3) `OpenProcess` nạn nhân với access mask `0x143a` (`PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD`) hoặc `PROCESS_ALL_ACCESS` (`0x1fffff`); (4) allocate → write → execute hoặc biến thể gộp (section mapping/Mockingjay, mục 1.6); (5) payload chạy dưới identity nạn nhân, file gốc bị xóa.
 
-1. Malware (hoặc macro/script) ghi file `.exe`/`.dll` xuống thư mục staging (`%TEMP%`, `%APPDATA%`, …).
-2. Gọi `CreateProcess` hoặc `ShellExecute` spawn tiến trình mới — có thể với `CREATE_SUSPENDED` cho Early Bird / hollowing.
-3. `OpenProcess` nạn nhân (cùng process mới hoặc process hệ thống khác).
-4. Thực hiện chuỗi allocate → write → execute (hoặc biến thể gộp bước).
-5. Payload chạy dưới identity nạn nhân; file gốc có thể bị xóa.
-
-Luận văn mở rộng paper [4] bằng pipeline **provenance** bắt sự kiện bước 1–2 (Sysmon Event 11, Event 1) để liên kết Finding injection với file nguồn — đối trọng trực tiếp cho E3.
+Luận văn mở rộng [4] bằng pipeline **provenance** bắt bước 1–2 (Sysmon Event 11, Event 1) để liên kết Finding với file nguồn — đối trọng cho E3.
 
 ## 1.2. Bộ nhớ ảo, section object và lớp API
 
 ### 1.2.1. Virtual memory và page protection
 
-Windows sử dụng **bộ nhớ ảo per-process** với phân trang (typically 4 KB page). Mỗi vùng có **protection** quyết định quyền đọc/ghi/thực thi: `PAGE_READWRITE` (RW), `PAGE_EXECUTE_READ` (RX), `PAGE_EXECUTE_READWRITE` (RWX), v.v. Injection an toàn về mặt OPSEC thường: allocate RW → write payload → đổi protection sang RX (`VirtualProtectEx`) trước execute — tránh vùng RWX dễ bị heuristic EDR phát hiện [7], [4].
+Windows dùng bộ nhớ ảo per-process với phân trang (4 KB hoặc 2 MB large page). Mỗi region có **protection** R/W/X: `PAGE_READWRITE` (RW), `PAGE_EXECUTE_READ` (RX), `PAGE_EXECUTE_READWRITE` (RWX). Để OPSEC, malware thực hiện chuỗi allocate RW → write → `VirtualProtectEx` đổi sang RX, tránh RWX vốn bị EDR coi là heuristic shellcode [7], [4].
 
-Malware né heuristic có thể: (a) dùng section mapping map trực tiếp RX; (b) **Mockingjay** — ghi vào vùng RWX có sẵn trong DLL signed (bỏ bước allocate riêng, E2); (c) **module stomping** — ghi đè section `.text` của module đã load.
+Để né heuristic này, attacker có ba hướng: (a) **section mapping** với `SEC_IMAGE`/`PAGE_EXECUTE_READ` map trực tiếp ở RX; (b) **Mockingjay** — ghi đè vùng RWX có sẵn trong DLL hợp pháp (`libcef.dll`, `dbghelp.dll`) (E2); (c) **module stomping** — ghi đè `.text` của module đã RX.
 
 ### 1.2.2. Section object và shared mapping
 
-**Section object** là abstraction kernel cho vùng nhớ có thể map vào nhiều process. Chuỗi:
+**Section object** là abstraction kernel cho vùng nhớ map vào nhiều process. Chuỗi điển hình:
 
-- `NtCreateSection` — tạo section từ file hoặc anonymous (commit memory).
-- `NtMapViewOfSection` — map view vào address space local hoặc **remote** (target process handle).
+- `NtCreateSection` — tạo section từ file hoặc anonymous backing; `AllocationAttributes` (`SEC_COMMIT`, `SEC_IMAGE`, `SEC_RESERVE`) và `SectionPageProtection` quyết định ngữ nghĩa.
+- `NtMapViewOfSection` — map view vào address space local hoặc **remote**, với `Win32Protect` xác định quyền.
 
-Khi map remote, một l lệnh có thể đồng thời **allocate** (reserve VAD) và **write** (copy content từ section) — điển hình E2 “gộp bước”. Paper [4] xếp `NtCreateSection` vào lớp *allocate*, `NtMapViewOfSection` vào *write*; thực tế ngữ nghĩa phụ thuộc tham số — luận văn theo artifact Noirlycan cố định mapping này và khai báo deviation D8 trong audit.
+Khi map remote, một lệnh có thể đồng thời **allocate** (VAD mới) và **write** (copy nội dung) — gộp bước điển hình của E2. Paper [4] xếp `NtCreateSection` vào *allocate* và `NtMapViewOfSection` vào *write*; luận văn tuân theo mapping artifact Noirlycan và khai báo deviation D8.
 
 ### 1.2.3. Win32 API và Native API
 
@@ -317,116 +396,112 @@ Khi map remote, một l lệnh có thể đồng thời **allocate** (reserve VA
 | Lớp | Thư viện | Ví dụ | Ghi chú |
 |-----|----------|-------|---------|
 | Win32 | `kernel32.dll` | `VirtualAllocEx`, `WriteProcessMemory`, `CreateRemoteThread` | Wrapper documented |
-| Native | `ntdll.dll` | `NtAllocateVirtualMemory`, `NtWriteVirtualMemory`, `NtCreateThreadEx` | Syscall stub nội bộ |
-| Direct syscall | Stub attacker | `syscall` instruction với SSN tự resolve | E4 — bypass hook user-mode |
-| Kernel | `ntoskrnl.exe` | (không gọi trực tiếp user malware thông thường) | Out-of-scope luận văn |
+| Native | `ntdll.dll` | `NtAllocateVirtualMemory`, `NtWriteVirtualMemory`, `NtCreateThreadEx` | Syscall stub |
+| Direct syscall | Stub attacker | `syscall` với SSN tự resolve | E4 — bypass hook user-mode |
+| Kernel | `ntoskrnl.exe` | (out-of-scope) | — |
 
-Malware E1 thay Win32 bằng Native API tương đương để lách rule Sigma/EDR viết cho tên hàm Win32. Phương pháp [4] neutralize E1 bằng **equivalence class** — mọi API cùng ngữ nghĩa primitive được gom một lớp, rule phát hiện không phụ thuộc tên export cụ thể.
+Cùng thao tác cấp phát remote có thể qua ba lớp, mà chỉ Win32 có tên hàm “dễ nhận diện” trong Sigma/Yara. Malware E1 thay Win32 bằng Native API tương đương, hoặc tự resolve SSN gọi `syscall`. Paper [4] neutralize E1 bằng **equivalence class** — mọi API cùng ngữ nghĩa primitive gom thành một lớp; rule 2-of-3 chỉ phụ thuộc kind primitive (A/W/E) đã chuẩn hoá.
 
 ## 1.3. Process injection — định nghĩa và operational primitive
 
 ### 1.3.1. Ba bước cổ điển (Klein et al.)
 
-Klein et al. [7] phân loại process injection Windows thành ba thao tác **operational** trên bộ nhớ nạn nhân:
+Klein và cộng sự [7] phân loại injection thành ba thao tác **operational**, không phụ thuộc API:
 
-1. **Allocate** — dành/chuẩn bị vùng nhớ có thể thực thi (allocation, section creation, thay đổi protection).
-2. **Write** — ghi payload (shellcode, PE image, DLL) vào vùng đó.
-3. **Execute** — chuyển luồng CPU tới payload (remote thread, APC, resume, set context, load library, …).
+1. **Allocate** — chuẩn bị vùng nhớ: `VirtualAllocEx`, `NtCreateSection`, hoặc `VirtualProtectEx` đổi protection.
+2. **Write** — ghi payload: `WriteProcessMemory`, `NtWriteVirtualMemory`, hoặc map view section.
+3. **Execute** — chuyển luồng CPU tới payload: remote thread, APC, resume thread, set context, `LoadLibrary` remote, hook window, thread pool.
 
-Ba bước này mô tả **ngữ nghĩa** hành vi, không ràng buộc API cụ thể — nền tảng cho abstraction của [4].
+Ba bước mô tả **ngữ nghĩa** chứ không ràng buộc API — nền tảng cho abstraction của [4].
 
 ### 1.3.2. Cùng vùng nhớ (Starink et al.)
 
-Starink et al. [12] dùng **behavior graph** — đồ thị API — và yêu cầu các bước injection liên quan thao tác trên **cùng buffer** bộ nhớ. Paper [4] formal hóa thành **memory range congruence**: hai primitive được correlate nếu khoảng địa chỉ `[address, address+size)` giao nhau hoặc chứa nhau. Mục đích: giảm false positive khi cùng actor mở nhiều allocation độc lập trong nạn nhân [4], [12].
+Starink và cộng sự [12] dùng **behavior graph** với điều kiện các bước phải thao tác trên **cùng buffer**. Paper [4] formal hoá thành **memory range congruence**: hai primitive correlate nếu `[address, address+size)` giao nhau hoặc chứa nhau, giảm false positive khi actor có nhiều allocation độc lập [4], [12].
 
 ### 1.3.3. Giới hạn abstraction
 
-Abstraction primitive **không** cover toàn bộ hành vi độc hại Windows: không mô tả credential dumping, lateral movement, kernel exploit. Phạm vi luận văn giới hạn **user-mode cross-process / self inject** theo threat model (Chương 3). Primitive cũng **không** thay thế phân tích tĩnh — static triage bổ sung context payload (entropy, signature) cho E3.
+Primitive **không** bao phủ credential dumping, lateral movement, kernel exploit. Phạm vi luận văn giới hạn ở **user-mode cross-process / self-inject** (Chương 3); ngoài ra out-of-scope. Static triage (entropy, signature, import table) bổ sung context payload cho E3.
 
 ## 1.4. Phân loại hình thức né tránh E1–E6
 
-Luận văn nhóm né tránh liên quan injection thành sáu lớp E1–E6. Phân loại thống nhất Mở đầu, threat model, và đánh giá.
+Luận văn nhóm các hình thức né tránh thành sáu lớp E1–E6 dựa trên đối tượng attacker nhắm (rule, sandbox, instrumentation, analyst). Một kỹ thuật có thể thuộc nhiều nhóm.
 
 ### 1.4.1. E1 — Né tránh bằng biến thể API
 
-Attacker thay API Win32 bằng Native API hoặc biến thể ít bị rule hóa:
+Attacker thay API Win32 bằng Native API hoặc biến thể ít bị rule hoá:
 
-| API Win32 (dễ rule) | Thay thế Native / khác |
-|---------------------|------------------------|
+| API Win32 (dễ rule) | Thay thế Native |
+|---------------------|-----------------|
 | `CreateRemoteThread` | `NtCreateThreadEx`, `RtlCreateUserThread` |
 | `VirtualAllocEx` | `NtAllocateVirtualMemory` |
 | `WriteProcessMemory` | `NtWriteVirtualMemory` |
 | `OpenProcess` | `NtOpenProcess` |
 
-**Cơ chế phát hiện [4]:** equivalence class — mọi biến thể cùng primitive. Noirlycan manifest `PAPER_API_CLASSES` trong `kernel/classification/api_manifest.py` [11], [13].
+**Phát hiện [4]:** equivalence class — biến thể ánh xạ về cùng primitive nên rule fire bất kể lớp API. Noirlycan hiện thực manifest `PAPER_API_CLASSES` trong `kernel/classification/api_manifest.py` [11], [13]. Nếu attacker dùng direct syscall thì thuộc E4.
 
 ### 1.4.2. E2 — Né tránh bằng gộp hoặc ẩn bước
 
-Attacker giảm số API observable bằng cách gộp allocate+write hoặc bỏ allocate:
+Attacker giảm số API observable bằng cách gộp allocate+write hoặc bỏ một bước:
 
-- **Section mapping:** `NtCreateSection` + `NtMapViewOfSection` remote.
-- **Process hollowing (section variant):** tạo process suspended, unmap image gốc, map section payload, set context entrypoint — dominant variant trong dataset [4].
-- **Mockingjay:** chỉ write+execute vào RWX có sẵn trong `libcef.dll`, `mshtml.dll`, …
-- **PoolParty:** lạm dụng thread pool wait callback — execute không qua `CreateRemoteThread` cổ điển.
+- **Section mapping:** `NtCreateSection` + `NtMapViewOfSection` remote, map view đồng thời cấp phát và ghi.
+- **Process hollowing (section variant):** process suspended, `NtUnmapViewOfSection` unmap image gốc, map section payload, set context, resume — chiếm tỉ lệ lớn trong dataset [4].
+- **Mockingjay:** chỉ write + execute vào vùng RWX có sẵn (`libcef.dll`, `mshtml.dll`); bỏ allocate.
+- **PoolParty:** lạm dụng thread pool wait callback / timer / IO completion thay cho `CreateRemoteThread`.
 
-**Cơ chế phát hiện [4]:** quy tắc **2-of-3** — không yêu cầu đủ cả ba primitive; chỉ cần ≥2 primitive khác loại trên cùng vùng nhớ. Ví dụ Mockingjay: W + E đủ điều kiện.
+**Phát hiện [4]:** quy tắc **2-of-3** — chỉ cần ≥2 primitive khác kind trên cùng vùng nhớ. Mockingjay thoát rule yêu cầu allocate nhưng W+E vẫn đủ.
 
 ### 1.4.3. E3 — Né tránh bằng che attribution
 
-Attacker tránh tạo tiến trình “đáng ngờ”:
+Attacker chọn victim cẩn thận và xử lý dấu vết disk:
 
-- Inject vào browser, shell, service signed.
-- File-drop: executable tên giả mạo, thư mục staging, xóa file sau spawn.
-- Parent PID spoofing (ngoài phạm vi đầy đủ luận văn nhưng liên quan lineage).
+- Inject vào process tin cậy (`explorer.exe`, `svchost.exe`, `RuntimeBroker.exe`).
+- File-drop tên giả mạo (`update.exe`, `svchost.exe` ngoài `System32`), staging trong thư mục user-writable, xóa file sau spawn.
+- Parent PID spoofing qua `UpdateProcThreadAttribute` (ngoài phạm vi hiện thực đầy đủ).
 
-**Cơ chế phát hiện (extension luận văn):** Sysmon Event 1 (parent/child, command line, `CreationUtcTime`), Event 11 (file path hash), static triage — pipeline provenance Noirlycan. Paper [4] batch sandbox không nhấn mạnh forensics file-drop trên endpoint.
+**Phát hiện (extension):** Sysmon Event 1 (parent/child, command line) + Event 11 (file path, SHA-256) + static triage → pipeline provenance. Paper [4] dùng batch sandbox và không nhấn mạnh forensics file-drop endpoint — điểm mở rộng của luận văn.
 
 ### 1.4.4. E4 — Né tránh instrumentation user-mode
 
-Attacker bypass hook Frida/EDR user-mode:
+Attacker chủ động bypass hook user-mode:
 
-- **Direct syscall:** stub assembly gọi `syscall` với System Service Number (SSN), không đi qua export `ntdll` đã hook.
-- **Unhooking:** restore `.text` section `ntdll.dll` từ bản sạch (disk hoặc `KnownDlls`).
-- **Patch ETW/AMSI:** giảm telemetry/logging (kỹ thuật riêng trong classifier Noirlycan).
+- **Direct syscall:** stub assembly `mov r10, rcx; mov eax, <SSN>; syscall; ret`, không qua `ntdll`.
+- **Unhooking:** đọc bản sạch `.text` của `ntdll.dll` từ disk hoặc `KnownDlls`, ghi đè vùng đã bị EDR vá.
+- **Patch ETW/AMSI:** ghi đè entry function `EtwEventWrite`/`AmsiScanBuffer` bằng `ret`.
 
-Frida `Interceptor.attach` trên export **miss** toàn bộ khi E4 thành công — mất đối số address/size cho congruence. **Sysmon kernel** (Event 8 CreateRemoteThread, Event 10 ProcessAccess) vẫn ghi cross-process artifact vì callback đăng ký ở kernel, không phụ thuộc hook user-mode [10]. Luận văn coi E4 “trong phạm vi một phần”: phát hiện được hành vi cross-process nhưng có thể mất chi tiết memory congruence.
+Khi E4 thành công, Frida miss toàn bộ — mất đối số address/size cho congruence. Tuy nhiên **Sysmon kernel** (Event 8, Event 10) vẫn ghi nhận cross-process vì callback đăng ký kernel qua `PsSetCreateProcessNotifyRoutineEx`, `ObRegisterCallbacks`, ETW Threat Intelligence [10]. E4 do đó trong phạm vi một phần: phát hiện được cross-process coarse-grained, có thể mất chi tiết congruence — khai báo trong RQ2/RQ4.
 
 ### 1.4.5. E5 — Né tránh sandbox và môi trường phân tích
 
-Malware **không thực hiện** injection khi phát hiện VM/sandbox/debugger:
+Malware **không** inject khi phát hiện VM/sandbox/debugger:
 
 - Timing: `RDTSC`, `GetTickCount`, sleep acceleration.
-- Environment: thiếu file user, registry sandbox, MAC address VM vendor, CPUID hypervisor bit.
-- Human interaction: không click, không cửa sổ visible.
+- Environment: thư mục Documents trống, registry key sandbox, MAC VM vendor, bit hypervisor trong CPUID.
+- Human interaction: chờ click chuột, di chuyển con trỏ, số cửa sổ visible.
 
-Paper [4] báo **21,2 %** mẫu injection bị sandbox bỏ sót vì evasion này; module **anti-evasion** paper (patch timing, fake env) cải thiện recall đáng kể trong ablation. Luận văn **không hiện thực** anti-evasion tương đương — **E5 ngoài phạm vi hiện thực**. Noirlycan ghi signal evasion nhưng không bypass. Mọi so sánh recall với paper phải nêu disclaimer E5.
+Paper [4] báo cáo **21,2 %** mẫu injection bị sandbox bỏ sót do E5; module anti-evasion của paper cải thiện recall trong ablation. Luận văn **không hiện thực** module này — **E5 ngoài phạm vi**. So sánh recall với [4] phải kèm disclaimer E5.
 
-### 1.4.6. E6 — Né tránh instrumentation chủ độch (anti-Frida)
+### 1.4.6. E6 — Né tránh instrumentation chủ động (anti-Frida)
 
-Attacker quét memory/process để tìm `frida-agent`, pipe Frida, breakpoint INT3, timing bất thường do hook — rồi abort hoặc đổi code path. Luận văn:
-
-- Ưu tiên **`spawn` mode** (Frida attach trước entrypoint) giảm cửa sổ race.
-- Khai báo **limitation** — không claim chống anti-Frida.
-- Sysmon fallback một phần khi malware vẫn inject sau khi không detect agent.
+Attacker quét bộ nhớ và process list tìm artifact Frida (`frida-agent`, pipe Frida, RWX shellcode gadget, INT3 Stalker, timing bất thường) rồi abort hoặc đổi code path. Luận văn giảm thiểu: ưu tiên **`spawn` mode**, khai báo limitation, dùng Sysmon làm fallback.
 
 **Bảng 1.3.** Tóm tắt nhóm né tránh E1–E6
 
-| Nhóm | Tấn công vào | Phát hiện chính | Phạm vi luận văn |
-|------|--------------|-----------------|------------------|
-| E1 | Rule API cố định | Equivalence class [4] | ✓ Đầy đủ |
-| E2 | Rule 3 bước tuần tự | 2-of-3 [4] | ✓ Đầy đủ |
-| E3 | Analyst attribution | Provenance extension | ✓ Extension |
-| E4 | Frida/EDR hook | Sysmon kernel fallback | ✓ Một phần |
-| E5 | Sandbox/VM | Anti-evasion [4] | ✗ Out-of-scope |
-| E6 | Frida agent | spawn; limitation | △ Hạn chế |
+| Nhóm | Tấn công vào | Phát hiện chính | Phạm vi |
+|------|--------------|-----------------|---------|
+| E1 | Rule API cố định | Equivalence class [4] | Đầy đủ |
+| E2 | Rule 3 bước tuần tự | 2-of-3 [4] | Đầy đủ |
+| E3 | Analyst attribution | Provenance extension | Extension |
+| E4 | Frida/EDR hook | Sysmon kernel fallback | Một phần |
+| E5 | Sandbox/VM | Anti-evasion [4] | Out-of-scope |
+| E6 | Frida agent | spawn; limitation | Hạn chế |
 
 ## 1.5. Operational primitive và quy tắc 2-of-3 theo Di Pietro et al. [4]
 
-Phần này trình bày phương pháp **căn cứ khoa học chính** của luận văn — tóm tắt và formal hóa theo paper [4] và artifact Sap4Sec/process-injection [11].
+Phần này tóm tắt phương pháp [4] cùng artifact Sap4Sec/process-injection [11].
 
 ### 1.5.1. Ba primitive và lớp tương đương API
 
-Mỗi primitive ánh xạ tập API **thay thế được** về mặt ngữ nghĩa operational:
+Mỗi primitive ánh xạ về tập API **thay thế được** về ngữ nghĩa operational, dựa trên hành vi kernel chứ không hình thức tên hàm.
 
 **Bảng 1.4.** Lớp tương đương API (rút gọn từ [4], Table 1; đầy đủ Phụ lục A)
 
@@ -436,55 +511,53 @@ Mỗi primitive ánh xạ tập API **thay thế được** về mặt ngữ ngh
 | **Write (W)** | `WriteProcessMemory`, `NtWriteVirtualMemory`, `NtMapViewOfSection`, `NtUnmapViewOfSection`, `RtlCopyMemory` |
 | **Execute (E)** | `CreateRemoteThread(Ex)`, `NtCreateThreadEx`, `RtlCreateUserThread`, `QueueUserAPC`, `NtQueueApcThread(Ex)`, `SetThreadContext`, `ResumeThread`, `LoadLibraryA/W`, `LdrLoadDll`, `SetWindowsHookEx`, `GlobalAddAtom` |
 
-**Lưu ý:** `ReadProcessMemory` / `NtReadVirtualMemory` **không** là write primitive trong paper — dùng cho observation (reflective loader đọc headers). Noirlycan tách class `remote_read` khỏi đếm 2-of-3 [13].
-
-Các class phụ trợ không phải primitive paper: `process_spawn`, `process_access`, `dynamic_resolve`, `context_read` — hỗ trợ classifier và evidence flags.
+`ReadProcessMemory`/`NtReadVirtualMemory` **không** tính write — dùng cho observation (reflective loader đọc PE headers). Noirlycan tách `remote_read` khỏi đếm 2-of-3 [13]. Class phụ trợ (`process_spawn`, `process_access`, `dynamic_resolve`, `context_read`) ghi nhận để hỗ trợ classifier và gắn evidence flag (`create_suspended`, `suspicious_access_mask`, `gpa_resolves_injection_api`).
 
 ### 1.5.2. Quy tắc 2-of-3
 
-**Phát biểu:** Phát hiện injection khi tồn tại ít nhất **hai primitive khác loại** trong tập {A, W, E} quan sát trên cùng cặp `(actor_pid, target_pid)` (hoặc self-inject khi `actor == target`), thỏa memory congruence và temporal ordering [4].
+**Phát biểu:** Phát hiện injection khi tồn tại ≥ **hai primitive khác kind** trong {A, W, E} trên cùng cặp `(actor_pid, target_pid)` (hoặc `actor == target` cho self-inject), thoả memory congruence và temporal ordering [4].
 
-**Lý do:** Malware E2 thường che một bước — section mapping che allocate/write tách rời; Mockingjay che allocate. Yêu cầu 3/3 gây false negative cao. Yêu cầu 1/1 không đủ (chỉ `OpenProcess` là access, không phải primitive). Ngưỡng 2/3 cân bằng recall/precision theo đánh giá paper trên dataset lớn [4].
+**Lý do:** Malware E2 thường che một bước (section che A/W, Mockingjay che A, AtomBombing che W). Yêu cầu 3/3 gây false negative cao; ngưỡng 1/1 không đủ vì nhiều process hợp pháp gọi đơn lẻ `OpenProcess`/`VirtualAlloc`. Ngưỡng 2/3 là điểm cân bằng đánh giá thực nghiệm [4].
 
-**Formal (ký hiệu):**
+**Formal:**
 
-- `P` — tập primitive quan sát trong cửa sổ thời gian `T` (Noirlycan: 300 giây).
-- `kind(p) ∈ {A, W, E}` — loại primitive.
+- `P` — tập primitive trong cửa sổ thời gian `T` (Noirlycan: 300 giây).
+- `kind(p) ∈ {A, W, E}`.
 - Điều kiện: `|{kind(p) : p ∈ P}| ≥ 2` ∧ `congruent(P)` ∧ `temporal(P)`.
 
 ### 1.5.3. Memory range congruence
 
-Với mỗi primitive `p`, ghi `range(p) = [addr(p), addr(p)+size(p))` (khoảng nửa mở). Hai primitive `p`, `q` **congruent** nếu `range(p) ∩ range(q) ≠ ∅` hoặc một range chứa range kia [4], [12].
+Với mỗi primitive `p`, `range(p) = [addr(p), addr(p)+size(p))`. Hai primitive **congruent** nếu `range(p) ∩ range(q) ≠ ∅` hoặc một chứa cái kia [4], [12].
 
-**Thách thức thực thi:** Execute API như `ResumeThread` không có address — paper track thread start address (`Rip`/`RIP`). Frida hook nên đọc `lpStartAddress` từ `CreateRemoteThread` / `NtCreateThreadEx` để gắn address cho primitive E (deviation D1 trong audit Noirlycan).
+Một số execute như `ResumeThread` không có address rõ ràng — paper [4] lấy `Rip` tại thời điểm thread bắt đầu chạy làm address đại diện. Frida đọc `lpStartAddress` từ tham số `CreateRemoteThread`/`NtCreateThreadEx`, hoặc `ThreadContext` trước resume (deviation D1).
 
-**Cross-kind only:** Engine Noirlycan so congruence giữa các kind khác nhau (A↔W, W↔E, A↔E) — đủ link chuỗi injection; tránh gom nhầm hai write độc lập cùng kind.
+Engine Noirlycan chỉ tính congruence giữa các kind khác nhau (A↔W, W↔E, A↔E), tránh gom nhầm hai write độc lập.
 
 ### 1.5.4. Temporal ordering
 
-Thứ tự hợp lệ: **allocate → write → execute**, với ngoại lệ:
+Thứ tự hợp lệ là **allocate → write → execute**, với ngoại lệ [4] công nhận:
 
-- **Gộp bước:** A và W đồng thời (section map) — timestamp bằng nhau hoặc map ngay sau create section.
-- **Allocate lặp:** `VirtualProtectEx` sau write để RW→RX — vẫn là allocate kind, được phép lặp sau write [4].
-- **Reject:** allocate *sau* execute (out-of-order không hợp lý cho injection chuẩn).
+- **Gộp bước:** A và W đồng thời (section map remote) — timestamp bằng nhau.
+- **Allocate lặp:** `VirtualProtectEx` sau write để chuyển RW → RX vẫn là kind A, được phép sau write.
+- **Reject:** allocate sau execute là out-of-order.
 
-Noirlycan gán bậc `A=0, W=1, CONTEXT_READ=2, E=3`; reject khi allocate xuất hiện sau bậc cao hơn (deviation D3: cần siết thêm write sau execute).
+Noirlycan gán bậc `A=0, W=1, CONTEXT_READ=2, E=3` và reject khi primitive bậc thấp xuất hiện sau bậc cao trong cùng range. Engine chưa siết “write không sau execute” — deviation D3.
 
 ### 1.5.5. Phân loại kỹ thuật sau phát hiện
 
-Sau khi 2-of-3 kết luận injection, paper [4] dùng **tập API quan sát** và context (suspended process, section flag, APC, …) để gán nhãn kỹ thuật: Classic Remote Thread, APC, Early Bird, Thread Hijacking, Process Hollowing (classic/section), Reflective DLL, Module Stomping, AtomBombing, Process Doppelgänging, Ghosting/Herpaderping, v.v. Noirlycan mở rộng **21+ enum** (`InjectionTechnique`) bao gồm PoolParty, Mockingjay, fiber, thread pool [13].
+Sau 2-of-3, paper [4] dùng **tập API quan sát** + context (suspended, `SEC_IMAGE`, APC queue, …) gán nhãn: Classic Remote Thread, APC, Early Bird, Thread Hijacking, Hollowing (classic/section), Reflective DLL, Module Stomping, AtomBombing, Doppelgänging, Ghosting/Herpaderping. Noirlycan mở rộng lên **21+ enum** `InjectionTechnique`, thêm PoolParty, Mockingjay, fiber injection, thread pool variants [13].
 
 ### 1.5.6. Chuỗi injection đệ quy
 
-Paper [4] báo ~**2 %** mẫu có injection lồng: A inject B, B inject C. Framework theo dõi re-trace khi victim resume. Noirlycan `injection_graph.py` và auto-attach Frida hỗ trợ một phần — metric prevalence chưa tái lập đủ quy mô paper.
+Paper [4] báo cáo ~**2 %** mẫu có injection lồng nhiều tầng (A → B → C). Noirlycan có `injection_graph.py` mô hình hoá graph và auto-attach Frida cho process con; metric prevalence chưa tái lập do giới hạn dataset.
 
-## 1.6. Taxonomy kỹ thuật process injection (chi tiết)
+## 1.6. Taxonomy kỹ thuật process injection
 
-Phần này mô tả **mười hai kỹ thuật chính** theo paper [4] cộng biến thể mở rộng trong Noirlycan — mỗi kỹ thuật: cơ chế, primitive điển hình, né tránh liên quan.
+Mỗi kỹ thuật trình bày ngắn theo cơ chế, primitive, và né tránh liên quan.
 
 ### 1.6.1. Classic Remote Thread Injection
 
-**Cơ chế:** `OpenProcess` → `VirtualAllocEx` (A) → `WriteProcessMemory` (W) → `CreateRemoteThread` (E) trỏ `lpStartAddress` tới shellcode.
+**Cơ chế:** `OpenProcess` → `VirtualAllocEx` (A) → `WriteProcessMemory` (W) → `CreateRemoteThread` (E) với `lpStartAddress` trỏ tới shellcode.
 
 **Né tránh:** E1 (`NtCreateThreadEx`); E3 (target `explorer.exe`); E4 (direct syscall).
 
@@ -492,122 +565,122 @@ Phần này mô tả **mười hai kỹ thuật chính** theo paper [4] cộng b
 
 ### 1.6.2. DLL Injection (LoadLibrary)
 
-**Cơ chế:** Thay shellcode bằng đường dẫn DLL; `CreateRemoteThread` gọi `LoadLibraryA/W` (E) sau khi write path string (W) vào remote memory (A thường implicit).
+**Cơ chế:** `CreateRemoteThread` với `lpStartAddress = LoadLibraryA` và `lpParameter` trỏ tới đường dẫn DLL đã write sang remote memory.
 
-**Né tránh:** E3 — DLL dropped disk; E1 — `LdrLoadDll`.
+**Né tránh:** E3 (DLL trên disk); E1 nếu chuyển `LdrLoadDll`.
 
-**Phát hiện:** W+E; file provenance bổ sung cho E3.
+**Phát hiện:** W+E; file provenance (Event 11) bổ sung cho E3.
 
 ### 1.6.3. APC Injection
 
-**Cơ chế:** `OpenProcess`/`OpenThread` → allocate/write shellcode → `QueueUserAPC` (E) — APC queue gắn thread alertable; execute khi thread vào trạng thái alertable.
+**Cơ chế:** Allocate + write shellcode vào remote, `QueueUserAPC` (E) gắn vào APC queue thread victim. Khi thread alertable (`SleepEx`, `WaitForSingleObjectEx`), kernel dispatch APC.
 
-**Né tránh:** E2 — thiếu remote thread rõ ràng; E1 — `NtQueueApcThreadEx`.
+**Né tránh:** E2 (Sysmon Event 8 không fire); E1 (`NtQueueApcThreadEx`).
 
-**Phát hiện [4]:** W+E phổ biến; cần thread alertable hoặc force alert.
+**Phát hiện [4]:** W+E.
 
 ### 1.6.4. Early Bird APC Injection
 
-**Cơ chế:** `CreateProcess(..., CREATE_SUSPENDED)` → allocate/write vào process con suspended → `QueueUserAPC` trên thread chính → `ResumeThread` (E). APC chạy trước entrypoint chính.
+**Cơ chế:** `CreateProcess(..., CREATE_SUSPENDED)`; allocate + write vào process con; `QueueUserAPC` lên thread chính; `ResumeThread` (E). Khi thread chính alertable trong init (`NtTestAlert`), APC chạy trước entrypoint.
 
-**Né tránh:** E2, E3 — không cần inject process đang chạy; victim mới spawn trông “sạch”.
+**Né tránh:** E2; E3 (victim mới spawn “sạch”).
 
-**Phát hiện:** Evidence `create_suspended` + APC + resume; classifier `EARLY_BIRD_APC_INJECTION`.
+**Phát hiện:** Evidence `create_suspended` + APC + `ResumeThread`; classifier `EARLY_BIRD_APC_INJECTION`.
 
 ### 1.6.5. Thread Execution Hijacking
 
-**Cơ chế:** Suspend thread nạn nhân → `GetThreadContext` (context read) → sửa `Rip`/`RSP` → `SetThreadContext` (E) → `ResumeThread`.
+**Cơ chế:** `SuspendThread` → `GetThreadContext` → sửa `Rip`/`RSP` → `SetThreadContext` (E) → `ResumeThread`.
 
-**Né tránh:** E2 — không tạo thread mới (khó Event 8); E1 — `NtGetContextThread`/`NtSetContextThread`.
+**Né tránh:** E2 (không tạo thread mới); E1 (`NtGetContextThread`/`NtSetContextThread`).
 
-**Phát hiện [4]:** W + CONTEXT_READ + E; memory congruence qua `Rip` (extension D1 Noirlycan).
+**Phát hiện [4]:** W + CONTEXT_READ + E; address congruence lấy từ `Rip` mới (extension D1).
 
 ### 1.6.6. Process Hollowing (classic)
 
-**Cơ chế:** `CreateProcess` suspended → `NtUnmapViewOfSection` unmap image gốc → allocate/write image độc hại → set thread context entrypoint → resume.
+**Cơ chế:** `CreateProcess` suspended → `NtUnmapViewOfSection` image gốc → allocate + write image độc hại vào cùng base → set context → `ResumeThread`.
 
-**Né tránh:** E1, E2, E3 — victim là process hợp pháp (`svchost` pattern).
+**Né tránh:** E1, E2, E3.
 
-**Phát hiện:** A+W+E hoặc unmap (write kind) + set context + resume; `PROCESS_HOLLOWING_CLASSIC`.
+**Phát hiện:** A+W+E hoặc unmap (W) + set context + resume; classifier `PROCESS_HOLLOWING_CLASSIC`.
 
 ### 1.6.7. Process Hollowing (section-mapping variant)
 
-**Cơ chế:** Dominant trong dataset [4]: `NtCreateSection` từ file payload → `NtMapViewOfSection` remote thay image → `SetThreadContext` + `ResumeThread`. Case study **Neurevt** trong paper §3.5.
+**Cơ chế:** Biến thể chiếm tỉ lệ lớn nhất trong [4]: `NtCreateSection` từ file payload → `NtMapViewOfSection` remote thay image gốc → `SetThreadContext` + `ResumeThread`. Case study **Neurevt** [4] §3.5.
 
-**Né tránh:** E2 mạnh — gộp allocate+write.
+**Né tránh:** E2 mạnh do gộp A và W.
 
-**Phát hiện:** `NtMapViewOfSection` (W) + `ResumeThread` (E) = 2-of-3; test Noirlycan `test_detects_section_mapping_write_execute_chain`.
+**Phát hiện:** `NtMapViewOfSection` (W) + `ResumeThread` (E) = 2-of-3; testcase `test_detects_section_mapping_write_execute_chain`.
 
 ### 1.6.8. Reflective DLL Injection
 
-**Cơ chế:** Loader manual-map PE DLL vào memory: parse headers, relocations, imports — **không** gọi `LoadLibrary`. Execute qua export hoặc shellcode bootstrap.
+**Cơ chế:** Loader trong shellcode manual-map PE DLL: parse PE headers, relocation, resolve import, gọi `DllMain` — không qua `LoadLibrary`.
 
-**Né tránh:** E1, E3 — không file DLL load event rõ; E6 — anti-analysis trong loader.
+**Né tránh:** E1, E3; E6 nếu loader có anti-analysis.
 
-**Phát hiện [4]:** W+E; heuristic loại `LoadLibrary` present; Sysmon Event 7 (ImageLoad) absent cho reflective.
+**Phát hiện [4]:** W+E; Sysmon Event 7 (ImageLoad) vắng mặt cho payload reflective.
 
 ### 1.6.9. Module Stomping / Overloading
 
-**Cơ chế:** Load DLL hợp pháp (RWX section hoặc RW) → ghi đè `.text` (W) → execute trong export/function pointer (E).
+**Cơ chế:** Load DLL hợp pháp; xác định section RX/RWX; ghi đè `.text` (W); execute qua export hoặc function pointer (E).
 
-**Né tránh:** E2 — tái sử dụng mapping có sẵn; E3 — DLL signed.
+**Né tránh:** E2 (tái sử dụng mapping); E3 (DLL có chữ ký).
 
-**Phát hiện:** W+E trên range module đã load; ImageLoad trước write.
+**Phát hiện:** W+E trên range module đã load; ImageLoad trước write là dấu hiệu phân loại.
 
 ### 1.6.10. Process Doppelgänging
 
-**Cơ chế:** Lạm dụng **NTFS transaction**: tạo file transacted, ghi payload, `CreateProcess` từ transacted section, rollback transaction — process chạy image “ma” không tồn tại disk.
+**Cơ chế:** Lạm dụng **NTFS transaction**: tạo file transacted, ghi payload, `CreateProcess` từ transacted section, rollback transaction. Process chạy image “ma” không còn trên disk.
 
-**Né tránh:** E1, E3 — forensics disk miss file.
+**Né tránh:** E1, E3.
 
-**Phát hiện:** Transaction API + spawn + inject primitives; `PROCESS_DOPPELGANGING` enum.
+**Phát hiện:** Transaction API + spawn + inject primitives; classifier `PROCESS_DOPPELGANGING`.
 
-### 1.6.11. Process Ghosting và Process Herpaderping
+### 1.6.11. Process Ghosting và Herpaderping
 
-**Ghosting:** Tạo file delete-pending, map section, ghi payload, tạo process từ section, đóng handle file (file bị xóa khi handle hết).
+**Ghosting:** File delete-pending, map section, ghi payload, tạo process, đóng handle — file bị xóa khi process payload đã chạy.
 
-**Herpaderping:** Map file legitimate, ghi đè payload, tạo process, sau đó mới “sửa” file view — lừa scanner đọc file sạch.
+**Herpaderping:** Map file hợp lệ, ghi đè bằng payload, tạo process, “sửa” lại view trên disk thành file sạch.
 
-**Né tránh:** E2, E3 — file system forensics khó.
+**Né tránh:** E2, E3.
 
-**Phát hiện:** Pattern spawn + section + write; enum `PROCESS_GHOSTING`, `PROCESS_HERPADERPING` trong Noirlycan.
+**Phát hiện:** Spawn + section + write thứ tự bất thường; classifier `PROCESS_GHOSTING`, `PROCESS_HERPADERPING`.
 
 ### 1.6.12. AtomBombing
 
-**Cơ chế:** Ghi payload vào **global atom table** → `GlobalGetAtomName`/`NtQueueApcThread` kết hợp trick copy từ atom sang memory nạn nhân — execute qua APC.
+**Cơ chế:** Ghi payload vào **global atom table** qua `GlobalAddAtom`; dùng `GlobalGetAtomName` ép kernel copy chuỗi sang memory victim; thực thi qua APC.
 
-**Né tránh:** E2 — đường dẫn không classic VirtualAllocEx.
+**Né tránh:** E2 (không có `VirtualAllocEx` cổ điển).
 
-**Phát hiện:** `GlobalAddAtom` (execute class trong manifest) + APC + write.
+**Phát hiện:** `GlobalAddAtom` (execute class theo manifest paper) + APC + write.
 
 ### 1.6.13. SetWindowsHookEx Injection
 
-**Cơ chế:** Cài hook (`SetWindowsHookEx`) trỏ tới DLL trong process nạn nhân (thường cần DLL trong shared memory hoặc inject DLL trước).
+**Cơ chế:** `SetWindowsHookEx` với hook type (`WH_KEYBOARD`, `WH_GETMESSAGE`, …) và handle module DLL độc hại. Kernel tự map DLL vào process có message loop tương ứng.
 
-**Né tránh:** E3 — DLL hợp pháp; execute qua message loop.
+**Né tránh:** E3 (DLL có chữ ký); execute không qua `CreateRemoteThread`.
 
-**Phát hiện:** `SetWindowsHookEx` (E) + W; `HOOK_INJECTION`.
+**Phát hiện:** `SetWindowsHookEx` (E) + W; classifier `HOOK_INJECTION`.
 
 ### 1.6.14. Mockingjay Injection
 
-**Cơ chế:** Tìm section **RWX** trong DLL signed (ví dụ `ssh.exe`, Chromium Embedded) → chỉ `WriteProcessMemory` (W) + hijack execution (E) — **không allocate** [7].
+**Cơ chế:** Quét DLL signed đã load tìm section RWX có sẵn (`ssh.exe`, CEF, một số runtime); chỉ thực hiện `WriteProcessMemory` (W) + hijack execution (E) — **bỏ allocate** [7].
 
-**Né tránh:** E2 mạnh — chỉ 2 primitive.
+**Né tránh:** E2 mạnh — chỉ 2 primitive observable.
 
 **Phát hiện [4]:** W+E đủ 2-of-3; classifier `MOCKINGJAY`.
 
 ### 1.6.15. PoolParty (Thread Pool)
 
-**Cơ chế:** Lạm dụng Windows thread pool: queue work item / timer / wait callback trỏ shellcode đã write — execute không qua remote thread API cổ điển.
+**Cơ chế:** Lạm dụng Windows thread pool — queue work item, timer, hoặc wait callback trỏ tới shellcode — execute không cần `CreateRemoteThread`.
 
-**Né tránh:** E2, E4 — tránh CreateRemoteThread signature.
+**Né tránh:** E2, E4.
 
-**Phát hiện:** W + execute qua pool API (extension `POOLPARTY`); cần hook sâu hơn.
+**Phát hiện:** W + execute qua API thread pool; extension `POOLPARTY` trong Noirlycan; yêu cầu hook sâu hơn baseline.
 
 **Bảng 1.5.** Tóm tắt kỹ thuật injection, primitive và né tránh
 
-| # | Kỹ thuật | Primitive điển hình | E1 | E2 | E3 |
-|---|----------|---------------------|----|----|-----|
+| # | Kỹ thuật | Primitive | E1 | E2 | E3 |
+|---|----------|-----------|----|----|-----|
 | 1 | Classic Remote Thread | A+W+E | ✓ | | ✓ |
 | 2 | DLL Injection | W+E | ✓ | | ✓ |
 | 3 | APC Injection | W+E | ✓ | ✓ | |
@@ -626,86 +699,83 @@ Phần này mô tả **mười hai kỹ thuật chính** theo paper [4] cộng b
 
 ## 1.7. Sysmon — telemetry kernel cho phát hiện injection
 
-**Sysmon** (System Monitor) là thành phần Sysinternals ghi log hành vi hệ thống qua driver kernel `SysmonDrv.sys` [10]. Trong luận văn, Sysmon đóng vai **lớp phòng thủ chống E4** — quan sát artifact cross-process mà không phụ thuộc hook user-mode.
+**Sysmon** ghi log qua driver kernel `SysmonDrv.sys` [10]. Trong luận văn, Sysmon là **lớp chống E4** — quan sát cross-process khi malware bypass user-mode hook, và là ground truth độc lập so với Frida cho RQ4.
 
 ### 1.7.1. Kiến trúc Sysmon
 
-Sysmon.exe (service LocalSystem) đăng ký với driver; driver cài callback kernel:
+Sysmon.exe (LocalSystem) đăng ký với driver; driver cài callback kernel:
 
 - `PsSetCreateProcessNotifyRoutineEx` — process create/exit.
 - `PsSetLoadImageNotifyRoutine` — DLL/EXE map.
-- `ObRegisterCallbacks` — handle operation (OpenProcess).
-- Minifilter — file create.
-- ETW Threat Intelligence — CreateRemoteThread, …
+- `ObRegisterCallbacks` — handle operation (`OpenProcess`, `OpenThread`).
+- Minifilter file system — file create/write.
+- ETW Threat Intelligence — CreateRemoteThread kernel.
 
-Log ghi vào Windows Event Log (channel `Microsoft-Windows-Sysmon/Operational`).
+Log ghi vào `Microsoft-Windows-Sysmon/Operational`, collector Noirlycan đọc qua `EvtSubscribe`.
 
 ### 1.7.2. Sự kiện Sysmon trong phạm vi Noirlycan
 
-**Bảng 1.6.** Sự kiện Sysmon và vai trò phát hiện injection / né tránh
+**Bảng 1.6.** Sự kiện Sysmon và vai trò phát hiện
 
-| Event ID | Tên | Cơ chế kernel | Chống né tránh | Vai trò Noirlycan |
-|----------|-----|---------------|----------------|-------------------|
-| **1** | ProcessCreate | Process notify | E3, E4 (syscall spawn vẫn log) | Lineage, parent PID, `CreationUtcTime`, command line, `CurrentDirectory` |
-| **3** | NetworkConnect | WFP ETW | — | Post-injection C2 beacon watch |
-| **7** | ImageLoad | Image notify | E4 (kernel) | Phân biệt reflective vs LoadLibrary |
-| **8** | CreateRemoteThread | ETW TI | **E4** — kể cả direct syscall | Fallback execute primitive; `SourceImage`, `TargetImage`, `StartAddress` |
-| **10** | ProcessAccess | ObRegisterCallbacks | **E4** | `OpenProcess` với `GrantedAccess` suspicious (`0x1fffff`, `0x143a`, …) |
-| **11** | FileCreate | Minifilter | E3 | File-drop provenance; hash SHA256 (config Noirlycan) |
-| **15** | FileCreateStreamHash | Minifilter | E3 alt | ADS (ít dùng trong config hiện tại) |
+| Event | Tên | Cơ chế kernel | Chống né tránh | Vai trò |
+|-------|-----|---------------|----------------|---------|
+| **1** | ProcessCreate | Process notify | E3, E4 | Lineage, parent PID, command line |
+| **3** | NetworkConnect | WFP ETW | — | Post-injection C2 |
+| **7** | ImageLoad | Image notify | E4 (kernel) | Reflective vs LoadLibrary |
+| **8** | CreateRemoteThread | ETW TI | **E4** | Fallback execute; `StartAddress` |
+| **10** | ProcessAccess | ObRegisterCallbacks | **E4** | `GrantedAccess` suspicious (`0x1fffff`, `0x143a`) |
+| **11** | FileCreate | Minifilter | E3 | File-drop provenance; SHA256 |
+| **15** | FileCreateStreamHash | Minifilter | E3 alt | ADS |
 
-Config `sysmon-noirlycan.xml` [13]: ProcessCreate broad; FileCreate filter extension executable/script; ProcessAccess filter access mask; CreateRemoteThread exclude none (log all); ImageLoad filter `ntdll`, `kernel32`.
+Config `sysmon-noirlycan.xml` [13]: ProcessCreate broad; FileCreate filter `.exe/.dll/.ps1/.vbs/.js/.scr`; ProcessAccess filter `GrantedAccess` suspicious; CreateRemoteThread log toàn bộ; ImageLoad filter `ntdll.dll`, `kernel32.dll`.
 
 ### 1.7.3. Giới hạn Sysmon
 
-- **Không** có đối số đầy đủ mọi NT API (vd. size write, protection flags) — Frida bổ sung congruence.
-- **Kernel rootkit** (O3 threat model) có thể blind driver — out-of-scope.
-- Event 8 không cover mọi execute vector (APC-only, thread pool) — cần Frida.
-- Volume log cao nếu config quá rộng — lab VM chấp nhận được.
+- Thiếu chi tiết tham số NT API (size, protection flag) — Frida bổ sung cho memory congruence.
+- Kernel rootkit (O3 threat model) có thể vô hiệu hoá driver — ngoài phạm vi luận văn.
+- Event 8 không cover mọi execute vector — APC-only và thread pool không phát sinh CreateRemoteThread.
+- Volume log tăng nhanh nếu config rộng — mức hiện tại chấp nhận được trong lab.
 
 ### 1.7.4. Sysmon và E4 — ma trận tin cậy
 
-Khi malware direct-syscall `NtCreateThreadEx`:
-
-- Frida miss → không có primitive chi tiết từ hook export.
-- Sysmon Event 8 vẫn fire (kernel ETW TI) → có `StartAddress`, `SourceImage`, `TargetImage`.
-
-Correlator Noirlycan merge hai nguồn: Sysmon event chuyển thành primitive EXECUTE sơ cấp; Frida cung cập W/A với address. Congruence có thể yếu hơn paper — khai báo trong đánh giá RQ2/RQ4.
+Khi malware direct-syscall `NtCreateThreadEx`, Frida miss hoàn toàn vì hook trên `ntdll!NtCreateThreadEx` không kích hoạt, nhưng Sysmon Event 8 vẫn fire qua ETW Threat Intelligence kernel. Correlator merge: Sysmon → primitive EXECUTE sơ cấp; Frida → W/A với address. Trong E4, congruence yếu hơn paper — khai báo trong RQ2/RQ4.
 
 ## 1.8. Frida — instrumentation user-mode và kiến trúc telemetry kép
 
 ### 1.8.1. Frida overview
 
-**Frida** là toolkit dynamic instrumentation [5]: inject **agent** JavaScript (V8) vào process target qua `frida-server` hoặc `frida-gadget`; hook function bằng `Interceptor.attach(address, { onEnter, onLeave })`. Noirlycan dùng Frida để:
+**Frida** [5] inject agent JavaScript (V8/QuickJS) vào process target qua `frida-server` hoặc `frida-gadget`; hook function bằng `Interceptor.attach(address, { onEnter, onLeave })`. Noirlycan dùng Frida để:
 
-- Hook export `kernel32.dll` / `ntdll.dll` liên quan injection (manifest `PAPER_API_CLASSES` + extensions iRed.team).
-- Trích xuất đối số: `lpBaseAddress`, `nSize`, `flAllocationType`, `lpStartAddress`, `lpBuffer`, process/thread handles.
-- Emit **observation** tới collector Python qua message bus JSON.
+- Hook export liên quan injection trong `kernel32.dll` và `ntdll.dll`.
+- Trích xuất đối số: `lpBaseAddress`, `nSize`, `flAllocationType`, `flProtect`, `lpStartAddress`, handle.
+- Emit **observation** sang collector Python qua JSON message bus.
 
-Script `windows_injection_hooks.js` (~1900 dòng) [13] implement helper normalize API (`Zw*` alias `Nt*`), xử lý CONTEXT pointer cho thread hijack, và phân biệt `emit` vs `emitObservation` (read-only không đếm 2-of-3).
+Script `windows_injection_hooks.js` (~1900 dòng) [13] chuẩn hoá API (alias `Zw*` về `Nt*`), xử lý `CONTEXT` cho thread hijack, phân biệt `emit` (đếm 2-of-3) với `emitObservation` (không đếm).
 
 ### 1.8.2. Ưu điểm so với chỉ Sysmon
 
 | Khía cạnh | Frida | Sysmon |
 |-----------|-------|--------|
-| Đối số API (addr, size, prot) | ✓ Chi tiết | ✗ Hạn chế |
-| Memory congruence [4] | ✓ Trực tiếp | △ Một phần (StartAddress) |
-| APC, MapView, Protect | ✓ Hook NT | ✗ Không log hết |
+| Đối số API (addr, size, prot) | Chi tiết | Hạn chế |
+| Memory congruence [4] | Trực tiếp | Một phần (StartAddress) |
+| APC, MapView, Protect | Hook NT | Không log hết |
 | Overhead | Cao hơn | Thấp hơn |
-| E4 direct syscall | ✗ Miss | ✓ Event 8/10 |
-| E6 anti-Frida | ✗ Risk | ✓ Không agent trong victim hook path |
+| E4 direct syscall | Miss | Event 8/10 |
+| E6 anti-Frida | Risk | Không agent trong victim |
+
+Hai công cụ bổ trợ: Frida cho chi tiết congruence [4], Sysmon cho tin cậy khi Frida bị vô hiệu hoá.
 
 ### 1.8.3. Chế độ attach và E6
 
-- **`spawn`:** Frida tạo process suspended, inject agent trước entrypoint — giảm miss primitive đầu (T2 threat model); giảm cửa sổ malware chạy trước hook.
-- **`attach`:** Gắn process đang chạy — phù hợp file-drop đã spawn; risk miss early API.
-- **`auto-attach-new-processes`:** Theo dõi victim sau injection đệ quy [4].
+- **`spawn`:** inject agent trước entrypoint — giảm cửa sổ race (T2).
+- **`attach`:** gắn vào process đang chạy — rủi ro miss API ở init.
+- **`auto-attach-new-processes`:** theo dõi process con cho injection đệ quy.
 
-E6: malware scan Frida artifact → luận văn **không** triển khai stealth agent; ghi limitation và khuyến nghị spawn cho thí nghiệm.
+E6 không vô hiệu hoá hoàn toàn — luận văn khuyến nghị `spawn` mode cho thí nghiệm rủi ro E6 cao.
 
 ### 1.8.4. Kiến trúc kép Sysmon ∪ Frida (Hình 1.1)
 
-Luận văn đề xuất kiến trúc **tăng cường phát hiện dưới né tránh** bằng cách kết hợp:
+Luận văn kết hợp hai nguồn telemetry độc lập:
 
 ```
 [Loader/Malware] 
@@ -719,371 +789,51 @@ Luận văn đề xuất kiến trúc **tăng cường phát hiện dưới né 
     [Dashboard / JSONL]
 ```
 
-**Hình 1.1** (mô tả conceptual; bản đồ kiến trúc đầy đủ tại `docs/design/architecture-comparison-template.svg` và Chương 5) thể hiện trust boundary: Frida (user, untrusted nếu E4/E6) + Sysmon (kernel, trusted nếu O3 không xảy ra) → correlator (trusted).
+**Hình 1.1** (đầy đủ tại `docs/design/architecture-comparison-template.svg` và Chương 5) thể hiện trust boundary giữa Frida (user-mode, không tin cậy nếu E4/E6) và Sysmon (kernel, tin cậy nếu O3 không xảy ra). Correlator đặt ngoài agent — tránh mất logic phát hiện khi agent bị vô hiệu hoá.
 
 ### 1.8.5. Fidelity và giả định M5
 
-Luận văn giả định Frida hook **trung thực** về thứ tự và đối số (M5 threat model) — cần benchmark Frida fidelity (Phụ lục E): so sánh N lần gọi API với ground truth ETW/`SilkETW` hoặc controlled PoC. Overhead hook có thể thay đổi timing — **không** claim đo lường E5 timing evasion.
+Giả định Frida hook **trung thực** về thứ tự và đối số (M5 threat model); cần benchmark định kỳ (Phụ lục E) so với ETW/`SilkETW`. Overhead hook có thể thay đổi timing, do đó luận văn **không** claim đo lường E5 timing evasion từ Frida.
 
 ### 1.8.6. Hướng thay thế: ETW Threat Intelligence
 
-Microsoft **ETW Threat Intelligence** provider cung cấp syscall-level event kernel — không bypass bằng user-mode unhooking. Luận văn ghi nhận hướng phát triển thay/bổ sung Frida (Kết luận); hiện thực Noirlycan dùng Sysmon (đã tích hợp ETW TI cho Event 8) làm bước trung gian.
+**ETW Threat Intelligence** cung cấp event mức syscall kernel — không bypass bằng unhook user-mode. Đây là hướng tiềm năng thay thế Frida (Kết luận); hiện thực Noirlycan dùng Sysmon (đã tích hợp ETW TI cho Event 8) làm trung gian.
 
 ### 1.8.7. Tóm tắt chương
 
-Chương 1 đã trình bày nền tảng lý thuyết cho luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh*:
-
-1. **Mô hình Windows** — process, thread, virtual memory, section object, và lớp Win32/NT API — bối cảnh mọi kỹ thuật injection.
-2. **Process injection** — hành vi né attribution (T1055), prevalence ~16,5 % theo [4], chuỗi file-drop → spawn → inject trong lab.
-3. **Sáu nhóm né tránh E1–E6** — từ biến thể API (E1) đến anti-sandbox (E5, **ngoài phạm vi hiện thực**) và anti-Frida (E6, hạn chế).
-4. **Phương pháp [4]** — operational primitive (allocate, write, execute), equivalence class, quy tắc 2-of-3, memory congruence, temporal ordering — **căn cứ khoa học chính** của correlator Noirlycan.
-5. **Taxonomy 15+ kỹ thuật** — từ classic remote thread đến PoolParty/Mockingjay, mỗi kỹ thuật gắn primitive và nhóm né tránh.
-6. **Sysmon** — telemetry kernel (Event 1, 7, 8, 10, 11) fallback chống E4, provenance chống E3.
-7. **Frida** — telemetry user-mode chi tiết cho congruence; kiến trúc kép Sysmon ∪ Frida tăng độ bền phát hiện dưới né tránh hook.
-
-Chương 2 sẽ đặt phương pháp [4] trong bức tranh công trình liên quan (Klein [7], Starink [12], sandbox evasion [6], [8]) và làm rõ vị trí đóng góp replication + extension lab của luận văn so với nghiên cứu quy mô 56.340 mẫu của tác giả gốc.
+Chương 1 đã trình bày mô hình Windows, process injection (T1055, ~16,5 % [4]), sáu nhóm né tránh E1–E6, phương pháp [4] (primitive A/W/E, equivalence class, 2-of-3, congruence, temporal ordering), taxonomy 15+ kỹ thuật, Sysmon kernel chống E4/E3, Frida user-mode cho congruence, và kiến trúc kép Sysmon ∪ Frida. Chương 2 đặt [4] vào bức tranh công trình liên quan (Klein [7], Starink [12], sandbox evasion [6], [8]) và làm rõ vị trí đóng góp replication + extension so với 56.340 mẫu của tác giả gốc.
 
 ---
 
-# CHƯƠNG 2. CÔNG TRÌNH LIÊN QUAN
+# CHƯƠNG 2. PHƯƠNG PHÁP TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC DƯỚI NÉ TRÁNH
 
-Chương này khảo sát các hướng nghiên cứu và thực hành liên quan đến phát hiện process injection trên Windows, với trọng tâm đặt vào khả năng **chống né tránh** (*anti-evasion*) ở các tầng khác nhau: biến thể triển khai API, gộp bước injection, né attribution, né hook user-mode, và né sandbox. Mục tiêu là xác định vị trí khoa học của luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh* so với công trình căn cứ Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [4], đồng thời làm rõ khoảng trống mà hệ thống Noirlycan nhắm tới lấp đầy.
-
-## 2.1. Bối cảnh: cuộc đua vũ trang giữa phát hiện và né tránh
-
-Process injection (MITRE ATT&CK T1055 [9]) vẫn là kỹ thuật then chốt của malware Windows hiện đại vì ba lý do gắn trực tiếp với né tránh. Thứ nhất, malware thực thi payload trong tiến trình nạn nhân uy tín (`explorer.exe`, trình duyệt, binary ký số) thay vì tạo tiến trình mới dễ bị EDR chặn — đây là hình thức **né attribution** (E3). Thứ hai, mỗi triển khai injection có thể chọn tập API khác nhau (`CreateRemoteThread` so với `NtCreateThreadEx`, `VirtualAllocEx` so với section mapping) để lách rule cứng — **biến thể API** (E1). Thứ ba, malware có thể phát hiện sandbox hoặc debugger rồi không thực hiện injection, khiến phân tích động trả về kết quả âm tính giả — **né sandbox** (E5).
-
-Phương pháp phát hiện truyền thống chia thành ba nhóm chính (Bảng 2.1). Không nhóm nào tự thân giải quyết đồng thời mọi hình thức né tránh; cộng đồng nghiên cứu hai thập kỷ qua đã dần chuyển từ khớp chuỗi API cụ thể sang mô hình hóa hành vi ở mức trừu tượng hơn — *operational primitive* — nơi Di Pietro et al. [4] đóng vai trò mốc quan trọng nhất trong phạm vi luận văn này.
-
-**Bảng 2.1.** Phân loại hướng tiếp cận phát hiện process injection và khả năng chống né tránh
-
-| Nhóm | Cơ chế cốt lõi | Đại diện | Chống E1 (biến thể API) | Chống E2 (gộp/ẩn bước) | Chống E3 (attribution) | Chống E4 (né hook) | Chống E5 (sandbox) |
-|------|----------------|----------|-------------------------|-------------------------|------------------------|--------------------|--------------------|
-| Signature / rule API | Khớp chuỗi hoặc tập API cố định | Sigma, YARA behavior, rule AV | Yếu | Yếu–trung bình | Yếu | Yếu (hook user-mode) | Trung bình (phụ thuộc môi trường) |
-| Behavior graph | Đồ thị quan hệ handle, vùng nhớ, tiến trình | Starink et al. [12] | Khá | Khá | Trung bình | Trung bình | Phụ thuộc anti-evasion |
-| Operational primitive | Ba thao tác allocate/write/execute + equivalence class | Klein [7], **Di Pietro et al. [4]** | **Mạnh** | **Mạnh** (quy tắc 2-of-3) | Yếu (paper không trọng tâm) | Trung bình (tracer user-mode) | **Cần module anti-evasion** |
-| Memory forensic | Quét vùng thực thi trong RAM | Barabosch et al. [3], Quincy | Mạnh (offline) | Mạnh (offline) | Trung bình | Không áp dụng real-time | Không real-time |
-| EDR thương mại | Rule + ML + kernel driver | Microsoft Defender, Elastic, CrowdStrike | Khá–mạnh (đóng nguồn) | Khá | Khá | Mạnh (kernel) | Khá (tùy sản phẩm) |
-
-Luận văn chọn [4] làm **căn cứ phương pháp chính** vì đây là công trình duy nhất trong phạm vi nghiên cứu vừa (a) đề xuất framework phát hiện chịu biến thể triển khai, vừa (b) **định lượng trực tiếp** tác động né tránh sandbox lên tỷ lệ phát hiện injection trên dataset quy mô lớn (56.340 mẫu), vừa (c) công bố artifact tái lập được [11]. Các công trình còn lại được xem xét như nền tảng lý thuyết, đối chiếu, hoặc bối cảnh thực hành.
-
-## 2.2. Phát hiện dựa trên signature và rule API
-
-Phương pháp signature — khớp chuỗi lệnh gọi API, hash, chuỗi byte, hoặc rule Sigma/YARA trên log hệ thống — vẫn phổ biến trong SOC và AV vì chi phí triển khai thấp và độ trễ nhỏ. Một rule điển hình cho classic remote thread injection có thể yêu cầu tuần tự `OpenProcess` → `VirtualAllocEx` → `WriteProcessMemory` → `CreateRemoteThread`. Cách tiếp cận này hiệu quả với mẫu không đa hình, nhưng **dễ bị phá** bởi E1: thay `CreateRemoteThread` bằng `NtCreateThreadEx` hoặc `RtlCreateUserThread` là đủ để rule thất bại nếu rule không liệt kê mọi biến thể. Tương tự, E2 phá signature khi malware gộp allocate và write vào một lệnh gọi `NtMapViewOfSection` sau `NtCreateSection`.
-
-Hạn chế cơ bản của signature không nằm ở implementation cụ thể mà ở **mức trừu tượng quá thấp**: rule mô tả *cách* malware triển khai injection thay vì *điều gì* bắt buộc phải xảy ra trên bộ nhớ nạn nhân. Di Pietro et al. [4] lập luận rằng phương pháp signature và behavior graph cứng (khớp đồ thị API chính xác) tạo false negative đáng kể trên malware thực tế đa hình API — kết luận được củng cố bằng số liệu 21,2 % mẫu injection bị sandbox miss (mục 2.6.4). Luận văn **không** đề xuất phương pháp signature mới; thay vào đó, hiện thực framework primitive của [4] như lớp phát hiện semantic nằm trên signature.
-
-## 2.3. Klein et al. (2017) — Phân loại operational primitive
-
-Klein et al. [7] là công trình nền tảng đặt ra ba bước tối thiểu mọi process injection user-mode phải thực hiện trên bộ nhớ tiến trình nạn nhân:
-
-1. **Allocate** — cấp phát hoặc chuẩn bị vùng nhớ có thể chứa mã thực thi (bao gồm thay đổi page protection).
-2. **Write** — đặt payload vào vùng nhớ đó.
-3. **Execute** — kích hoạt luồng thực thi từ vùng nhớ đó.
-
-Đóng góp của Klein nằm ở **mô hình khái niệm**: thay vì liệt kê hàng chục kỹ thuật injection riêng lẻ, ba primitive mô tả *bản chất thao tác* mà mọi kỹ thuật phải tuân theo. Tuy nhiên, công trình [7] chưa xây dựng:
-
-- **Lớp tương đương API** (*equivalence class*) — không chỉ rõ `NtAllocateVirtualMemory` và `VirtualAllocEx` thuộc cùng primitive allocate;
-- **Quy tắc quyết định** khi chỉ quan sát được hai trong ba primitive (trường hợp gộp bước hoặc ẩn bước — E2);
-- **Ràng buộc vùng nhớ** để phân biệt injection chain với nhiều thao tác heap độc lập;
-- **Đánh giá quy mô lớn** trên corpus malware thực tế và phân tích né tránh sandbox.
-
-Di Pietro et al. [4] kế thừa trực tiếp ba primitive của Klein và bổ sung bốn thành phần phương pháp (equivalence class, quy tắc 2-of-3, memory congruence, temporal ordering) — biến mô hình khái niệm thành **framework phát hiện có thể triển khai và đo lường**. Trong repo Noirlycan, định nghĩa `PrimitiveKind.ALLOCATE / WRITE / EXECUTE` trong `kernel/entities/models.py` và manifest `PAPER_API_CLASSES` trong `kernel/classification/api_manifest.py` bám sát phân loại Klein–Di Pietro.
-
-**Hạn chế kế thừa:** Klein (và paper [4]) giới hạn user-mode injection; kernel-mode injection (driver-based, kernel APC) nằm ngoài ba primitive này. Luận văn khai báo giới hạn tương tự (Chương 3, O3).
-
-## 2.4. Barabosch et al. (2017) — Phân tích memory dump
-
-Barabosch et al. [3] và các công cụ memory forensic (Quincy, Volatility plugin) tiếp cận injection từ góc **offline**: dump RAM, quét vùng executable bất thường, phát hiện shellcode hoặc PE mapping thủ công trong tiến trình nạn nhân. Ưu điểm: không phụ thuộc chuỗi API — malware đã thực thi xong vẫn để lại dấu vết trong bộ nhớ, chống hiệu quả E1 và E2 *sau khi* injection hoàn tất.
-
-Nhược điểm đối với mục tiêu luận văn:
-
-- **Không real-time** — không phù hợp endpoint monitoring liên tục;
-- **Chi phí I/O cao** — dump toàn bộ RAM không khả thi trên mọi host;
-- **Không ghi nhận chuỗi thao tác** — khó phân biệt injection với JIT hợp pháp hoặc self-modifying code benign;
-- **Không đối phó E5** — nếu malware không inject trong sandbox, memory dump cũng không có gì để phát hiện.
-
-Luận văn xem memory forensic là **bổ trợ điều tra sau sự cố**, không thay thế pipeline telemetry real-time của Noirlycan. Quan hệ với [4]: paper dùng tracer động (tương tự EDR) thay vì dump RAM; Noirlycan kết hợp Frida + Sysmon theo hướng đó.
-
-## 2.5. Starink et al. (2023) — Behavior graph và memory congruence
-
-Starink et al. [12] đề xuất mô hình **behavior graph**: các node là thực thể (process, thread, memory region, handle); các cạnh là quan hệ thao tác (allocate, write, execute, open). Phát hiện injection = tìm subgraph khớp mẫu injection trong đồ thị hành vi. Công trình nhấn mạnh ràng buộc **cùng buffer** — mọi primitive phải thao tác trên cùng vùng nhớ vật lý, không chỉ cùng process pair.
-
-**Bảng 2.2.** So sánh behavior graph [12] và operational primitive [4]
-
-| Khía cạnh | Starink et al. [12] | Di Pietro et al. [4] |
-|-----------|---------------------|----------------------|
-| Cấu trúc dữ liệu | Đồ thị đầy đủ (node/edge) | Ba primitive + equivalence class |
-| Ràng buộc vùng nhớ | Same buffer (chặt) | Overlap/contain (nới lỏng có chứng minh) |
-| Chống E1 | Phụ thuộc node label API | Equivalence class gom API tương đương |
-| Chi phí tính toán | Cao hơn (graph matching) | Thấp hơn (rule 2-of-3 trên stream event) |
-| Triển khai sandbox batch | Có | Có (QEMU + custom tracer) |
-| Đánh giá né sandbox | Không tập trung | Có (21,2 % miss rate) |
-
-Di Pietro et al. [4] đơn giản hóa ràng buộc *same buffer* của Starink thành **memory range congruence**: hai primitive *p₁*, *p₂* được coi là cùng vùng nhớ nếu khoảng địa chỉ nửa mở `[addr, addr+size)` của chúng giao nhau hoặc chứa nhau. Cách này đủ để loại false positive khi cùng actor thực hiện nhiều allocation độc lập, đồng thời cho phép section mapping (một API gắn với hai primitive). Noirlycan hiện thực trực tiếp quy tắc overlap trong `_has_memory_congruence()` (`services/analysis/domain/correlation.py`).
-
-**Hạn chế Starink so với luận văn:** behavior graph vẫn có thể bị E1 nếu node label gắn cứng tên API thay vì equivalence class; chi phí đồ thị khó scale trên endpoint cá nhân. [4] được chọn vì cân bằng tốt hơn giữa độ tổng quát và chi phí triển khai lab.
-
-## 2.6. Di Pietro, D'Elia, Querzoni (ASIA CCS 2025) — Căn cứ khoa học chính
-
-### 2.6.1. Thông tin công trình và bối cảnh
-
-> Di Pietro, G., D'Elia, D. C., & Querzoni, L. (2025). *Can You Run My Code? A Close Look at Process Injection in Windows Malware.* Proceedings of the 20th ACM Asia Conference on Computer and Communications Security (ASIA CCS '25), Hanoi, Vietnam. DOI: 10.1145/3708821.3736206. Artifact: [github.com/Sap4Sec/process-injection](https://github.com/Sap4Sec/process-injection) [11].
-
-Tác giả thuộc Sapienza University of Rome; nhóm có kinh nghiệm phân tích malware động và sandbox evasion (D'Elia là tác giả framework Bluepill). Paper được công bố tại ASIA CCS 2025 ở Hà Nội — bối cảnh phù hợp luận văn thạc sĩ tại Việt Nam và tạo điều kiện truy cập artifact công khai.
-
-Paper đặt ra **ba câu hỏi nghiên cứu (RQ)**:
-
-| ID | Câu hỏi | Ý nghĩa với luận văn |
-|----|---------|----------------------|
-| **RQ1** | Process injection phổ biến đến đâu trong malware Windows 2017–2023? | Cung cấp baseline prevalence; luận văn **không tái lập** trên 56k mẫu |
-| **RQ2** | Có phương pháp tổng quát hơn signature API, đủ rẻ cho sandbox quy mô lớn? | Framework 2-of-3 — **đối tượng replication** của Noirlycan |
-| **RQ3** | Sandbox công cộng bỏ sót bao nhiêu mẫu injection vì anti-evasion? | 21,2 % — **động lực** cho đề tài né tránh; luận văn trích dẫn, không claim lại |
-
-### 2.6.2. Phương pháp cốt lõi
-
-#### (a) Ba operational primitive và equivalence class
-
-Mọi injection user-mode phải thực hiện allocate, write, execute trên bộ nhớ nạn nhân [7]. Đóng góp phương pháp của [4] là **ánh xạ mỗi primitive sang lớp tương đương API** (Bảng 2.3 — rút gọn từ Table 1 paper và `PAPER_API_CLASSES` trong repo).
-
-**Bảng 2.3.** Lớp tương đương API theo Di Pietro et al. [4] (rút gọn)
-
-| Primitive | Ví dụ API trong lớp | Vai trò chống né tránh |
-|-----------|---------------------|------------------------|
-| Allocate | `VirtualAllocEx`, `NtAllocateVirtualMemory`, `VirtualProtectEx`, `NtCreateSection`, `CreateFileMappingW`, `MapViewOfFile` | Chống E1: thay API cấp phát |
-| Write | `WriteProcessMemory`, `NtWriteVirtualMemory`, `NtMapViewOfSection`, `RtlCopyMemory` | Chống E1/E2: section mapping = allocate ∧ write |
-| Execute | `CreateRemoteThread(Ex)`, `NtCreateThreadEx`, `QueueUserAPC`, `SetThreadContext`, `ResumeThread`, `LoadLibrary*` | Chống E1: thay cơ chế kích hoạt thực thi |
-
-Equivalence class cho phép correlator kết luận *có injection* khi quan sát **ngữ nghĩa** ba thao tác, không phụ thuộc tên API cụ thể — trực tiếp đối phó E1.
-
-#### (b) Quy tắc 2-of-3
-
-Paper lập luận:
-
-- Yêu cầu **đủ cả ba** primitive → false negative cao (malware gộp bước hoặc khai thác vùng RWX sẵn có — Mockingjay, một số biến thể APC).
-- Yêu cầu **chỉ một** primitive → false positive cao (nhiều ứng dụng hợp pháp gọi `VirtualAllocEx` hoặc `WriteProcessMemory` trong debug/optimization).
-
-Cân bằng: **quan sát ít nhất hai primitive khác loại** trên cùng cặp `(actor_pid, target_pid)`, kèm memory congruence và temporal ordering. Quy tắc này là cơ chế chính chống **E2** (gộp/ẩn bước). Trong Noirlycan, điều kiện `operational_kind_count(kinds) >= 2` trong `services/analysis/domain/correlation.py` hiện thực trực tiếp quy tắc này; `CONTEXT_READ` (từ `GetThreadContext`) được ghi nhận nhưng **không tính** vào 2-of-3 — đúng tinh thần paper.
-
-#### (c) Memory range congruence
-
-Hai primitive *congruent* khi vùng địa chỉ giao nhau:
-
-\[
-[p_1.\text{addr},\, p_1.\text{addr}+p_1.\text{size}) \cap [p_2.\text{addr},\, p_2.\text{addr}+p_2.\text{size}) \neq \emptyset
-\]
-
-Mục đích: tránh gom nhầm allocate ở địa chỉ *a* với write ở địa chỉ *b* không liên quan trong cùng process pair. Kế thừa tinh thần Starink [12], đơn giản hóa cho stream processing.
-
-#### (d) Temporal consistency
-
-Thứ tự tự nhiên: Allocate → Write → Execute. Paper **cho phép**:
-
-- **Gộp bước** trong một API (`NtMapViewOfSection` = allocate + write đồng thời);
-- **Lặp allocate** (resize, đổi protection RW → RX sau write).
-
-Paper **không cho phép** đảo bậc nghiêm trọng (execute trước write trên cùng vùng). Noirlycan hiện thực qua `_has_temporal_consistency()` với bậc `ALLOCATE=0, WRITE=1, EXECUTE=3`.
-
-### 2.6.3. Hạ tầng thực nghiệm và dataset
-
-Paper xây pipeline phân tích trên:
-
-- **Nguồn mẫu:** VirusTotal Academic + VX Underground Bazaar, giai đoạn 2017–2023;
-- **Lọc:** 334.885 mẫu Windows → **56.340 mẫu** đại diện thuộc 2.667 family;
-- **Sandbox:** QEMU + custom tracer (tương tự Bluepill) + **module anti-evasion** (bypass timing check, env fingerprint);
-- **Baseline so sánh:** Cuckoo Sandbox, Hatching Triage, và các công cụ phổ biến khác.
-
-Module anti-evasion là thành phần **không thể tách rời** khi paper trả lời RQ3: without anti-evasion, sandbox miss injection vì malware **chủ động không chạy** payload (E5), không phải vì phương pháp phát hiện primitive yếu.
-
-### 2.6.4. Kết quả chính — prevalence, sandbox miss, và ý nghĩa né tránh
-
-**Bảng 2.4.** Tóm tắt kết quả thực nghiệm Di Pietro et al. [4]
-
-| Chỉ số | Giá trị | Diễn giải |
-|--------|---------|-----------|
-| Tỷ lệ mẫu có injection (2017–2023) | **~16,5 %** | Trả lời RQ1; xu hướng tăng theo năm |
-| Mẫu injection bị sandbox miss (thiếu anti-evasion) | **21,2 %** | Trả lời RQ3; **né sandbox che hành vi injection** |
-| Mẫu multi-stage đệ quy (A→B→C) | ~2 % | Injection lồng nhau — paper theo dõi re-trace |
-| Biến thể dominant trong family đa kỹ thuật | Section-mapping hollowing | Case study *neurevt* |
-
-Hai con số **16,5 %** và **21,2 %** mang ý nghĩa kép cho luận văn:
-
-1. **16,5 %** khẳng định injection không phải kỹ thuật hiếm — đáng đầu tư phương pháp phát hiện tổng quát, không chỉ rule cho từng kỹ thuật.
-2. **21,2 %** chứng minh **né tránh môi trường phân tích** (E5) làm giảm recall đáng kể ngay cả khi đã có phương pháp phát hiện tốt — sandbox không có anti-evasion *under-report* prevalence thực tế.
-
-**Lưu ý quan trọng (trung thực khoa học):** Hai con số trên thuộc **paper [4]**, đo trên corpus và hạ tầng của tác giả. Luận văn **không được claim** đã tái lập prevalence trên 56.340 mẫu; Noirlycan chưa tích hợp module anti-evasion tương đương (Chương 3, O7). Số liệu được trích dẫn làm **động lực và baseline tham chiếu**, không phải kết quả của luận văn.
-
-Ablation anti-evasion trong [4]: khi bật module chống timing/env check, tỷ lệ phát hiện injection tăng tương ứng phần sandbox đã miss — chứng minh một phần 21,2 % là do **malware không thực hiện hành vi**, không phải do correlator primitive không nhận ra pattern khi có log.
-
-### 2.6.5. Taxonomy kỹ thuật và case study *neurevt*
-
-Paper phân loại **12 kỹ thuật injection chính** trong dataset: Classic Remote Thread, APC, Early Bird APC, SetWindowsHookEx, Thread Hijacking, Process Hollowing (classic + section variant), AtomBombing, Reflective DLL, Module Stomping, Process Doppelgänging, Process Ghosting/Herpaderping, và các biến thể liên quan. Mỗi kỹ thuật ánh xạ lên tập primitive và equivalence class tương ứng.
-
-**Case study *neurevt*** (Paper §3.5) là ví dụ điển hình **E1 + E2**:
-
-- Thay cặp `VirtualAllocEx` + `WriteProcessMemory` bằng `NtCreateSection` + `NtMapViewOfSection` (local và remote) — **gộp allocate và write**;
-- Kích hoạt thực thi qua `SetThreadContext` + `ResumeThread` trên tiến trình suspended — biến thể **Process Hollowing** dominant trong family đa kỹ thuật của dataset [4].
-
-Paper coi đây là minh chứng framework 2-of-3 **không bị phá** bởi section mapping: correlator vẫn thấy write + execute (hoặc allocate + execute) trên cùng vùng section. Noirlycan có test `test_detects_section_mapping_write_execute_chain` xác nhận kịch bản `NtMapViewOfSection` + `ResumeThread` cross-process vào `msedge.exe` đạt score ≥ 70 — trực tiếp phản ánh case study paper.
-
-**Hạn chế case study trong luận văn:** test trên loader PoC lab, không phải sample *neurevt* gốc từ corpus 56k. Luận văn claim **phát hiện đúng pattern primitive** của biến thể section-mapping, không claim đã phân tích lại family *neurevt* trên malware thật.
-
-### 2.6.6. Module anti-evasion và quan hệ với đề tài
-
-Paper §6 mô tả module anti-evasion tích hợp trong sandbox:
-
-- Bypass **timing checks** (sleep acceleration, RDTSC manipulation detection);
-- Bypass **environment fingerprint** (registry key VM, MAC address, process list artifact);
-- Tránh malware **skip injection** khi phát hiện phân tích.
-
-Module này giải thích vì sao framework primitive của paper đạt recall cao hơn Cuckoo **trên cùng corpus** — không chỉ vì 2-of-3 rule mà còn vì **malware thực sự chạy injection** trong môi trường đã được che giấu.
-
-**Bảng 2.5.** Vai trò anti-evasion trong [4] so với Noirlycan
-
-| Khía cạnh | Paper [4] | Noirlycan (luận văn) |
-|-----------|-----------|----------------------|
-| Anti-evasion timing/env | Tích hợp trong QEMU sandbox | **Out-of-scope** (`kernel/analysis/evasion.py` chỉ ghi signal) |
-| Phát hiện primitive E1/E2 | Có (custom tracer) | Có (Frida + correlator) |
-| Phát hiện khi malware không chạy (E5) | Giảm nhờ anti-evasion | **Không xử lý** — recall lab có thể thấp hơn paper |
-| Số liệu 21,2 % miss | Đo trên corpus paper | Trích dẫn, không tái lập |
-
-Luận văn **tách bạch** hai lớp vấn đề:
-
-1. **Chống E1–E4 khi malware *đã* thực hiện injection** — mục tiêu chính, hiện thực [4] + extension Sysmon/provenance;
-2. **Chống E5 khi malware *không* thực hiện injection** — paper giải quyết bằng anti-evasion; luận văn khai báo ngoài phạm vi, đề xuất hướng phát triển (Chương Kết luận).
-
-### 2.6.7. Hạn chế tự công bố của paper [4]
-
-Paper thừa nhận các giới hạn sau — luận văn kế thừa và không che giấu:
-
-| Hạn chế | Mô tả | Ảnh hưởng luận văn |
-|---------|-------|-------------------|
-| User-space only | Kernel injection không trong scope | O3 threat model |
-| Tracer user-mode có thể bị bypass | Direct syscall stub | E4 — Noirlycan bổ sung Sysmon kernel |
-| Dataset đến 2023 | Thiếu PoolParty (2023), Mockingjay (2023) đầy đủ | Noirlycan mở rộng taxonomy qua iRed.team |
-| Phụ thuộc chất lượng trace | Drop event → sai primitive count | Giả định M5 (Frida fidelity) |
-| Không có file provenance end-to-end | Bắt đầu từ process đã chạy | Đóng góp RO3 của luận văn |
-
-### 2.6.8. Đóng góp khoa học paper và vị trí artifact
-
-**Bảng 2.6.** Đóng góp Di Pietro et al. [4]
-
-| ID | Đóng góp | Loại |
-|----|----------|------|
-| C1 | Framework 2-of-3 + equivalence class + congruence + temporal | Methodology |
-| C2 | Prevalence ~16,5 % trên 56k mẫu | Empirical |
-| C3 | Sandbox miss 21,2 % — định lượng E5 | Comparative |
-| C4 | Anti-evasion ablation | Engineering + Empirical |
-| C5 | Phân tích biến thể theo thời gian (section mapping) | Forensic |
-| C6 | Artifact công khai [11] | Reproducibility |
-
-Artifact `Sap4Sec/process-injection` [11] chứa analyzer rules, dataset metadata, và log thí nghiệm — là cơ sở cho RO3 luận văn (đối chiếu subset). Luận văn **không fork** artifact làm phương pháp mới; Noirlycan là **implementation độc lập** trên Frida + Sysmon, audit đối chiếu paper (docs/audit-and-threat-model.md).
-
-## 2.7. Né tránh sandbox và phân tích chống phân tích
-
-Korkin [8] và Hosseini & Antoniou [6] khảo sát có hệ thống kỹ thuật malware dùng để né sandbox và công cụ phân tích động trên Windows: phát hiện VM (CPUID, registry, driver), timing attack (sleep dài, đo delta RDTSC), kiểm process/tool (Wireshark, Procmon, Frida artifact), và **hành vi có điều kiện** (chỉ decrypt/inject sau khi môi trường “sạch”).
-
-**Bảng 2.7.** Phân loại né tránh sandbox và liên hệ với injection
-
-| Kỹ thuật né tránh | Mục tiêu | Tác động lên phát hiện injection |
-|-------------------|----------|----------------------------------|
-| VM/sandbox fingerprint | E5 | Malware không gọi API injection → log trống |
-| Timing / delayed execution | E5 | Injection xảy ra sau window phân tích |
-| User interaction gate | E5 | Cần click/input — sandbox batch fail |
-| Anti-debug (E6) | Dừng trước inject | Tương tự miss behavior |
-| Direct syscall (E4) | Né hook | Injection vẫn có thể xảy ra nhưng mất API trace |
-
-Trong các công trình liên quan, **chỉ [4] định lượng miss rate 21,2 %** gắn trực tiếp với injection trên corpus lớn. Korkin [8] và Hosseini [6] cung cấp **taxonomy E5/E6** và best practice, nhưng không thay thế số liệu paper. Luận văn dùng khảo sát này để **justify** vì sao anti-evasion là hướng phát triển bắt buộc, đồng thời thừa nhận Noirlycan **chưa hiện thực** module tương đương Bluepill/paper.
-
-## 2.8. EDR thương mại và thực hành phòng thủ
-
-EDR/EPP thương mại (Microsoft Defender for Endpoint, Elastic Defend, CrowdStrike Falcon, v.v.) kết hợp kernel driver, ETW provider, machine learning trên telemetry, và threat intelligence. Về mặt nguyên tắc, EDR hiện đại cũng quan sát cross-process memory operation và thread creation — gần với primitive model. Tuy nhiên:
-
-- **Rule và model đóng nguồn** — không thể audit equivalence class hay 2-of-3 rule tương đương [4];
-- **Tối ưu production** — latency, false positive trên phần mềm hợp pháp, không công bố ablation né sandbox;
-- **Không cung cấp pipeline provenance file→injection** cho phòng lab cá nhân.
-
-Noirlycan **không cạnh tranh** với EDR thương mại về quy mô triển khai. Vị trí luận văn: **công cụ lab mã nguồn mở**, minh bạch rule, phục vụ nghiên cứu replication [4] và đào tạo analyst. Sysmon [10] — driver ký bởi Microsoft — được chọn làm lớp kernel vì phổ biến trong forensic community và có tài liệu event schema công khai.
-
-## 2.9. MITRE ATT&CK và chuẩn hóa taxonomy
-
-MITRE ATT&CK T1055 [9] liệt kê hơn một chục sub-technique injection (Process Hollowing, Thread Execution Hijacking, APC Injection, v.v.). Chuẩn hóa này giúp analyst giao tiếp sau phát hiện, nhưng **không cung cấp thuật toán phát hiện** — mỗi vendor map sub-technique sang rule riêng.
-
-Noirlycan `kernel/classification/technique_classifier.py` map output rule-based lên nhãn ATT&CK tương ứng, mở rộng từ ~12 kỹ thuật paper lên **36 enum** (17 đạt FULL coverage: hook + classifier + test). Mở rộng này phục vụ **phân loại sau phát hiện primitive**, không thay thế 2-of-3 rule. Luận văn thừa nhận classifier **chưa được đánh giá** precision/recall trên ground truth corpus (Chương 3 — scientific claims).
-
-## 2.10. Khoảng trống nghiên cứu
-
-Tổng hợp khảo sát, Bảng 2.8 liệt kê khoảng trống giữa paper [4], thực hành EDR, và nhu cầu phòng lab endpoint Windows.
-
-**Bảng 2.8.** Khoảng trống nghiên cứu và định vị luận văn
-
-| Khoảng trống | Paper [4] | EDR thương mại | Sandbox (Cuckoo) | Luận văn (Noirlycan) |
-|--------------|-----------|----------------|------------------|----------------------|
-| Framework primitive chống E1/E2 | ✅ Batch QEMU | Một phần (đóng) | Yếu (signature) | ✅ Real-time Windows lab |
-| Định lượng prevalence 56k | ✅ | Không công bố | Không | ❌ Out-of-scope |
-| Anti-evasion E5 | ✅ Module tích hợp | Một phần | Yếu → 21,2 % miss | ❌ Out-of-scope; ghi signal |
-| Telemetry kernel khi E4 | Tracer tùy biến | ✅ | Guest agent dễ detect | ✅ Sysmon E8/E10/E11 |
-| File provenance → injection (E3) | ❌ | Một phần | Một phần | ✅ Pipeline end-to-end |
-| Công cụ analyst lab mở | Artifact batch | Đóng | Cuckoo web UI | ✅ Dashboard + JSONL |
-| Audit replication có test | Artifact paper | N/A | N/A | ✅ 31+ unit test + audit doc |
-| Đánh giá Frida fidelity (M5) | N/A (QEMU tracer) | N/A | N/A | ⚠️ Protocol đề xuất, Chương 6 |
-
-**Khoảng trống trung tâm luận văn lấp đầy:** Paper [4] chứng minh phương pháp và prevalence ở quy mô sandbox batch, nhưng **chưa cung cấp** (a) triển khai vận hành trên endpoint Windows thật với telemetry kép kernel/user, (b) liên kết injection finding với nguồn file drop, (c) tài liệu threat model formal cho từng hình thức né tránh E1–E6. Noirlycan nhắm (a)–(c) trong phạm vi **Replication + Extension Study**, không claim phương pháp detection mới thay [4].
-
-## 2.11. Định vị luận văn: Replication + Extension
-
-Luận văn định khung phương pháp luận như sau:
-
-1. **Replication có kiểm chứng:** Hiện thực lõi 2-of-3 + memory congruence + temporal ordering + `PAPER_API_CLASSES` trên Frida hooks (`windows_injection_hooks.js`) và correlator Python (`services/analysis/domain/correlation.py`, `kernel/analysis/primitives.py`). Audit phát hiện ba lệch lạc implementation (D1: execute thiếu address; D2: read API lẫn write; D3: temporal quá lỏng) — đã sửa và verify bằng test.
-
-2. **Extension kiến trúc:** (a) Sysmon kernel fallback chống E4; (b) file provenance pipeline chống E3; (c) mở rộng taxonomy `kernel/classification/technique_classifier.py` beyond paper §4.
-
-3. **Honest scope:** Không claim prevalence 16,5 % / miss 21,2 %; không claim anti-evasion E5; không claim production EDR.
-
-**Bảng 2.9.** Claim được phép và không được phép (tóm tắt — chi tiết Chương 3)
-
-| Được claim | Không được claim |
-|------------|------------------|
-| Hiện thực [4] trên Frida + Sysmon với unit test | Phương pháp detection mới hơn [4] |
-| Phát hiện pattern section-mapping (*neurevt*-class) trên PoC | Precision/recall ngang paper trên 56k mẫu |
-| Giảm FN một phần dưới E4 nhờ Sysmon | Chống E5 toàn diện như paper |
-| Pipeline provenance tăng giá trị forensic E3 | Thay thế Cuckoo/EDR thương mại |
-
-## 2.12. Tóm tắt chương
-
-Chương 2 đã khảo sát phương pháp signature, nền tảng primitive Klein [7], behavior graph Starink [12], và phân tích chi tiết Di Pietro et al. [4] — công trình căn cứ với ba RQ, kết quả **16,5 %** prevalence injection và **21,2 %** sandbox miss do né tránh, case study *neurevt* minh họa E1/E2, và module anti-evasion giải thích giới hạn sandbox không có E5 countermeasure. Các khảo sát né sandbox [6], [8] và thực hành EDR bổ sung bối cảnh nhưng không thay số liệu paper.
-
-Khoảng trống: thiếu triển khai real-time Windows + telemetry kép + provenance + threat model formal. Luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh* định vị là **Replication + Extension** của [4], tăng cường phát hiện dưới **E1–E4** trong phòng lab, thừa nhận **E5/E6** và prevalence scale nằm ngoài phạm vi hiện tại. Chương 3 trình bày threat model formal — tài sản, đối thủ C1–C7, out-of-scope O1–O7, giả định E1–E6 và M1–M6, ma trận tin cậy telemetry, và ranh giới claim khoa học.
+Chương này trình bày **định nghĩa bài toán**, **threat model**, **phương pháp giải quyết** (kế thừa và mở rộng [4]), và **phân tích đánh giá phương pháp** — phân biệt rõ kết quả đã có và đóng góp của luận văn (nguyên tắc khởi–thừa–chuyển–kết). Phần đầu formal hóa đối thủ và giả định; phần sau mô tả pipeline 2-of-3, provenance và telemetry kép.
 
 ---
 
-# CHƯƠNG 3. THREAT MODEL THEO HÌNH THỨC NÉ TRÁNH
+Chương này xây dựng **mô hình đe dọa formal** cho Noirlycan: tài sản, đối thủ, giả định môi trường/phương pháp, ranh giới tin cậy telemetry, mối đe dọa, **ranh giới claim khoa học**. Căn cứ audit đối chiếu Noirlycan với Di Pietro et al. (ASIA CCS 2025) [4], `docs/audit-and-threat-model.md`, taxonomy E1–E6.
 
-Chương này xây dựng **mô hình đe dọa formal** (*formal threat model*) cho hệ thống Noirlycan và phạm vi luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh*. Mục tiêu là định nghĩa rõ: (a) tài sản cần bảo vệ, (b) đối thủ và năng lực né tránh, (c) giả định môi trường và phương pháp, (d) ranh giới tin cậy giữa các lớp telemetry, (e) mối đe dọa còn lại và mitigations, (f) **ranh giới claim khoa học** — những gì luận văn được phép và không được phép tuyên bố trước hội đồng.
+## 2.1. Phạm vi và hệ thống quan tâm
 
-Threat model căn cứ audit đối chiếu implementation Noirlycan với Di Pietro et al. (ASIA CCS 2025) [4], tài liệu `docs/audit-and-threat-model.md`, và phân loại né tránh E1–E6 đã giới thiệu ở Chương 1 (Mở đầu) và Chương 2 (Công trình liên quan).
+### 2.1.1. System Under Analysis (SUA)
 
-## 3.1. Phạm vi và hệ thống quan tâm
+SUA là **một host Windows 10/11** trong lab cô lập. Phạm vi: *phát hiện hành vi inject ở endpoint*; SIEM, multi-tenant ngoài đề tài.
 
-### 3.1.1. System Under Analysis (SUA)
-
-Hệ thống quan tâm là **một host Windows 10 hoặc 11** trong phòng lab cô lập (máy ảo hoặc bare-metal không kết nối mạng production), cài đặt các thành phần sau:
-
-**Bảng 3.1.** Thành phần hệ thống Noirlycan
+**Bảng 2.1.** Thành phần hệ thống Noirlycan
 
 | Thành phần | Privilege | Cơ chế quan sát | Module repo |
 |------------|-----------|-----------------|-------------|
-| Sysmon driver (`SysmonDrv.sys`) | **Kernel (ring 0)** | `PsSetCreateProcessNotifyRoutineEx`, `PsSetLoadImageNotifyRoutine`, `ObRegisterCallbacks`, Minifilter `FltRegisterFilter`, ETW Threat Intelligence | `sysmon.py` |
-| Sysmon service (`Sysmon.exe`) | User (LocalSystem) | Thu thập event từ driver, ghi Windows Event Log | `services/collector/infrastructure/sysmon.py` |
-| Frida agent | **User (trong target process)** | `Interceptor.attach` trên export `ntdll.dll` / `kernel32.dll` / `user32.dll` | `services/collector/infrastructure/frida_manager.py`, `frida_hooks/windows_injection_hooks.js` |
-| Python collector | User | Đọc Event Log + Frida message bus, correlate | `services/collector/application/collector_runtime.py`, `services/analysis/domain/correlation.py` |
-| Static triage | User | SHA256, PE header, entropy, Authenticode trên file mới | `services/collector/infrastructure/triage.py`, `kernel/analysis/payload.py` |
-| Dashboard analyst | User (host hoặc remote lab) | Django REST + WebSocket UI, JSONL export | `services/dashboard/` |
-| Target process | User | Loader malware / PoC injection | Mẫu thí nghiệm |
+| Sysmon driver | **Kernel** | Process/Image/Object callback, Minifilter, ETW Threat Intelligence | `sysmon.py` |
+| Sysmon service | User (LocalSystem) | Thu event từ driver, ghi Event Log | `infrastructure/sysmon.py` |
+| Frida agent | **User (in-target)** | `Interceptor.attach` trên `ntdll`/`kernel32`/`user32` | `frida_manager.py`, `windows_injection_hooks.js` |
+| Python collector | User | Đọc Event Log + Frida bus, correlate | `collector_runtime.py`, `correlation.py` |
+| Static triage | User | SHA256, PE header, entropy, Authenticode | `triage.py`, `payload.py` |
+| Dashboard | User | Django REST + WebSocket, JSONL export | `services/dashboard/` |
+| Target process | User | Loader malware / PoC | — |
 
-**Hệ quả thiết kế quan trọng:** Hai lớp telemetry Frida (user-mode) và Sysmon (kernel-mode) có **khả năng chống bypass khác nhau**. Frida mất signal khi đối thủ direct syscall (E4); Sysmon kernel callback vẫn ghi cross-process artifact (Event 8 CreateRemoteThread, Event 10 ProcessAccess). Luận văn coi đây là *defense-in-depth* có chủ đích, không phải redundancy ngẫu nhiên — chi tiết mục 3.8.
+Driver kernel ghi sự kiện không che được bởi user-mode adversary; Frida là *granular API tracer* cung cấp tham số (addr, size, prot); collector correlate `(actor_pid, target_pid)` window 300s. Frida mất signal khi direct syscall (E4); Sysmon vẫn ghi Event 8/10 — *defense-in-depth* (mục 3.8).
 
-### 3.1.2. Ranh giới hệ thống
+### 2.1.2. Ranh giới hệ thống
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -1102,180 +852,164 @@ Hệ thống quan tâm là **một host Windows 10 hoặc 11** trong phòng lab 
                     Analyst workstation (TRUSTED)
 ```
 
-\* Sysmon driver tin cậy **nếu** giả định O3 không xảy ra (không có kernel rootkit tắt driver).
+\* Sysmon tin cậy nếu O3 không xảy ra; BYOVD vẫn khả thi nhưng khó (xem 3.4.3). Phạm vi chỉ pipeline host → analyst, nhất quán [4].
 
-Phạm vi threat model **không bao gồm** mạng ngoài lab, SIEM enterprise, hoặc cloud triage — chỉ pipeline từ host bị nhiễm đến analyst.
+## 2.2. Phân loại hình thức né tránh (E1–E6)
 
-## 3.2. Phân loại hình thức né tránh (E1–E6)
+Ký hiệu **E1–E6** cho sáu nhóm né tránh process injection (thống nhất Bảng 1.1).
 
-Luận văn dùng ký hiệu **E1–E6** cho sáu nhóm né tránh liên quan process injection (thống nhất Chương 1, Bảng 1.1). Chương 3 ánh xạ từng nhóm lên năng lực đối thủ, mitigation Noirlycan, và trạng thái xử lý.
-
-**Bảng 3.2.** Taxonomy né tránh và phản ứng hệ thống
+**Bảng 2.2.** Taxonomy né tránh và phản ứng hệ thống
 
 | ID | Hình thức né tránh | Mô tả | Mitigation Noirlycan | Trạng thái |
 |----|-------------------|-------|----------------------|------------|
-| **E1** | Biến thể API | Thay Win32 bằng NT API, đổi cơ chế thread/APC | Equivalence class + 2-of-3 [4] (`kernel/classification/api_manifest.py`, `services/analysis/domain/correlation.py`) | **Được xử lý** (có test) |
-| **E2** | Gộp/ẩn bước | Section mapping, Mockingjay (RWX sẵn có), thiếu primitive riêng lẻ | Quy tắc 2-of-3; classifier section-mapping (`kernel/classification/technique_classifier.py`) | **Được xử lý** (có test) |
-| **E3** | Né attribution | Inject vào tiến trình hợp pháp; file-drop loader che nguồn | Sysmon lineage (E1) + file provenance (E11) + static triage | **Mở rộng đề tài** |
-| **E4** | Né hook user-mode | Direct syscall stub, unhooking `ntdll` | Sysmon kernel E8/E10 fallback; graceful degradation | **Một phần** |
-| **E5** | Né sandbox/VM | Timing check, env fingerprint — không chạy injection | Không có module anti-evasion | **Out-of-scope** |
-| **E6** | Né instrumentation | Anti-Frida, anti-debug, phát hiện agent | `spawn` mode; khai báo limitation | **Hạn chế** |
+| **E1** | Biến thể API | Win32 ↔ NT API, đổi thread/APC | Equivalence + 2-of-3 [4] | **Xử lý** (có test) |
+| **E2** | Gộp/ẩn bước | Section mapping, Mockingjay (RWX) | 2-of-3 + classifier section-mapping | **Xử lý** (có test) |
+| **E3** | Né attribution | Inject tiến trình hợp pháp; file-drop loader | Sysmon lineage + provenance + triage | **Mở rộng** |
+| **E4** | Né hook user-mode | Direct syscall, unhook `ntdll` | Sysmon E8/E10 fallback | **Một phần** |
+| **E5** | Né sandbox/VM | Timing, env fingerprint — không inject | Không có module anti-evasion | **Out-of-scope** |
+| **E6** | Né instrumentation | Anti-Frida, anti-debug | `spawn` mode; documented | **Hạn chế** |
 
-**Lưu ý ký hiệu:** E1–E6 ở Bảng 3.2 là **nhóm né tránh của đối thủ malware**. Mục 3.5 dùng ký hiệu **E1–E6** riêng cho **giả định môi trường** (environmental assumptions) — hai hệ ký hiệu trùng tên nhưng ngữ cảnh khác nhau; trong luận văn, khi nói "giả định E-spawn" ám chỉ environmental assumption, khi nói "chống E4" ám chỉ hình thức né tránh.
+E1 phản ánh không gian API rộng cho cùng primitive *WRITE-cross-process*. E2: section mapping gộp allocate+write. E3 tấn công *attribution*. E4 là *visibility floor* user-mode. E5/E6 là né tránh *meta*. **Lưu ý:** ký hiệu E1–E6 ở mục 3.5 là **giả định môi trường**, khác ngữ cảnh.
 
-## 3.3. Tài sản cần bảo vệ (Assets)
+## 2.3. Tài sản cần bảo vệ (Assets)
 
-**Bảng 3.3.** Tài sản và mục tiêu bảo vệ
+**Bảng 2.3.** Tài sản và mục tiêu bảo vệ
 
 | ID | Tài sản | Định nghĩa | Liên quan né tránh |
 |----|---------|------------|-------------------|
-| **A1** | Tính toàn vẹn phát hiện | Finding injection phản ánh đúng hành vi thực tế trên host khi malware thực hiện inject (không bỏ sót oan vì E1/E2/E4 nếu trong phạm vi claim) | E1, E2, E4 |
-| **A2** | Tính sẵn sàng collector | Collector và Frida agent không crash vì mẫu độc; session log ghi đủ event trong window phân tích | E6 (anti-Frida có thể gây abort) |
-| **A3** | Tính cô lập lab | Mẫu malware không lan ra mạng production hoặc host ngoài VM | Không phải mục tiêu phát hiện; ranh giới an toàn nghiên cứu |
+| **A1** | Toàn vẹn phát hiện | Finding phản ánh đúng hành vi inject thực tế | E1, E2, E4 |
+| **A2** | Sẵn sàng collector | Collector/Frida không crash; log đủ event | E6 |
+| **A3** | Cô lập lab | Malware không lan ra production | An toàn nghiên cứu |
 
-A1 là tài sản **trung tâm** của luận văn. A1 **không** yêu cầu phát hiện khi malware chủ động không inject (E5) — đó là giới hạn có chủ ý, đồng bộ với paper [4] khi thiếu anti-evasion (21,2 % miss).
+A1 là tài sản **trung tâm**; không yêu cầu phát hiện khi malware không inject (E5) — đồng bộ [4] (21,2 % miss). Ưu tiên *integrity* hơn *coverage*.
 
-## 3.4. Mô hình đối thủ (Adversary Model)
+## 2.4. Mô hình đối thủ (Adversary Model)
 
-### 3.4.1. Loại đối thủ
+### 2.4.1. Loại đối thủ
 
-**Đối thủ:** Tác giả malware Windows **user-mode** (Tier 2 theo phân loại Microsoft SDL) — botnet loader, trojan banker, RAT staging, hoặc red-team implant trong phạm vi lab.
+**Đối thủ:** tác giả malware Windows **user-mode** (Tier 2 Microsoft SDL) — botnet loader, trojan banker, RAT, red-team implant.
 
-**Mục tiêu đối thủ:**
+**Mục tiêu đối thủ:** (1) inject thành công; (2) tránh telemetry lab; (3) persistence/beacon (tùy mẫu, ngoài phạm vi).
 
-1. Thực thi payload trong tiến trình nạn nhân (inject thành công);
-2. Tránh bị phát hiện bởi telemetry lab (E1–E6 tùy khả năng);
-3. (Tùy mẫu) Duy trì persistence hoặc beacon — ngoài phạm vi đánh giá injection thuần.
+**Không phải đối thủ:** insider admin tắt Sysmon; APT kernel rootkit (O3); analyst giả mạo log. OS bị khống chế ngoài threat model — kế thừa [4][7][12].
 
-**Đối thủ không phải:** Insider có quyền admin tắt Sysmon; APT với kernel rootkit signed-driver (O3); analyst cố ý giả mạo log (ngoài phạm vi).
+### 2.4.2. Năng lực giả định CÓ (C1–C7)
 
-### 3.4.2. Năng lực giả định CÓ (C1–C7)
-
-**Bảng 3.4.** Năng lực đối thủ trong phạm vi
+**Bảng 2.4.** Năng lực đối thủ trong phạm vi
 
 | ID | Năng lực | Ví dụ | Né tránh liên quan |
 |----|----------|-------|-------------------|
-| **C1** | Gọi mọi Win32 / NT API user-mode export | `NtWriteVirtualMemory`, `RtlCreateUserThread` | E1 |
-| **C2** | Section mapping thay allocate+write tách rời | `NtCreateSection` + `NtMapViewOfSection` | E1, E2 |
-| **C3** | Process hollowing classic | `CreateProcess(CREATE_SUSPENDED)` + `SetThreadContext` + `ResumeThread` | E2, E3 |
-| **C4** | Load DLL từ disk hoặc reflective/manual map | `LoadLibrary*`, PE mapping thủ công | E1, E3 |
-| **C5** | Mã hóa payload trong resource, giải mã runtime | XOR/AES stub trước inject | Che static triage, không che primitive runtime |
-| **C6** | Drop file thực thi xuống đĩa rồi spawn | `%TEMP%\*.exe` → ProcessCreate | E3 |
-| **C7** | Evasion **thụ động** một mức | `IsDebuggerPresent`, `NtQueryInformationProcess`, sleep ngắn | E6; một phần E5 |
+| **C1** | Gọi mọi Win32/NT API export | `NtWriteVirtualMemory`, `RtlCreateUserThread` | E1 |
+| **C2** | Section mapping | `NtCreateSection` + `NtMapViewOfSection` | E1, E2 |
+| **C3** | Process hollowing | `CREATE_SUSPENDED` + `SetThreadContext` + `ResumeThread` | E2, E3 |
+| **C4** | DLL/reflective load | `LoadLibrary*`, manual PE map | E1, E3 |
+| **C5** | Mã hóa payload runtime | XOR/AES stub | Che static, không che runtime |
+| **C6** | Drop file rồi spawn | `%TEMP%\*.exe` → ProcessCreate | E3 |
+| **C7** | Evasion **thụ động** | `IsDebuggerPresent`, sleep ngắn | E6; phần E5 |
 
-C7 **cố ý không** bao gồm bộ anti-sandbox đầy đủ (VM registry scan, MAC check, process blacklist dài) — đó thuộc E5/O7.
+C5 che static nhưng không che runtime primitive — lý do behavioral detection bền hơn signature; C7 **cố ý không** gồm anti-sandbox đầy đủ (E5/O7).
 
-### 3.4.3. Năng lực NGOÀI phạm vi (O1–O7)
+### 2.4.3. Năng lực NGOÀI phạm vi (O1–O7)
 
-**Bảng 3.5.** Out-of-scope capabilities
+**Bảng 2.5.** Out-of-scope capabilities
 
 | ID | Năng lực ngoài phạm vi | Lý do loại trừ | Hệ quả nếu xảy ra |
 |----|------------------------|----------------|-------------------|
-| **O1** | Direct syscall stub bỏ qua user-mode export hook | Frida miss API-arg; paper cũng giới hạn user tracer | FN một phần Frida; Sysmon E8/E10 vẫn có thể báo (E4 degradation) |
-| **O2** | Unhooking / patch `ntdll` trước inject | Cùng phạm vi O1 | Tương tự O1 |
-| **O3** | **Kernel-mode adversary** — rootkit, BYOVD, abuse signed driver tắt Sysmon | Paper và repo đều user-space focus; cần Secure Boot + HVCI + driver policy | Toàn bộ telemetry kernel mù |
-| **O4** | Side-channel / TOCTOU tấn công collector Python | Không phải malware Windows injection study | Collector integrity fail — ngoài đề tài |
-| **O5** | Anti-Frida **chủ động** (scan `frida-agent`, gum, port) | Lab prototype; không harden agent | Malware abort → miss behavior (E6) |
-| **O6** | Process Ghosting / Herpaderping **phiên bản mới** chưa có rule | Taxonomy mở rộng dần; một số biến thể đã có rule precursor | FN trên kỹ thuật chưa cover |
-| **O7** | Sandbox-aware evasion **chủ động** (E5 đầy đủ) | Paper có anti-evasion module; luận văn không hiện thực | Malware không inject → không có finding; recall thấp hơn paper |
+| **O1** | Direct syscall stub | Frida miss API-arg; paper cũng giới hạn user tracer | FN Frida; Sysmon E8/E10 vẫn báo |
+| **O2** | Unhook/patch `ntdll` | Cùng O1 | Tương tự O1 |
+| **O3** | **Kernel-mode** rootkit/BYOVD tắt Sysmon | Paper/repo user-space focus | Toàn bộ telemetry kernel mù |
+| **O4** | TOCTOU/side-channel collector | Ngoài injection study | Collector integrity fail |
+| **O5** | Anti-Frida **chủ động** | Lab prototype | Malware abort → miss behavior |
+| **O6** | Process Ghosting/Herpaderping mới | Taxonomy mở rộng dần | FN kỹ thuật chưa cover |
+| **O7** | Sandbox-aware evasion **chủ động** | Paper có anti-evasion; luận văn không | Malware không inject → recall thấp |
 
-O1/O2 **không** đồng nghĩa detection = 0: ma trận tin cậy (mục 3.8) mô tả fallback kernel. O3 là ranh giới cứng — cả [4] lẫn Noirlycan đều không claim chống kernel adversary.
+O1/O2 không đồng nghĩa detection = 0: Sysmon vẫn ghi Event 8 vì `PsSetCreateThreadNotifyRoutine` được gọi sau syscall qua KiSystemCall64. O3 là ranh giới cứng.
 
-## 3.5. Giả định môi trường (Environmental Assumptions)
+## 2.5. Giả định môi trường (Environmental Assumptions)
 
-Ký hiệu **E1–E6** (environmental) — không nhầm với nhóm né tránh E1–E6 (mục 3.2).
+Ký hiệu **E1–E6** environmental — khác né tránh E1–E6 (mục 3.2).
 
-**Bảng 3.6.** Giả định môi trường vận hành
+**Bảng 2.6.** Giả định môi trường vận hành
 
 | ID | Giả định | Mô tả | Vi phạm → hậu quả | Liên quan né tránh |
 |----|----------|-------|-------------------|-------------------|
-| **E1** | Sysmon chạy với config `sysmon-noirlycan.xml` | Event 1, 3, 7, 8, 10, 11 enabled | Mất lineage, fallback E4, provenance E3 | E4, E3 |
-| **E2** | Frida attach **trước** API injection đầu tiên | Ưu tiên `spawn` mode | Late attach → miss primitive đầu → FN (T2) | E6 |
-| **E3** | Target không dùng **pure** direct syscall cho mọi API inject | Ít nhất một call đi qua export hooked | Pure syscall → Frida trống; chỉ còn Sysmon coarse signal | E4 |
-| **E4** | Đồng hồ host monotonic trong correlation window (300 s) | `services/analysis/domain/correlation.py` window | VM snapshot/restore → temporal sai | — |
-| **E5** | Không có process benign khác gây collision `(actor_pid, target_pid)` | Lab ít noise | Gom nhầm chain → FP (T8) | — |
-| **E6** | VM cô lập, không credential/dữ liệu thật | Ethics lab | Rủi ro vận hành ngoài phạm vi khoa học | E5 (môi trường lab ≠ production) |
+| **E1** | Sysmon config `sysmon-noirlycan.xml` | Event 1,3,7,8,10,11 enabled | Mất lineage/provenance | E4, E3 |
+| **E2** | Frida attach **trước** API inject đầu | Ưu tiên `spawn` | Late attach → FN (T2) | E6 |
+| **E3** | Không pure direct syscall mọi API | Ít nhất một call qua export hook | Pure syscall → Frida trống | E4 |
+| **E4** | Clock monotonic trong window 300s | `correlation.py` | VM rollback → temporal sai | — |
+| **E5** | Không collision `(actor_pid, target_pid)` benign | Lab ít noise | Gom nhầm chain → FP (T8) | — |
+| **E6** | VM cô lập, không credential thật | Ethics lab | Rủi ro ngoài phạm vi khoa học | E5 |
 
-E3 là giả định **thực dụng** cho phạm vi luận văn: nhiều mẫu malware vẫn gọi qua `ntdll` export; pure syscall everywhere thuộc O1 và được xử lý như degradation, không như failure hoàn toàn.
+E3 thực dụng: malware in-the-wild đến 2023 dùng hỗn hợp direct syscall + API thường. Pure syscall everywhere thuộc O1.
 
-## 3.6. Giả định phương pháp (Methodological Assumptions M1–M6)
+## 2.6. Giả định phương pháp (Methodological Assumptions M1–M6)
 
-**Bảng 3.7.** Giả định khoa học — căn cứ phương pháp [4]
+**Bảng 2.7.** Giả định khoa học — căn cứ phương pháp [4]
 
 | ID | Giả định | Nguồn / justification | Rủi ro nếu sai |
 |----|----------|----------------------|----------------|
-| **M1** | Ba primitive allocate/write/execute trên cùng vùng nhớ **đủ mô tả** injection user-mode | Klein [7]; [4] §3.1 | FN trên kỹ thuật kernel (O3) hoặc kỹ thuật không map được primitive |
-| **M2** | Quan sát ≥ 2/3 primitive khác loại **đủ kết luận** injection với precision chấp nhận được | [4] §3.2; prevalence study | FP từ benign debug tool gọi cross-process API |
-| **M3** | API trong cùng equivalence class có ngữ nghĩa thay thế được | [4] Table 1; `PAPER_API_CLASSES` | FN khi malware dùng API chưa liệt kê |
-| **M4** | Memory range overlap/contain là proxy hợp lý cho *same buffer* | Starink [12]; [4] §3.3 | FP/FN trên edge case vùng nhớ lớn hoặc execute thiếu address |
-| **M5** | Frida user-mode hook **trung thực** về argument và thứ tự gọi dưới load thí nghiệm | Frida docs [5]; cần benchmark fidelity | Drop event → sai primitive count → sai 2-of-3 |
-| **M6** | Sysmon kernel callbacks **không bị** attacker user-mode sửa đổi | Driver ring 0; chỉ O3 phá được | Mất toàn bộ lớp kernel nếu O3 |
+| **M1** | A/W/E trên cùng vùng nhớ **đủ mô tả** injection user-mode | Klein [7]; [4] §3.1 | FN kỹ thuật kernel (O3) |
+| **M2** | ≥ 2/3 primitive khác loại **đủ kết luận** injection | [4] §3.2 | FP từ benign debug tool |
+| **M3** | API cùng equivalence class thay thế được | [4] Table 1 | FN khi API chưa liệt kê |
+| **M4** | Memory overlap là proxy cho *same buffer* | Starink [12]; [4] §3.3 | FP/FN edge case |
+| **M5** | Frida hook **trung thực** về argument/thứ tự | Frida [5]; cần benchmark | Drop event → sai 2-of-3 |
+| **M6** | Sysmon kernel callbacks không bị user-mode sửa | Driver ring 0; chỉ O3 phá | Mất lớp kernel nếu O3 |
 
-**M5 — cần justification thực nghiệm:** Luận văn **không thể** giả định M5 mà không đo. Chương 6 (Đánh giá) đề xuất protocol Frida fidelity: so sánh output Frida với ETW/`SilkETW` trên ≥ 1000 lệnh gọi API injection synthetic. Cho đến khi có số liệu, mọi claim phụ thuộc Frida granularity phải gắn nhãn *conditional on M5*.
+M1–M3 là cơ sở 2-of-3; M4 là *bridging assumption* (overlap address+size). **M5 cần justification:** Chương 6 đề xuất protocol Frida fidelity (ETW/SilkETW ≥ 1000 lệnh gọi synthetic); claim Frida gắn *conditional on M5*. **D1 đã sửa:** EXECUTE thiếu `address` được phục hồi bằng `lpStartAddress`/`Rip` từ CONTEXT.
 
-**M4 — deviation đã audit:** Khi primitive EXECUTE thiếu trường `address` (ví dụ `ResumeThread`), correlator có thể bỏ qua memory congruence cho cặp đó — deviation D1 đã được sửa bằng cách extract `lpStartAddress` / `Rip` từ CONTEXT trong Frida hooks. Luận văn thừa nhận đây từng là lỗ hổng methodology.
+## 2.7. Ma trận né tránh ↔ mitigation (tổng hợp)
 
-## 3.7. Ma trận né tránh ↔ mitigation (tổng hợp)
-
-**Bảng 3.8.** Ma trận đối thủ – hình thức né tránh – mitigation – hạn chế
+**Bảng 2.8.** Ma trận đối thủ – hình thức né tránh – mitigation – hạn chế
 
 | Né tránh | Năng lực C | Out-of-scope O | Module Noirlycan | Mức độ mitigation | Hạn chế còn lại |
 |----------|-----------|----------------|------------------|-------------------|-----------------|
-| E1 | C1, C2, C4 | — | `kernel/classification/api_manifest.py`, `services/analysis/domain/correlation.py` | Cao | API mới chưa trong manifest |
-| E2 | C2, C3 | — | 2-of-3, `kernel/classification/technique_classifier.py` | Cao | Mockingjay edge (RWX only) |
-| E3 | C3, C6 | — | Sysmon E1/E11, `file_watch.py`, triage | Trung bình–cao | Inject không qua file-drop |
-| E4 | (via O1/O2) | O1, O2 | Sysmon E8/E10 | Trung bình | Mất address/size; classifier yếu |
-| E5 | C7 (một phần) | **O7** | `kernel/analysis/evasion.py` (ghi signal only) | **Không** | Recall < paper khi malware không chạy |
-| E6 | C7 | O5 | `spawn`, documentation | Thấp | Không stealth Frida |
+| E1 | C1,C2,C4 | — | `api_manifest.py`, `correlation.py` | Cao | API mới chưa trong manifest |
+| E2 | C2,C3 | — | 2-of-3, `technique_classifier.py` | Cao | Mockingjay edge (RWX) |
+| E3 | C3,C6 | — | Sysmon E1/E11, `file_watch.py`, triage | TB-cao | Inject không qua file-drop |
+| E4 | (via O1/O2) | O1,O2 | Sysmon E8/E10 | TB | Mất address/size |
+| E5 | C7 phần | **O7** | `evasion.py` ghi signal | **Không** | Recall < paper |
+| E6 | C7 | O5 | `spawn`, docs | Thấp | Không stealth Frida |
 
-## 3.8. Ma trận tin cậy lớp telemetry (Telemetry Layer Trust Matrix)
+## 2.8. Ma trận tin cậy lớp telemetry (Telemetry Layer Trust Matrix)
 
-Ma trận này trả lời câu hỏi phản biện: *"Frida bị bypass bởi direct syscall — phương pháp còn ý nghĩa gì?"* Câu trả lời: **graceful degradation** — detection chuyển từ semantic primitive sang coarse cross-process signal, không về zero.
+Trả lời phản biện *"Frida bị bypass — phương pháp còn ý nghĩa gì?"*: **graceful degradation** — detection chuyển từ semantic primitive sang coarse cross-process signal, không về zero — đóng góp định tính so với [4] (QEMU một lớp).
 
-**Bảng 3.9.** Telemetry Layer Trust Matrix
+**Bảng 2.9.** Telemetry Layer Trust Matrix
 
 | Nguồn telemetry | Privilege | Cơ chế bắt | Bị bypass bởi | Phạm vi quan sát | Vai trò trong correlator |
 |-----------------|-----------|------------|---------------|------------------|--------------------------|
-| Sysmon Event 1 (ProcessCreate) | Kernel | Process notify | O3 | Mọi process create | Lineage, `CREATE_SUSPENDED`, parent PID — **E3** |
-| Sysmon Event 7 (ImageLoad) | Kernel | Image notify | O3 | DLL/PE map | Reflective vs `LoadLibrary` — phân loại |
-| Sysmon Event 8 (CreateRemoteThread) | Kernel | ETW Threat Intelligence | O3 | Cross-process thread **kể cả direct syscall** | Fallback EXECUTE — **E4** |
-| Sysmon Event 10 (ProcessAccess) | Kernel | ObRegisterCallbacks | O3 | `OpenProcess` + VM_WRITE etc. | Fallback access — **E4** |
-| Sysmon Event 11 (FileCreate) | Kernel | Minifilter | O3 | File executable/script mới | File provenance — **E3** |
-| Sysmon Event 3 (NetworkConnect) | Kernel | ETW WFP | O3 | TCP/UDP | Post-injection beacon (watch hook) |
-| Frida hooks (~121 API) | **User** | Export intercept | **O1, O2, O5** | NT API **arguments** (addr, size, prot) | Primitive detail, congruence input — **E1, E2** |
-| Static triage | User | Disk read | C5 (encrypted) | Hash, PE, entropy, signature | Payload class trước runtime |
+| Sysmon Event 1 (ProcessCreate) | Kernel | Process notify | O3 | Process create | Lineage, parent PID — **E3** |
+| Sysmon Event 7 (ImageLoad) | Kernel | Image notify | O3 | DLL/PE map | Reflective vs `LoadLibrary` |
+| Sysmon Event 8 (CreateRemoteThread) | Kernel | ETW TI | O3 | Cross-process thread **kể cả direct syscall** | Fallback EXECUTE — **E4** |
+| Sysmon Event 10 (ProcessAccess) | Kernel | ObCallback | O3 | `OpenProcess`+VM_WRITE | Fallback access — **E4** |
+| Sysmon Event 11 (FileCreate) | Kernel | Minifilter | O3 | File exec/script mới | Provenance — **E3** |
+| Sysmon Event 3 (NetworkConnect) | Kernel | ETW WFP | O3 | TCP/UDP | Post-injection beacon |
+| Frida hooks (~121 API) | **User** | Export intercept | **O1,O2,O5** | NT API args (addr,size,prot) | Primitive, congruence — **E1,E2** |
+| Static triage | User | Disk read | C5 | Hash, PE, entropy, signature | Payload class |
 
-**Kết luận thiết kế (trình bày như điểm mạnh, không che limitation):**
+**Kết luận:** với O1/O2, Frida mất granularity nhưng Sysmon vẫn fire Event 8/10 → correlator thấy *process_access + execute* với confidence giảm; detection khả thi ở mức "có cross-process injection" thay vì chi tiết kỹ thuật — recall giảm, **không về 0**.
 
-Khi đối thủ O1/O2 (direct syscall / unhook):
+## 2.9. Mối đe dọa và mitigations (T1–T9)
 
-1. **Frida** mất granularity → không đủ input cho memory congruence đầy đủ và phân loại kỹ thuật chi tiết.
-2. **Sysmon kernel** vẫn fire Event 8/10 → correlator có thể thấy pattern *process_access + execute* với confidence **giảm** (chỉ còn 2 primitive coarse, không có address).
-3. **Detection khả thi ở mức** "có cross-process injection vào target X" thay vì "section-mapping hollowing variant *neurevt* class" — recall giảm, **không về 0**.
-
-Đây là đóng góp kiến trúc luận văn so với paper [4] (một lớp tracer QEMU): **phân tách rõ trust boundary** và document degradation path.
-
-## 3.9. Mối đe dọa và mitigations (T1–T9)
-
-**Bảng 3.10.** Threat catalog
+**Bảng 2.10.** Threat catalog
 
 | ID | Threat | Né tránh | Mức | Mitigation hiện có | Mitigation đề xuất / trạng thái |
 |----|--------|----------|-----|-------------------|--------------------------------|
-| **T1** | Direct syscall bỏ qua Frida (mất API-arg) | E4 / O1 | Cao | Sysmon E8/E10 fallback | ETW Threat Intelligence provider bổ sung (future) |
-| **T2** | Late attach miss primitive đầu chuỗi | E6 | Cao | `spawn` mode documented | Mặc định `spawn` trong benchmark; auto-attach chỉ file-drop |
-| **T3** | EXECUTE primitive thiếu address → yếu congruence | E2 edge | Trung | **Đã fix D1:** `lpStartAddress` / Rip trong hooks | Duy trì test regression |
-| **T4** | Frida agent bị detect → malware abort | E6 / O5 | Trung | Không | Out-of-scope; ghi limitation |
-| **T5** | Anti-evasion sandbox — malware không inject | E5 / O7 | Cao | `kernel/analysis/evasion.py` ghi signal only | Future: timing/env patch module như [4] |
-| **T6** | Read API lẫn vào write count | — | Trung | **Đã fix D2:** tách `remote_read` khỏi 2-of-3 | — |
-| **T7** | Temporal ordering quá lỏng | — | Thấp | **Đã fix D3:** reject mọi đảo bậc A/W/E | — |
-| **T8** | Collision `(actor, target)` từ process benign | — | Thấp | Window 300s + PID pair | Đo FP trên Benign-Baseline (Chương 6) |
-| **T9** | Kernel-mode injection | O3 | Cao | Không | Out-of-scope; paper cũng không phủ |
+| **T1** | Direct syscall bỏ qua Frida | E4/O1 | Cao | Sysmon E8/E10 fallback | ETW TI provider (future) |
+| **T2** | Late attach miss primitive đầu | E6 | Cao | `spawn` mode | Auto-attach chỉ file-drop |
+| **T3** | EXECUTE thiếu address | E2 edge | TB | **Đã fix D1:** `lpStartAddress`/Rip | Test regression |
+| **T4** | Frida agent bị detect | E6/O5 | TB | — | Out-of-scope |
+| **T5** | Anti-evasion sandbox | E5/O7 | Cao | `evasion.py` signal only | Future module như [4] |
+| **T6** | Read API lẫn write count | — | TB | **Đã fix D2:** tách `remote_read` | — |
+| **T7** | Temporal ordering lỏng | — | Thấp | **Đã fix D3:** reject đảo bậc A/W/E | — |
+| **T8** | Collision `(actor,target)` benign | — | Thấp | Window 300s + PID pair | Đo FP Benign-Baseline (Ch.6) |
+| **T9** | Kernel-mode injection | O3 | Cao | — | Out-of-scope |
 
-T3, T6, T7 là **deviation methodology** đã phát hiện qua audit code-vs-paper — minh chứng luận văn trung thực về limitation implementation, không chỉ claim thành công.
+T3, T6, T7 là **deviation methodology** phát hiện qua audit code-vs-paper — cung cấp scientific provenance.
 
-## 3.10. Trust boundary và luồng dữ liệu
+## 2.10. Trust boundary và luồng dữ liệu
 
-**Bảng 3.11.** Ranh giới tin cậy theo thành phần
+**Bảng 2.11.** Ranh giới tin cậy theo thành phần
 
 | Thành phần | Tin cậy | Điều kiện |
 |------------|---------|-----------|
@@ -1296,36 +1030,38 @@ FileCreate (E11) → static triage → ProcessCreate (E1) → Frida primitives
                               → dashboard / JSONL
 ```
 
-Finding **không** được coi là ground truth tuyệt đối — là *hypothesis* dựa trên M1–M6, cần analyst xác nhận.
+Finding là *hypothesis* dựa trên M1–M6, không phải ground truth. Score ≥ 50/70 thể hiện 2-of-3 + congruence + ordering đã thoả; phán quyết cuối thuộc analyst.
 
-## 3.11. Ranh giới claim khoa học (Scientific Claims Boundaries)
+## 2.11. Ranh giới claim khoa học (Scientific Claims Boundaries)
 
-Phần này **bắt buộc** cho hội đồng — phân tách claim có evidence trong repo/test và claim **cấm** tuyên bố nếu chưa có Chương 6.
+Phân tách claim có evidence và claim **cấm** nếu chưa có Chương 6.
 
-### 3.11.1. Claim ĐƯỢC PHÉP bảo vệ (có căn cứ audit)
+### 2.11.1. Claim ĐƯỢC PHÉP bảo vệ (có căn cứ audit)
 
 | ID | Claim | Evidence |
 |----|-------|----------|
-| **C-IMPL** | Lõi 2-of-3 primitive + memory congruence + temporal ordering của [4] đã hiện thực trên Frida + Sysmon Windows 10/11 lab | `services/analysis/domain/correlation.py`, `kernel/classification/api_manifest.py`, `tests/test_correlation.py` |
-| **C-AUDIT** | Ba deviation methodology (D1/D2/D3) đã phát hiện và sửa có test regression | `docs/audit-and-threat-model.md`, test suite |
-| **C-EXT** | Pipeline file provenance → process lineage → injection finding cung cấp ngữ cảnh [4] không mô hình hóa | `services/collector/infrastructure/file_watch.py`, `services/analysis/domain/correlation.py` linking |
-| **C-CASE** | Kịch bản section-mapping (class *neurevt*) phát hiện đúng pattern primitive trên PoC | `test_detects_section_mapping_write_execute_chain` |
-| **C-ARCH** | Kiến trúc Sysmon ∪ Frida document graceful degradation dưới E4 | Bảng 3.9, mục 3.8 |
-| **C-TAX** | Taxonomy mở rộng beyond paper §4 (36 kỹ thuật enum) | `kernel/classification/technique_classifier.py` — **không** kèm precision số |
+| **C-IMPL** | Lõi 2-of-3 + congruence + temporal của [4] đã hiện thực trên Frida+Sysmon Windows 10/11 | `correlation.py`, `api_manifest.py`, `test_correlation.py` |
+| **C-AUDIT** | Ba deviation D1/D2/D3 đã phát hiện và sửa có test regression | `docs/audit-and-threat-model.md` |
+| **C-EXT** | Pipeline file provenance → lineage → finding cung cấp ngữ cảnh [4] không có | `file_watch.py`, `correlation.py` |
+| **C-CASE** | Section-mapping (*neurevt*) phát hiện đúng pattern primitive trên PoC | `test_detects_section_mapping_write_execute_chain` |
+| **C-ARCH** | Sysmon ∪ Frida document graceful degradation dưới E4 | Bảng 2.9, mục 3.8 |
+| **C-TAX** | Taxonomy mở rộng (36 kỹ thuật enum) | `technique_classifier.py` — không kèm precision số |
 
-### 3.11.2. Claim KHÔNG ĐƯỢC PHÉP (cấm nếu chưa bổ sung evaluation)
+### 2.11.2. Claim KHÔNG ĐƯỢC PHÉP (cấm nếu chưa bổ sung evaluation)
 
 | Claim cấm | Lý do |
 |-----------|-------|
-| "Precision/recall ngang hoặc hơn paper [4]" | Không có dataset 56k; không baseline Cuckoo trong repo |
-| "Phát hiện kỹ thuật X với độ chính xác Y%" | Classifier chưa đánh giá ground truth |
-| "Tái lập prevalence 16,5 % / sandbox miss 21,2 %" | Số liệu thuộc [4], không phải luận văn |
-| "Chống E5 toàn diện" | O7 — không anti-evasion module |
-| "Production-ready EDR thay thế thương mại" | Lab prototype; M5 chưa đầy đủ |
-| "Frida user-mode đủ tin cậy mọi điều kiện" | O1/O5; cần M5 benchmark |
-| "Phương pháp detection mới thay thế [4]" | Sai — phương pháp lõi là của [4]; luận văn là replication + extension |
+| "Precision/recall ngang/hơn [4]" | Không dataset 56k; không baseline Cuckoo |
+| "Phát hiện kỹ thuật X với Y%" | Classifier chưa eval ground truth |
+| "Tái lập prevalence 16,5 % / miss 21,2 %" | Số liệu thuộc [4] |
+| "Chống E5 toàn diện" | O7 — không anti-evasion |
+| "Production-ready EDR thay thương mại" | Lab prototype; M5 chưa đủ |
+| "Frida đủ tin cậy mọi điều kiện" | O1/O5; cần M5 |
+| "Phương pháp mới thay [4]" | Sai — lõi là [4]; luận văn replication + extension |
 
-### 3.11.3. Claim có điều kiện (conditional)
+Bảng claim cấm là checklist self-guard chống *claim creep*.
+
+### 2.11.3. Claim có điều kiện (conditional)
 
 | Claim | Điều kiện |
 |-------|-----------|
@@ -1333,94 +1069,83 @@ Phần này **bắt buộc** cho hội đồng — phân tách claim có evidenc
 | "Giảm FN dưới E4" | Sysmon E1 env assumption; không O3 |
 | "Tăng cường truy vết E3" | Có file-drop + Event 11; static triage readable |
 
-## 3.12. Mapping threat model ↔ mục tiêu nghiên cứu (RO1–RO5)
+## 2.12. Mapping threat model ↔ mục tiêu nghiên cứu (RO1–RO5)
 
-**Bảng 3.12.** Liên kết RO và threat model
+**Bảng 2.12.** Liên kết RO và threat model
 
 | Mục tiêu (Chương Mở đầu) | Threat model |
 |--------------------------|--------------|
 | RO1 — Hiện thực [4] | M1–M4; C-IMPL; T3/T6/T7 fixes |
-| RO2 — Telemetry kép E4 | Bảng 3.9; T1; O1/O2 degradation |
+| RO2 — Telemetry kép E4 | Bảng 2.9; T1; O1/O2 degradation |
 | RO3 — Provenance E3 | Sysmon E11/E1; C-EXT |
 | RO4 — Đánh giá biến thể | C-CASE; E1/E2; **không** claim prevalence |
-| RO5 — Tài liệu hóa threat model | Toàn chương 3; scientific claims §3.11 |
+| RO5 — Tài liệu hóa threat model | Toàn chương 2; scientific claims §3.11 |
 
-## 3.13. Hạn chế threat model và tính hợp lệ ngoại vi (*validity*)
+Mapping bảo đảm truy nguyên hai chiều giữa RO và threat model.
 
-### 3.13.1. Internal validity
+## 2.13. Hạn chế threat model và tính hợp lệ ngoại vi (*validity*)
+
+### 2.13.1. Internal validity
 
 - Ground truth PoC do tác giả gắn nhãn — bias có thể có.
 - Số mẫu nhỏ so với [4] — không generalize prevalence.
 - Frida overhead có thể thay đổi timing — ảnh hưởng race condition hiếm (không đo đầy đủ).
 
-### 3.13.2. External validity
+Bias kiềm chế bằng công khai mã PoC và config Sysmon để tái lập.
+
+### 2.13.2. External validity
 
 - Chỉ Windows 10/11 client — không Windows Server, không Linux.
 - Lab VM ≠ enterprise endpoint có EDR đa agent.
 - Mẫu 2017–2023 trong [4] — kỹ thuật 2024+ (một số) chỉ có rule chưa evaluate.
 
-### 3.13.3. Construct validity
+Windows 10/11 client là *deliberate scoping*: server và Linux (ptrace, LD_PRELOAD) ngoài T1055 Windows.
+
+### 2.13.3. Construct validity
 
 - Primitive abstraction M1 có thể không map một số kỹ thuật mới (PoolParty phức tạp) — classifier bổ sung, không thay 2-of-3.
 - Score finding (≥ 50/70) là heuristic lab, chưa calibrate trên corpus.
 
-Luận văn **không che** các hạn chế này; Chương 7 (Thảo luận) mở rộng thêm.
+PoolParty và biến thể 2024 làm primitive A/W/E có thể không phân giải đủ mịn. Chương 7 mở rộng.
 
-## 3.14. Tóm tắt chương
+## 2.14. Tóm tắt chương
 
-Chương 3 đã xây dựng threat model formal cho Noirlycan: hệ thống lab Windows với telemetry kép kernel (Sysmon) và user (Frida); tài sản A1–A3; đối thủ user-mode với năng lực C1–C7; ranh giài out-of-scope O1–O7 (đặc biệt O3 kernel, O7 anti-sandbox); taxonomy né tránh E1–E6 với mitigation tương ứng; giả định môi trường E1–E6 và phương pháp M1–M6; ma trận tin cậy telemetry giải thích graceful degradation dưới E4; catalog mối đe dọa T1–T9; và **ranh giới claim khoa học** phân tách rõ replication [4], extension provenance/architecture, versus những gì cấm claim (prevalence 16,5 %/21,2 %, anti-E5, production EDR).
-
-Threat model này phục vụ hai mục đích: (1) cho hội đồng đánh giá **scope** và trung thực khoa học; (2) làm khung cho Chương 5 (Phương pháp) và Chương 6 (Đánh giá) — mọi thí nghiệm phải map lại C-IMPL/C-EXT/C-CASE và không vượt claim §3.11.
+Chương 2 đã xây dựng threat model formal: telemetry kép Sysmon + Frida; A1–A3; C1–C7; O1–O7; E1–E6 và M1–M6; ma trận tin cậy giải thích graceful degradation dưới E4; T1–T9; ranh giới claim phân tách replication [4], extension, claim cấm. Threat model làm khung cho Chương 5 và 6 — thí nghiệm phải map C-IMPL/C-EXT/C-CASE, không vượt §3.11.
 
 ---
 
-# CHƯƠNG 4. PHƯƠNG PHÁP TĂNG CƯỜNG PHÁT HIỆN
-
-Chương này trình bày phương pháp luận của luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh*, căn cứ chính thức vào công trình Di Pietro, D'Elia và Querzoni tại ASIA CCS 2025 [4]. Phương pháp [4] được thiết kế để phát hiện process injection khi malware **né signature API** (nhóm né tránh E1) hoặc **gộp/ẩn bước operational** (E2). Luận văn kế thừa lõi phương pháp đó — ba *operational primitive*, lớp tương đương API (*equivalence class*), quy tắc *2-of-3*, đồng nhất vùng nhớ (*memory congruence*) và ràng buộc thứ tự thời gian (*temporal ordering*) — rồi mở rộng hai tầng bổ sung nhằm đối phó **né attribution** (E3) và **né hook user-mode** (E4). Các hình thức né tránh E5 (phát hiện sandbox/VM) và E6 (anti-instrumentation) được khai báo rõ trong Chương 3; **module anti-evasion của [4] tương ứng E5 không được hiện thực** trong artifact Noirlycan và không nằm trong phạm vi claim khoa học của luận văn.
+Chương này trình bày phương pháp luận, căn cứ công trình Di Pietro, D'Elia, Querzoni tại ASIA CCS 2025 [4], phát hiện process injection khi malware né signature API (E1) hoặc gộp/ẩn bước operational (E2). Luận văn kế thừa lõi — ba *operational primitive*, *equivalence class*, *2-of-3*, *memory congruence*, *temporal ordering* — và mở rộng hai tầng chống E3, E4. **Module anti-evasion E5 không được hiện thực** trong Noirlycan.
 
 ---
 
-## 4.1. Tổng quan pipeline phương pháp
+## 2.15. Tổng quan pipeline phương pháp
 
-### 4.1.1. Hai tầng tăng cường
+### 2.15.1. Hai tầng tăng cường
 
-Phương pháp luận văn gồm **hai tầng** bổ trợ lẫn nhau:
+Phương pháp gồm hai tầng:
 
-1. **Tầng phát hiện chống biến thể (E1, E2)** — kế thừa trực tiếp [4]: mọi lời gọi Windows API liên quan injection được ánh xạ vào một trong ba primitive *allocate*, *write*, *execute*; một chuỗi injection được kết luận khi quan sát **ít nhất hai primitive khác loại** trên cùng cặp `(actor_pid, target_pid)` và thỏa congruence + temporal.
-2. **Tầng ngữ cảnh và phòng thủ sâu (E3, E4)** — đóng góp của luận văn: (a) pipeline *file provenance* gắn nguồn gốc file với chuỗi injection; (b) *telemetry kép* Sysmon (kernel) ∪ Frida (user-mode) để giảm false negative khi hook bị né.
+1. **Tầng chống biến thể (E1, E2)** — kế thừa [4]: mọi lời gọi API injection ánh xạ vào một trong ba primitive *allocate*, *write*, *execute*; chuỗi được kết luận khi có ≥2 primitive khác loại trên cùng cặp `(actor_pid, target_pid)` thỏa congruence + temporal.
+2. **Tầng ngữ cảnh (E3, E4)** — đóng góp của luận văn: (a) pipeline *file provenance* phục hồi loader khi victim hợp pháp; (b) *telemetry kép* Sysmon ∪ Frida giảm FN khi user-mode hook bị né.
 
-Hình 4.1 (tham chiếu `docs/architecture-diagrams.md`) so sánh pipeline batch của [4] (QEMU sandbox → trace API → analyzer offline) với pipeline Noirlycan (lab Windows real-time: file/process events → Frida primitives → correlator → finding → dashboard).
+Hình 2.1 so sánh pipeline batch của [4] (QEMU sandbox → trace → analyzer offline) với Noirlycan (Windows real-time): khác biệt then chốt là trục thời gian — Noirlycan dùng cửa sổ trượt và re-evaluation tăng dần.
 
-### 4.1.2. Luồng dữ liệu end-to-end
-
-Pipeline Noirlycan được mô tả bằng các giai đoạn sau:
+### 2.15.2. Luồng dữ liệu end-to-end
 
 ```
-[Giai đoạn 1 — Thu thập]
-  FileDropWatcher / Sysmon E11,E15  →  FileEvent
-  Sysmon E1                         →  ProcessEvent
-  Frida hooks (windows_injection_hooks.js) → MemoryPrimitive
-  Sysmon E3 (tùy chọn)              →  NetworkConnectionEvent
-
-[Giai đoạn 2 — Tiền xử lý]
-  FileTriage (SHA256, PE, entropy, Authenticode) → làm giàu FileEvent
-  runtime_event_to_primitive / runtime_event_to_process → chuẩn hóa Frida
-
-[Giai đoạn 3 — Tương quan]
-  Correlator.add_file / add_process / add_primitive
-    → kiểm 2-of-3 + temporal + congruence
-    → scoring + technique_classifier
-    → Finding
-
-[Giai đoạn 4 — Đầu ra]
-  JSONL session log  →  Dashboard analyst  →  export / reclassify
+[1. Thu thập] FileDropWatcher/Sysmon E11,E15→FileEvent; Sysmon E1→ProcessEvent;
+              Frida hooks→MemoryPrimitive; Sysmon E3→NetworkConnectionEvent
+[2. Tiền xử lý] FileTriage (SHA256, PE, entropy, Authenticode);
+                runtime_event_to_primitive / runtime_event_to_process
+[3. Tương quan] Correlator.add_file/add_process/add_primitive
+                → 2-of-3 + temporal + congruence → scoring → Finding
+[4. Đầu ra] JSONL → Dashboard → export/reclassify
 ```
 
-Khác với [4] — nơi phân tích chạy *post-mortem* trên trace tĩnh — Noirlycan duy trì **cửa sổ trượt 300 giây** (`Correlator.window_seconds = 300`) và đánh giá lại chuỗi `(actor_pid, target_pid)` mỗi khi có primitive mới, cho phép phát hiện real-time trong phòng lab.
+Noirlycan duy trì **cửa sổ trượt 300s** (`Correlator.window_seconds=300`), đánh giá lại chuỗi mỗi khi có primitive mới. Giá trị 300s dự phòng *delayed execution* mà không bùng nổ bộ nhớ.
 
-### 4.1.3. Định nghĩa đối tượng quan sát
+### 2.15.3. Định nghĩa đối tượng quan sát
 
-Ký hiệu dùng xuyên suốt chương:
+Ký hiệu:
 
 | Ký hiệu | Ý nghĩa |
 |---------|---------|
@@ -1430,77 +1155,89 @@ Ký hiệu dùng xuyên suốt chương:
 | $K \subseteq \{\texttt{A}, \texttt{W}, \texttt{E}\}$ | Tập loại primitive đã quan sát trên một chuỗi |
 | $\mathrm{score}(K, ctx)$ | Điểm tin cậy 0–100 sau khi thỏa quy tắc phát hiện |
 
-Một **Finding** là bản ghi có cấu trúc gồm: timestamp, actor/target PID và image, danh sách primitive, điểm số, evidence, kỹ thuật injection suy luận (nếu có), và `related_file` khi pipeline provenance khớp.
+Một **Finding** gồm: timestamp, actor/target PID + image, danh sách primitive, score, evidence, kỹ thuật suy luận, `related_file`. Finding immutable; cập nhật chỉ *upgrade* score.
 
 ---
 
-## 4.2. Operational primitive và equivalence class (chống E1)
+## 2.16. Giả thuyết, tính khả thi và tiêu chí kiểm chứng
 
-### 4.2.1. Ba primitive theo [4]
+Theo [14], chương này gắn với **H1–H5** (§1.3.3). Mỗi giả thuyết quy định biến độc lập, biến phụ thuộc, thí nghiệm, ngưỡng chấp nhận; neo vào thành phần code giúp phản nghiệm khả thi.
 
-Theo Klein et al. [7] và formal hóa của [4], process injection user-mode có thể mô hình hóa bằng ba thao tác operational trên vùng nhớ victim:
+**Bảng 2.1.** Giả thuyết ↔ thành phần phương pháp ↔ tiêu chí
 
-1. **Allocate ($\texttt{A}$)** — chuẩn bị vùng nhớ (cấp phát, map section, đổi protection sang executable).
-2. **Write ($\texttt{W}$)** — đặt payload (shellcode, PE, đường dẫn DLL) vào vùng đó.
-3. **Execute ($\texttt{E}$)** — chuyển luồng thực thi tới vùng đó (remote thread, APC, resume, set context, load library, …).
+| Giả thuyết | Thành phần Noirlycan | Tiêu chí chấp nhận |
+|------------|----------------------|-------------------|
+| **H1** (E1) | `api_manifest.py`, correlator 2-of-3 | Test correlation pass; NT API thay Win32 vẫn ≥2 primitive |
+| **H2** (E2) | Congruence + temporal + section-mapping rule | Score ≥ 70 trên case `section_mapping` |
+| **H3** (E3) | `file_watch.py`, triage, `related_file` | Finding chứa path + hash file-drop |
+| **H4** (E4) | Sysmon E8/E10 + Frida hooks | Case syscall: Sysmon bắt khi Frida miss (thiết kế; số liệu pending) |
+| **H5** (E6/M5) | `frida-fidelity.md` protocol | Drop-rate < 1 % trên VM |
 
-**E1 (biến thể API):** malware thay `CreateRemoteThread` bằng `NtCreateThreadEx`, hoặc Win32 bằng NT/Zw export tương đương. Phương pháp [4] không khớp chuỗi API cố định mà khớp **lớp tương đương** — mọi API cùng ngữ nghĩa operational được gom vào một primitive.
+**Tính khả thi:** artifact [11] và paper [4] công khai; stack Sysmon/Frida/Python có sẵn. Rủi ro: benchmark VM Windows (H4, H5) phụ thuộc thời gian lab và ổn định Frida.
 
-### 4.2.2. Bảng equivalence class
+**Well-posed problem:** vấn đề là *tăng cường phát hiện dưới E1–E4 trên endpoint lab*, không phải giảm 21,2 % sandbox miss của [4] (phát biểu sau không kiểm chứng được trong phạm vi luận văn).
 
-Manifest `PAPER_API_CLASSES` trong `kernel/classification/api_manifest.py` liệt kê ánh xạ chính thức (Phụ lục A). Tóm tắt Bảng 4.1:
+---
 
-**Bảng 4.1.** Lớp tương đương API theo [4] (trích)
+## 2.17. Operational primitive và equivalence class (chống E1)
+
+### 2.17.1. Ba primitive theo [4]
+
+Theo Klein et al. [7] và formal hóa của [4], process injection user-mode mô hình bằng ba thao tác độc lập với họ API:
+
+1. **Allocate ($\texttt{A}$)** — chuẩn bị vùng nhớ qua `VirtualAllocEx`, `NtCreateSection` + `NtMapViewOfSection`, hoặc đổi protection sang `PAGE_EXECUTE_READWRITE` qua `VirtualProtectEx`.
+2. **Write ($\texttt{W}$)** — đặt payload qua `WriteProcessMemory` hoặc ghi ngầm qua mapping.
+3. **Execute ($\texttt{E}$)** — chuyển luồng thực thi qua `CreateRemoteThread`/`NtCreateThreadEx`, `QueueUserAPC`, `SetThreadContext` + `ResumeThread`, `LoadLibrary` remote, hoặc `SetWindowsHookEx`.
+
+**E1:** malware thay `CreateRemoteThread` bằng `NtCreateThreadEx`, thay Win32 bằng NT/Zw, hoặc resolve API runtime qua `GetProcAddress`. [4] khớp **lớp tương đương** chứ không khớp chuỗi API cố định, nên tổ hợp NT thuần vẫn được phát hiện như A+W+E hợp lệ.
+
+### 2.17.2. Bảng equivalence class
+
+**Bảng 2.2.** Lớp tương đương API theo [4] (trích; manifest `PAPER_API_CLASSES`, Phụ lục A)
 
 | Lớp | Primitive | Ví dụ API |
 |-----|-----------|-----------|
 | allocate | A | `VirtualAllocEx`, `NtAllocateVirtualMemory`, `VirtualProtectEx`, `NtCreateSection`, `CreateFileMapping*`, `MapViewOfFile*` |
 | write | W | `WriteProcessMemory`, `NtWriteVirtualMemory`, `NtMapViewOfSection`, `NtUnmapViewOfSection`, `RtlCopyMemory` |
 | execute | E | `CreateRemoteThread*`, `NtCreateThreadEx`, `QueueUserAPC`, `SetThreadContext`, `ResumeThread`, `LoadLibrary*`, `SetWindowsHookEx*`, `NtAddAtom` |
-| remote_read | *(quan sát)* | `ReadProcessMemory`, `NtReadVirtualMemory` — **không** tính vào 2-of-3 (deviation D2 đã sửa) |
-| context_read | *(lab)* | `GetThreadContext`, `NtGetContextThread` — chỉ báo hijack-prep, không tính 2-of-3 |
+| remote_read | *(quan sát)* | `ReadProcessMemory`, `NtReadVirtualMemory` — **không** tính vào 2-of-3 (D2) |
+| context_read | *(lab)* | `GetThreadContext`, `NtGetContextThread` — chỉ báo hijack-prep |
 
-Mở rộng lab: `IRED_TEAM_API_CLASSES` bổ sung fiber, threadpool, window memory, TXF — phục vụ classifier iRed.team mà không thay đổi quy tắc 2-of-3 cốt lõi.
+`remote_read` và `context_read` là *observation-only*: log phục vụ classifier nhưng không nâng $|K|$ vì đọc remote không cấu thành tấn công (debugger cũng làm). `IRED_TEAM_API_CLASSES` bổ sung fiber, threadpool, window memory, TXF — không thay quy tắc 2-of-3.
 
-### 4.2.3. Cơ chế hook chống E1
+### 2.17.3. Cơ chế hook chống E1
 
-Frida `Interceptor.attach` trên export của `kernel32.dll`, `ntdll.dll`, … Alias `Zw*` được resolve cùng stub với `Nt*`. Tập `DYNAMIC_INJECTION_APIS` trong `windows_injection_hooks.js` bao phủ API resolve động qua `GetProcAddress`. Mỗi lần gọi thành công phát sinh sự kiện `memory_primitive` hoặc `api_observation` với trường `kind` đã ánh xạ.
+Frida `Interceptor.attach` gắn trên export của `kernel32.dll`, `ntdll.dll`, `user32.dll`. Alias `Zw*` resolve cùng stub với `Nt*`. Tập `DYNAMIC_INJECTION_APIS` bao phủ API resolve động qua `GetProcAddress`: agent hook xen kẽ khi `GetProcAddress` trả về địa chỉ trong tập theo dõi. Mỗi lần gọi thành công phát sinh `memory_primitive` hoặc `api_observation` với `kind`, `address`, `size`, `protection`, và (nếu có) `thread_parameter` hoặc trích đoạn `CONTEXT`.
 
 ---
 
-## 4.3. Quy tắc 2-of-3 (chống E2)
+## 2.18. Quy tắc 2-of-3 (chống E2)
 
-### 4.3.1. Động cơ né tránh E2
+### 2.17.1. Động cơ né tránh E2
 
-Malware thường **gộp hoặc ẩn bước** để né detector dựa trên chuỗi A→W→E đầy đủ:
+Malware gộp/ẩn bước để né chuỗi A→W→E đầy đủ: **section mapping** (`NtCreateSection`+`NtMapViewOfSection` remote — chỉ W+E); **Mockingjay/RWX sẵn có** (W+E hoặc E); **Process Hollowing section variant** (allocate+write gộp trong map, execute qua `SetThreadContext`+`ResumeThread`).
 
-- **Section mapping:** `NtCreateSection` + `NtMapViewOfSection` (remote) vừa map vừa ghi — chỉ cần W+E.
-- **Mockingjay / RWX sẵn có:** payload copy vào vùng executable có sẵn — W+E hoặc chỉ E.
-- **Process Hollowing (section variant):** allocate+write gộp trong map; execute qua `SetThreadContext` + `ResumeThread`.
+[4] chứng minh yêu cầu đủ ba bước gây FN; quy tắc **≥2 trong 3 primitive khác loại** tăng recall, giữ precision nhờ congruence + temporal.
 
-Paper [4] chứng minh trên dataset lớn rằng yêu cầu **đủ ba bước** gây false negative đáng kể; quy tắc **ít nhất 2 trong 3 primitive khác loại** tăng recall mà vẫn giữ precision nhờ congruence và temporal.
+### 2.17.2. Phát biểu hình thức
 
-### 4.3.2. Phát biểu hình thức
-
-Cho cặp actor $a$ và victim $v$, tập quan sát trong cửa sổ thời gian $T$:
+Cho cặp $(a, v)$ trong cửa sổ $T$:
 
 $$\mathcal{O}_{a,v,T} = \{\, \mathrm{obs}(t_i, a, v, \pi_i, r_i) \mid t_i \in T \,\}$$
 
-Định nghĩa tập loại primitive:
-
 $$K = \{\, \pi \mid \exists\, \mathrm{obs}(\cdot, a, v, \pi, \cdot) \in \mathcal{O}_{a,v,T} \,\}$$
 
-**Quy tắc 2-of-3** (Công thức 4.1):
+**Quy tắc 2-of-3** (phương trình 2.14):
 
-$$|K \cap \{\texttt{A}, \texttt{W}, \texttt{E}\}| \geq 2 \tag{4.1}$$
+$$|K \cap \{\texttt{A}, \texttt{W}, \texttt{E}\}| \geq 2$$ (2.14)
 
-**Điều kiện bổ sung** (theo [4] §3.3–3.4), chuỗi chỉ được chấp nhận nếu:
+**Điều kiện bổ sung** ([4] §3.3–3.4):
 
-$$\mathrm{Congruence}(\mathcal{O}_{a,v,T}) \land \mathrm{Temporal}(\mathcal{O}_{a,v,T}) \tag{4.2}$$
+$$\mathrm{Congruence}(\mathcal{O}_{a,v,T}) \land \mathrm{Temporal}(\mathcal{O}_{a,v,T})$$ (2.15)
 
-Implementation: `operational_kind_count(kinds) >= 2` trong `_evaluate_chain`, loại trừ `CONTEXT_READ` khỏi đếm (`kernel.analysis.primitives.operational_kind_count`).
+Implementation: `operational_kind_count(kinds) >= 2` trong `_evaluate_chain`, loại `CONTEXT_READ` khỏi đếm. Độ trễ $O(|P|)$ trên bucket $(a, v)$, thực tế dưới 100 phần tử mỗi cặp.
 
-### 4.3.3. Ví dụ minh họa E2
+### 2.17.3. Ví dụ minh họa E2
 
 | Kịch bản | Primitive quan sát | $|K|$ | Kết luận |
 |----------|-------------------|-------|----------|
@@ -1509,67 +1246,64 @@ Implementation: `operational_kind_count(kinds) >= 2` trong `_evaluate_chain`, lo
 | Chỉ `WriteProcessMemory` | W | 1 | **Không** finding (`test_requires_two_distinct_primitives`) |
 | Debugger remote read | A + read-only | 1 | **Không** (D2: read không tính W) |
 
----
-
-## 4.4. Memory range congruence
-
-### 4.4.1. Định nghĩa
-
-Hai quan sát $\mathrm{obs}_1, \mathrm{obs}_2$ **đồng nhất vùng nhớ** nếu khoảng nửa mở $r_1 = [addr_1, addr_1 + size_1)$ và $r_2 = [addr_2, addr_2 + size_2)$ **giao nhau**:
-
-$$\mathrm{overlap}(r_1, r_2) \iff addr_1 < addr_2 + size_2 \;\land\; addr_2 < addr_1 + size_1 \tag{4.3}$$
-
-Starink et al. [12] dùng ý tưởng tương tự trong behavior graph; [4] áp dụng để loại false positive khi cùng process thực hiện nhiều thao tác heap độc lập.
-
-### 4.4.2. Thuật toán trong Noirlycan
-
-Hàm `_has_memory_congruence` xây dựng tập khoảng từ mỗi primitive qua `_memory_link_ranges`:
-
-- `address` + `size` chính;
-- `thread_parameter` trên EXECUTE (DLL path buffer cho `CreateRemoteThread`);
-- `context_pointer` liên kết `GetThreadContext` ↔ `SetThreadContext`;
-- `address == 0` coi như thiếu (hook không đọc được base — thường gặp với `NtAllocateVirtualMemory`).
-
-Congruence yêu cầu **ít nhất một cặp primitive khác loại** có khoảng overlap. Ngoại lệ thực dụng: khi `NtAllocateVirtualMemory` không trả address nhưng có nhiều WRITE + EXECUTE cross-process, chuỗi vẫn được chấp nhận nếu `operational_kind_count >= 2` và chỉ một loại có range (`services/analysis/domain/correlation.py` dòng 454–458).
-
-### 4.4.3. Deviation D1 (khai báo trung thực)
-
-Execute-level API (`ResumeThread`, …) lịch sử không mang `address`. Fix D1: hook đọc `Rip` từ `CONTEXT` cho `SetThreadContext`, `lpStartAddress` cho `CreateRemoteThread` — test `test_set_thread_context_with_rip_overlaps_write_buffer` xác nhận. Khi execute vẫn thiếu address, congruence có thể suy yếu; luận văn **không claim** precision tương đương paper trên mọi biến thể execute-only.
+Ba dòng cuối thể hiện vai trò *gating*: không alarm hoạt động đơn lẻ, kích hoạt khi đủ hai trục tác vụ.
 
 ---
 
-## 4.5. Temporal ordering
+## 2.19. Memory range congruence
 
-### 4.5.1. Quy tắc [4]
+### 2.19.1. Định nghĩa
 
-Thứ tự canonical: **allocate → write → execute**, với hai ngoại lệ được paper cho phép:
+Hai quan sát đồng nhất vùng nhớ nếu $r_1 = [addr_1, addr_1 + size_1)$ và $r_2$ giao nhau:
 
-1. **Allocate lặp** — resize, đổi protection RWX→RX.
-2. **Gộp bước** — section mapping có thể phát sinh W đồng thời với map (allocate ngữ nghĩa đã xảy ra trước hoặc trong cùng API).
+$$\mathrm{overlap}(r_1, r_2) \iff addr_1 < addr_2 + size_2 \;\land\; addr_2 < addr_1 + size_1$$ (2.16)
 
-### 4.5.2. Formal hóa implementation
+Starink et al. [12] dùng ý tưởng tương tự; [4] áp dụng overlap để loại FP khi process có nhiều thao tác heap độc lập (allocate A, write B không overlap → không ghép).
+
+### 2.19.2. Thuật toán trong Noirlycan
+
+`_has_memory_congruence` xây tập khoảng từ mỗi primitive qua `_memory_link_ranges`:
+
+- `address` + `size` lấy từ tham số API;
+- `thread_parameter` trên EXECUTE — ví dụ tham số thứ hai của `CreateRemoteThread` trỏ buffer chứa đường dẫn DLL (pattern LoadLibrary remote thread);
+- `context_pointer` liên kết `GetThreadContext` ↔ `SetThreadContext` qua trường `Rip` trong `CONTEXT` x86-64;
+- `address == 0` coi như thiếu (thường gặp với `NtAllocateVirtualMemory` khi `*BaseAddress` chưa fill).
+
+Congruence yêu cầu **ít nhất một cặp primitive khác loại** có overlap. Ngoại lệ: khi `NtAllocateVirtualMemory` không trả address nhưng có WRITE + EXECUTE cross-process, chuỗi vẫn chấp nhận nếu `operational_kind_count >= 2` và chỉ một loại có range — *safe relaxation*.
+
+### 2.19.3. Deviation D1 (khai báo trung thực)
+
+Execute-level API (`ResumeThread`, `NtCreateThreadEx` không kèm `lpStartAddress`) lịch sử không mang `address`. Fix D1: hook đọc `Rip` từ `CONTEXT` cho `SetThreadContext`, `lpStartAddress` cho `CreateRemoteThread`, `StartRoutine` cho `NtCreateThreadEx` (test `test_set_thread_context_with_rip_overlaps_write_buffer`). Khi execute vẫn thiếu address, congruence suy yếu; luận văn **không claim** precision tương đương paper trên mọi biến thể execute-only.
+
+---
+
+## 2.20. Temporal ordering
+
+### 2.20.1. Quy tắc [4]
+
+Thứ tự canonical **A → W → E**, với hai ngoại lệ: (1) allocate lặp (resize buffer, đổi protection RWX→RX sau khi ghi); (2) gộp bước (section mapping phát sinh W đồng thời với map; thứ tự A–W không xác định từ trace).
+
+### 2.20.2. Formal hóa implementation
 
 Gán bậc:
 
 $$\mathrm{rank}(\texttt{A}) = 0,\; \mathrm{rank}(\texttt{W}) = 1,\; \mathrm{rank}(\texttt{E}) = 3$$
 
-(`CONTEXT_READ` = 2, không gây reject.)
+(`CONTEXT_READ` = 2, không gây reject.) Sắp xếp primitive theo timestamp; duyệt tuần tự, với mỗi $\pi \in \{\texttt{A}, \texttt{W}, \texttt{E}\}$:
 
-Sắp xếp primitive theo timestamp; duyệt tuần tự, với mỗi $\pi \in \{\texttt{A}, \texttt{W}, \texttt{E}\}$:
+$$\text{nếu } \mathrm{rank}(\pi) < \mathrm{last\_rank} \text{ và } \pi \in \{\texttt{A}, \texttt{W}\} \Rightarrow \text{reject}$$ (2.17)
 
-$$\text{nếu } \mathrm{rank}(\pi) < \mathrm{last\_rank} \text{ và } \pi \in \{\texttt{A}, \texttt{W}\} \Rightarrow \text{reject} \tag{4.4}$$
-
-Fix D3: từ chối WRITE sau EXECUTE (`test_rejects_write_after_execute_temporal_order`). Cho phép allocate sau write (re-protect) vì rank A = 0 < last chỉ reject khi A xuất hiện **sau** W hoặc E đã nâng last_rank — logic trong `_has_temporal_consistency`.
+Fix D3: từ chối WRITE sau EXECUTE (`test_rejects_write_after_execute_temporal_order`) vì write-sau-execute thường là cập nhật cấu hình hậu injection. Cho phép allocate sau write (re-protect). Gap rank W–E = 2 để chừa khe cho `CONTEXT_READ`.
 
 ---
 
-## 4.6. Pipeline file provenance (chống E3)
+## 2.21. Pipeline file provenance (chống E3)
 
-### 4.6.1. Động cơ né tránh E3
+### 2.21.1. Động cơ né tránh E3
 
-Malware **né attribution** bằng cách inject vào tiến trình hợp pháp (`msedge.exe`, `explorer.exe`) thay vì giữ process tree bất thường. Signature chỉ nhìn injection trên victim sẽ **mất dấu loader gốc**. Paper [4] tập trung trace execution, không xây pipeline file→process end-to-end cho lab endpoint.
+Malware né attribution bằng cách inject vào tiến trình hợp pháp (`msedge.exe`, `explorer.exe`, `svchost.exe`). Detector chỉ nhìn victim sẽ **mất dấu loader gốc** — đặc biệt khi loader tự xoá sau spawn. Paper [4] không xây pipeline file→process cho lab endpoint; lớp provenance là đóng góp của luận văn.
 
-### 4.6.2. Luồng provenance
+### 2.21.2. Luồng provenance
 
 ```
 Sysmon E11/E15 (FileCreate)  ──┐
@@ -1580,28 +1314,23 @@ Sysmon E1 (ProcessCreate)  ────┘  add_process: created_from_file = ima
                               add_primitive → Finding.related_file
 ```
 
-Hàm `_related_file_for_process` liên kết theo thứ tự ưu tiên: (1) `created_from_file`; (2) image path khớp `files_by_path`; (3) image của parent process.
+`_related_file_for_process` liên kết theo ưu tiên: (1) `created_from_file` — khớp chính xác image path và file drop; (2) image khớp `files_by_path` (E11 đến sau ProcessCreate); (3) image của parent — fallback. Thứ tự phản ánh độ tin cậy giảm dần.
 
-### 4.6.3. Static triage
+### 2.21.3. Static triage
 
-Module `triage.py` tính:
+Module `triage.py` tính thuộc tính tĩnh: SHA256, entropy Shannon (1 MB đầu — gần 8 gợi ý packed); PE header qua `pefile`, Authenticode qua `signtool`; import injection API đáng ngờ; heuristic thư mục (`%TEMP%`, `%APPDATA%\Local\Temp`, `C:\Windows\Tasks`).
 
-- SHA256, entropy Shannon (1 MB đầu);
-- PE header (`pefile`), Authenticode (`signtool` / PowerShell);
-- import injection API đáng ngờ;
-- heuristic thư mục (`SUSPICIOUS_DIRECTORIES`).
-
-Metadata làm giàu scoring (mục 4.9) và dashboard — hỗ trợ analyst **phá vỡ né attribution** bằng cách truy ngược file drop tới loader.
+Metadata làm giàu scoring (§4.10) và hỗ trợ analyst truy ngược file drop tới loader dù victim hợp pháp. Triage *lazy*, không quét đệ quy toàn ổ đĩa.
 
 ---
 
-## 4.7. Telemetry kép (chống E4)
+## 2.22. Telemetry kép (chống E4)
 
-### 4.7.1. Động cơ né tránh E4
+### 2.22.1. Động cơ né tránh E4
 
-**Direct syscall** và **unhook ntdll** né Frida user-mode. Sysmon driver (`SysmonDrv.sys`) đăng ký kernel callback — Event ID 8 (CreateRemoteThread), 10 (ProcessAccess), 11 (FileCreate), 1 (ProcessCreate) — **không phụ thuộc** export hook trong process nạn nhân.
+**Direct syscall** (stub `syscall` tự xây thay vì `Nt*` export) và **unhook ntdll** (đọc bản gốc từ đĩa, ghi đè bản hook) né Frida user-mode. Sysmon driver đăng ký kernel callback (`PsSetCreateThreadNotifyRoutine`, `ObRegisterCallbacks`) — Event ID 8/10/11/1 — không phụ thuộc export hook, vẫn hoạt động dưới direct syscall.
 
-### 4.7.2. Ma trận bổ sung
+### 2.22.2. Ma trận bổ sung
 
 | Tình huống E4 | Frida | Sysmon | Kết quả mong đợi |
 |---------------|-------|--------|------------------|
@@ -1609,17 +1338,17 @@ Metadata làm giàu scoring (mục 4.9) và dashboard — hỗ trợ analyst **p
 | Syscall thuần, unhook | Miss primitive | E8/E10 vẫn log | Cảnh báo một phần; **thiếu congruence** |
 | File drop + spawn | Miss nếu attach trễ | E11 + E1 | Provenance vẫn có |
 
-Luận văn claim **giảm false negative một phần** dưới E4, không claim phát hiện injection đầy đủ khi chỉ có Sysmon (thiếu address/size cho congruence).
+Luận văn claim **giảm FN một phần** dưới E4, không claim phát hiện đầy đủ khi chỉ có Sysmon. Sysmon E10 báo mở handle với access mask nhưng không cung cấp `address`/`size`, nên congruence không đầy đủ; finding ở mức cảnh báo (severity giảm).
 
-### 4.7.3. Chế độ spawn
+### 2.22.3. Chế độ spawn
 
-`noirlycan-telemetry spawn` khởi chạy mẫu **dưới Frida từ đầu**, giảm rủi ro miss primitive đầu (liên quan E6). Đây là biện pháp methodology, không thay thế anti-evasion E5.
+`noirlycan-telemetry spawn` khởi chạy mẫu **dưới Frida từ đầu** (spawn-then-attach), giảm miss primitive đầu (liên quan E6: malware kiểm tra hook khi khởi động và self-terminate, attach-after-spawn bỏ lỡ). Đây là methodology bảo đảm fidelity, không thay anti-evasion E5.
 
 ---
 
-## 4.8. Phân loại kỹ thuật injection
+## 2.23. Phân loại kỹ thuật injection
 
-Sau khi có Finding, `kernel/classification/technique_classifier.py` áp dụng **rule-based classifier** (21+ enum `InjectionTechnique`), căn cứ taxonomy §4 của [4] và mở rộng iRed.team:
+Sau khi có Finding, `technique_classifier.py` áp dụng **rule-based classifier** (21+ enum), căn cứ taxonomy §4 của [4] và mở rộng iRed.team:
 
 | Rule (rút gọn) | Kỹ thuật | ATT&CK |
 |----------------|----------|--------|
@@ -1630,15 +1359,15 @@ Sau khi có Finding, `kernel/classification/technique_classifier.py` áp dụng 
 | TXF + section | `process_doppelganging` | T1055.013 |
 | NtSetInformationFile + section | `process_ghosting` | T1055.012 |
 
-`apply_classification` gọi sau scoring; confidence `high` khi đủ 3 primitive + execution_confirmed. Ghosting/Herpaderping có enum nhưng phụ thuộc precursor observation từ hook.
+`apply_classification` gọi sau scoring; confidence `high` khi đủ 3 primitive + `execution_confirmed`. Ghosting/Herpaderping phụ thuộc precursor (xoá image sau `NtCreateSection`, rewrite sau map); thiếu precursor, classifier rơi về nhãn tổng quát.
 
-**E5:** classifier không chạy nếu malware **không inject** do phát hiện VM — out-of-scope; recall trên lab có thể thấp hơn [4].
+**E5:** classifier không chạy nếu malware không inject do phát hiện VM — out-of-scope; recall trên lab có thể thấp hơn [4] với họ malware có anti-VM mạnh.
 
 ---
 
-## 4.9. Mô hình scoring
+## 2.24. Mô hình scoring
 
-Điểm 0–100 (`Correlator._score`) **không** thay thế quy tắc 2-of-3 mà **xếp hạng** finding và lọc `minimum_score` (mặc định 50):
+Điểm 0–100 (`Correlator._score`) **không** thay quy tắc 2-of-3 mà **xếp hạng** finding và lọc `minimum_score` (mặc định 50). Tách *gating logic* khỏi *ranking logic* cho phép tinh chỉnh ngưỡng mà không phá định nghĩa khoa học.
 
 | Thành phần | Điểm | Điều kiện |
 |------------|------|-----------|
@@ -1652,31 +1381,27 @@ Sau khi có Finding, `kernel/classification/technique_classifier.py` áp dụng 
 | Related file | +10 | Provenance E3 |
 | PE / unsigned / entropy ≥ 7 | +5 / +10 / +5 | Static triage |
 
-Severity: CRITICAL ≥ 85, HIGH ≥ 70, MEDIUM ≥ 50. Score ≥ 70 kích hoạt **network watch** 300 giây trên `target_pid` (Sysmon E3).
+Severity: CRITICAL ≥ 85, HIGH ≥ 70, MEDIUM ≥ 50. Score ≥ 70 kích hoạt **network watch** 300s trên `target_pid` (Sysmon E3).
 
-Heuristic giảm false positive: `_resume_only_spawn_to_trusted_target` cap score ≤ 50 khi chỉ ResumeThread vào Program Files.
+Heuristic giảm FP: `_resume_only_spawn_to_trusted_target` cap score ≤ 50 khi chỉ có ResumeThread vào Program Files mà không kèm write/context — pattern installer hợp pháp.
 
 ---
 
-## 4.10. Thuật toán (pseudo-code)
+## 2.25. Thuật toán (pseudo-code)
 
 ### Thuật toán 4.1 — Ánh xạ API → primitive
 
 ```
-function MAP_API(api_name):
+function MAP_API(api):
     for class in PAPER_API_CLASSES ∪ IRED_TEAM_API_CLASSES:
-        if api_name in class.apis:
-            if class.primitive == "observation":
-                return OBSERVATION_ONLY
-            return class.primitive
+        if api in class.apis:
+            return OBSERVATION_ONLY if class.primitive=="observation" else class.primitive
     return UNKNOWN
 
 function ON_API_CALL(api, args, retval):
     if not success(retval): return
     kind ← MAP_API(api)
-    if kind == OBSERVATION_ONLY:
-        emit api_observation(...)
-        return
+    if kind == OBSERVATION_ONLY: emit api_observation(...); return
     range ← extract_memory_range(api, args, retval)
     emit memory_primitive(kind, actor_pid, target_pid, range, api, details)
 ```
@@ -1691,14 +1416,10 @@ function ADD_PRIMITIVE(p):
     return EVALUATE_CHAIN(p.actor_pid, p.target_pid)
 
 function EVALUATE_CHAIN(actor, target):
-    P ← bucket[(actor, target)]
-    K ← { p.kind | p ∈ P } \ { CONTEXT_READ }
-    if |K ∩ {A,W,E}| < 2: return []
-    if not TEMPORAL_OK(P): return []
-    if not CONGRUENCE_OK(P): return []
+    P ← bucket[(actor, target)]; K ← {p.kind | p∈P} \ {CONTEXT_READ}
+    if |K ∩ {A,W,E}| < 2 or not TEMPORAL_OK(P) or not CONGRUENCE_OK(P): return []
     score, evidence ← SCORE(P, related_process, related_file)
-    if score < minimum_score: return []
-    if score ≤ previous_reported_score: return []  // chỉ upgrade
+    if score < minimum_score or score ≤ previous_reported_score: return []
     finding ← Finding(..., apply_classification(...))
     if score ≥ 70: enable_network_watch(target)
     return [finding]
@@ -1709,12 +1430,10 @@ function EVALUATE_CHAIN(actor, target):
 ```
 function CONGRUENCE_OK(P):
     ranges_by_kind ← group memory_link_ranges(p) for p in P
-    if count_linked_primitives < 2: return TRUE  // không đủ dữ liệu
-    for each pair (kind1, kind2) where kind1 ≠ kind2:
-        for r1 in ranges_by_kind[kind1], r2 in ranges_by_kind[kind2]:
-            if overlap(r1, r2): return TRUE
-    if |operational_kinds| ≥ 2 and only WRITE has ranges:
-        return TRUE  // NtAllocateVirtualMemory edge case
+    if count_linked_primitives < 2: return TRUE
+    for (kind1,kind2) with kind1≠kind2, r1∈ranges[kind1], r2∈ranges[kind2]:
+        if overlap(r1, r2): return TRUE
+    if |operational_kinds| ≥ 2 and only WRITE has ranges: return TRUE
     return FALSE
 ```
 
@@ -1722,9 +1441,7 @@ function CONGRUENCE_OK(P):
 
 ```
 function ADD_PROCESS(proc):
-    path ← normalize(proc.image)
-    if path in files_by_path:
-        proc.created_from_file ← path
+    if normalize(proc.image) in files_by_path: proc.created_from_file ← path
     processes_by_pid[proc.pid] ← proc
 
 function RELATED_FILE(proc):
@@ -1736,7 +1453,7 @@ function RELATED_FILE(proc):
 
 ---
 
-## 4.11. Ranh giới phương pháp so với [4]
+## 2.26. Ranh giới phương pháp so với [4]
 
 | Khía cạnh | [4] | Luận văn (Noirlycan) |
 |-----------|-----|----------------------|
@@ -1748,62 +1465,45 @@ function RELATED_FILE(proc):
 | Real-time endpoint | ❌ | ✅ Đóng góp |
 | Recursive chain metric ~2% | ✅ | ⚠️ `InjectionGraph` một phần |
 
-Luận văn **không** claim số liệu 16,5 % hay 21,2 % của [4]; các con số đó thuộc paper gốc và phụ thuộc module anti-evasion mà luận văn **chưa triển khai**.
+Luận văn không claim số 16,5 % hay 21,2 % của [4]; các con số đó phụ thuộc module anti-evasion chưa triển khai. Mọi cải tiến trên lab phải được hiểu trong phạm vi E1–E4.
 
 ---
 
-## 4.12. Ví dụ đi sâu: phân tích chuỗi section-mapping
+## 2.27. Ví dụ đi sâu: phân tích chuỗi section-mapping
 
-Để minh họa cách các thành phần phương pháp tương tác, xét chuỗi cross-process vào `msedge.exe` (case study *neurevt* [4], test `test_detects_section_mapping_write_execute_chain`):
+Xét chuỗi cross-process vào `msedge.exe` (case study *neurevt* [4], test `test_detects_section_mapping_write_execute_chain`):
 
-**Bước 1 — Provenance (E3):** Sysmon E11 hoặc file watcher ghi nhận `loader.exe` trong `%TEMP%`. Static triage: PE=True, signed=False, entropy=7,2. Khi loader spawn (E1, flag `CREATE_SUSPENDED`), `add_process` gắn `created_from_file`.
+**B1 — Provenance:** Sysmon E11 ghi `loader.exe` trong `%TEMP%`. Triage: PE=True, signed=False, entropy=7,2. Khi loader spawn (E1, `CREATE_SUSPENDED`), `add_process` gắn `created_from_file`.
 
-**Bước 2 — Primitive W:** Hook bắt `NtMapViewOfSection` với `target_pid` = Edge, `address` = 0x200000, `protection` = EXECUTE_READWRITE. Một lần map remote vừa đóng vai trò write vừa expose vùng executable — **không cần** quan sát `VirtualAllocEx` riêng (E2).
+**B2 — W:** Hook bắt `NtMapViewOfSection` với `target_pid`=Edge, `address`=0x200000, `protection`=EXECUTE_READWRITE. Map remote vừa write vừa expose vùng executable — không cần `VirtualAllocEx` riêng.
 
-**Bước 3 — Kiểm 2-of-3:** $K = \{\texttt{W}, \texttt{E}\}$, $|K| = 2$ — thỏa Công thức (4.1).
+**B3 — Gating:** $K=\{\texttt{W},\texttt{E}\}$, $|K|=2$ thỏa (4.1); ResumeThread sau MapView thỏa temporal; congruence chấp nhận khi đủ operational kinds.
 
-**Bước 4 — Temporal:** ResumeThread (E) sau MapView (W); không có A lùi sau E — thỏa (4.4).
+**B4 — Scoring:** +45 (W+E confirmed) +15 (cross-process) +10 (section) +15 (SUSPENDED) +10 (related_file) +10 (unsigned) ≥ 70 (HIGH).
 
-**Bước 5 — Congruence:** Execute không mang address; với chỉ W+E có range, `_has_memory_congruence` chấp nhận khi đủ operational kinds và overlap implicit qua cùng target (edge case Resume-only đã được test acceptance).
+**B5 — Classifier:** W+E resume → `section_mapping_injection` (hoặc hollowing nếu thêm context).
 
-**Bước 6 — Scoring:** W+E confirmed → +45; cross-process +15; section +10; CREATE_SUSPENDED +15; related_file +10; unsigned +10 → tổng ≥ 70 (HIGH).
+Baseline `VirtualAllocEx→WriteProcessMemory→CreateRemoteThread` không match — minh chứng giá trị phương pháp [4] dưới E2.
 
-**Bước 7 — Classifier:** Rule `process_hollowing_section` nếu thêm context read/set; với W+E resume → `section_mapping_injection` hoặc hollowing tùy evidence.
-
-So với baseline signature `VirtualAllocEx → WriteProcessMemory → CreateRemoteThread`, chuỗi này **không match** — minh chứng trực tiếp giá trị phương pháp [4] dưới E2.
-
-## 4.13. Ví dụ đi sâu: classic DLL injection (E1)
+## 2.28. Ví dụ đi sâu: classic DLL injection (E1)
 
 Malware E1 thay `CreateRemoteThread` bằng `NtCreateThreadEx`:
 
 1. `VirtualAllocEx` → A, range $r_a$
 2. `WriteProcessMemory` ghi đường dẫn DLL → W, $r_w$ overlap $r_a$
-3. `NtCreateThreadEx` start = `LoadLibraryW`, parameter = $r_a$ → E, `thread_parameter` overlap $r_w$
+3. `NtCreateThreadEx` với `StartRoutine = LoadLibraryW`, `Argument = r_a` → E, `thread_parameter` overlap $r_w$
 
-Equivalence class map cả ba API vào $\{\texttt{A}, \texttt{W}, \texttt{E}\}$ dù tên export khác Win32 classic. Congruence liên kết qua `thread_parameter` (Thuật toán 4.3). Pattern `_dll_path_remote_thread_pattern` tăng +5 score và classifier → `dll_injection` (MITRE T1055.001).
+Equivalence class map cả ba vào $\{\texttt{A},\texttt{W},\texttt{E}\}$ dù tên khác Win32. Congruence qua $r_a \cap r_w$ và $r_w \cap \text{thread\_parameter}$. Pattern `_dll_path_remote_thread_pattern` tăng +5 score; classifier kết luận `dll_injection` (T1055.001).
 
-## 4.14. Self-injection và local staging
+## 2.29. Self-injection và local staging
 
-Paper [4] tập trung cross-process; Noirlycan mở rộng `actor_pid == target_pid`:
+Paper [4] tập trung cross-process; Noirlycan mở rộng `actor_pid == target_pid` (self-injection, dùng để decode payload trước khi inject ra ngoài): `VirtualAlloc` + `memcpy` local RWX → A+W, evidence `local_staging`. Config `.classifier_rules.json` có thể bật `ignore_same_process_findings` để giảm FP từ installer/JIT. Phương pháp vẫn áp 2-of-3 nguyên vẹn; scoring ưu tiên cross-process (+15).
 
-- `VirtualAlloc` + `memcpy` local RWX → A+W, `local_staging` evidence, score ≥ 50.
-- Config `.classifier_rules.json` có thể bật `ignore_same_process_findings` nếu lab muốn giảm FP installer.
+## 2.30. CONTEXT_READ — extension lab
 
-Phương pháp vẫn áp dụng 2-of-3; scoring ưu tiên cross-process (+15) để phân biệt mối đe dọa attribution E3.
+`GetThreadContext`/`NtGetContextThread` hook với kind `CONTEXT_READ` để hỗ trợ classifier, không làm primitive thứ tư: không đếm vào $|K|$; +5 score khi hijack prep chưa confirmed; classifier dùng `context_read + SET_SUSPENDED` để nhãn `thread_hijack` hoặc `process_hollowing_classic`. Khai báo rõ để tránh hiểu nhầm là primitive thứ tư của [4] (deviation D7).
 
-## 4.15. CONTEXT_READ — extension lab (không phải primitive [4])
-
-`GetThreadContext` / `NtGetContextThread` được hook với kind `CONTEXT_READ`:
-
-- **Không** đếm vào $|K|$ cho 2-of-3.
-- Tăng +5 score khi có hijack prep mà chưa execution_confirmed.
-- Classifier dùng context_read + SET_SUSPENDED → `thread_hijack`, `process_hollowing_classic`.
-
-Phải khai báo rõ trong luận văn để tránh reviewer hiểu nhầm là primitive thứ tư của [4] (audit D7).
-
-## 4.16. Chiến lược giảm false positive
-
-Paper [4] dùng congruence + temporal; Noirlycan bổ sung heuristic scoring:
+## 2.31. Chiến lược giảm false positive
 
 | Heuristic | Mục đích |
 |-----------|----------|
@@ -1813,11 +1513,11 @@ Paper [4] dùng congruence + temporal; Noirlycan bổ sung heuristic scoring:
 | `require_cross_process_findings` (config) | Lab chỉ báo inject cross-process |
 | Network watch chỉ khi score ≥ 70 | Tránh alert noise |
 
-Các heuristic là **lab tuning**, không thay đổi định nghĩa 2-of-3 [4].
+Đây là **lab tuning**, không thay định nghĩa 2-of-3 [4]: chỉ điều chỉnh mức trình bày, không thêm/bớt điều kiện logic cốt lõi.
 
-## 4.17. Liên hệ MITRE ATT&CK
+## 2.32. Liên hệ MITRE ATT&CK
 
-Mỗi finding có thể map technique classifier → sub-technique T1055:
+Technique classifier ánh xạ finding sang sub-technique T1055 để tích hợp threat-informed defense:
 
 | Pattern primitive + evidence | ATT&CK (ví dụ) |
 |------------------------------|----------------|
@@ -1827,11 +1527,11 @@ Mỗi finding có thể map technique classifier → sub-technique T1055:
 | SetWindowsHookEx | T1055.004 Hook injection |
 | TxF + section | T1055.013 Process Doppelgänging |
 
-Phân loại phục vụ analyst sau bước phát hiện primitive — tách biệt với quyết định 2-of-3.
+Phân loại tách biệt với 2-of-3; lỗi nhãn không làm mất finding.
 
-## 4.19. So sánh pipeline [4] và Noirlycan
+## 2.34. So sánh pipeline [4] và Noirlycan
 
-**Bảng 4.2.** Pipeline phân tích — paper vs luận văn
+**Bảng 2.3.** Pipeline phân tích — paper vs luận văn
 
 | Giai đoạn | [4] Sap4Sec | Noirlycan |
 |-----------|-------------|-----------|
@@ -1843,55 +1543,54 @@ Phân loại phục vụ analyst sau bước phát hiện primitive — tách bi
 | Provenance file | Không | FileCreate + triage + lineage |
 | Quy mô đánh giá | 56.340 mẫu | 31 unit test + case study |
 
-Noirlycan **không** thay thế nghiên cứu thống kê [4]; nó **operationalize** phương pháp detection cho analyst endpoint và bổ sung lớp E3/E4.
+Noirlycan **operationalize** phương pháp [4] cho analyst endpoint và bổ sung E3/E4; không thay thế nghiên cứu thống kê của paper.
 
-## 4.20. Giả định phương pháp (M1–M5)
+## 2.35. Giả định phương pháp (M1–M5)
 
-Phương pháp Chương 4 dựa trên giả định Chương 3:
-
-| ID | Giả định | Ảnh hưởng phương pháp |
-|----|----------|----------------------|
-| M1 | Malware gọi API qua export hookable hoặc Sysmon-visible | E4 partial |
-| M2 | Injection trong cửa sổ 300s | Expiration correlator |
+| ID | Giả định | Ảnh hưởng |
+|----|----------|-----------|
+| M1 | API qua export hookable hoặc Sysmon-visible | E4 partial |
+| M2 | Injection trong cửa sổ 300s | Expiration |
 | M3 | User-mode injection | Không kernel primitive |
 | M4 | Lab cô lập | E5 không cần fake production |
-| M5 | Frida fidelity chấp nhận được | RQ5 — cần đo |
+| M5 | Frida fidelity chấp nhận | RQ5 — cần đo |
 
-Vi phạm M1 (syscall thuần + unhook hoàn toàn) → phương pháp 2-of-3 **không khả dụng**; chỉ còn telemetry Sysmon một phần.
+Vi phạm M1 (syscall thuần + unhook ntdll + tránh API có Sysmon callback) → 2-of-3 không khả dụng. Vi phạm M2 (*time bomb* > 300s) → correlator hết hạn primitive đầu.
 
-## 4.21. Mở rộng tương lai phương pháp
+## 2.36. Mở rộng tương lai phương pháp
 
-Ba hướng mở rộng **ngoài phạm vi luận văn hiện tại** nhưng bám Chương 4:
+Ba hướng ngoài phạm vi luận văn:
 
-1. **ETW Threat Intelligence provider** — thay/đi cùng Frida, giảm E4/E6; vẫn map về cùng equivalence class [4].
-2. **ML trên chuỗi primitive** — embedding API sequence thay rule classifier; cần dataset gán nhãn lớn hơn 31 test.
-3. **Anti-evasion E5 port** — tích hợp patch timing từ Sap4Sec artifact để so sánh công bằng recall với [4] trên Paper-Subset.
+1. **ETW Threat Intelligence provider** — thay/đi cùng Frida, giảm E4/E6 vì ETW-TI cung cấp sự kiện kernel cho `VirtualAllocEx`, `WriteProcessMemory`, `SetThreadContext`; ánh xạ về cùng equivalence class [4].
+2. **ML trên chuỗi primitive** — embedding API sequence thay rule classifier; yêu cầu dataset lớn và đánh giá robustness.
+3. **Anti-evasion E5 port** — tích hợp module patch timing/CPUID/registry từ Sap4Sec [11] để so sánh recall trên Paper-Subset.
 
-Các hướng này không invalidate phương pháp hiện tại — chúng bổ sung lớp vận hành và phạm vi đối thủ.
+## 2.37. Giám sát mạng hậu injection
 
-## 4.22. Giám sát mạng hậu injection
+Sau khi finding đạt score ≥ 70, phương pháp kích hoạt **network watch** trên `target_pid` 300s. Sysmon E3 lọc theo PID, chỉ lưu connection từ PID victim. Mục tiêu: bắt beacon sau khi payload chạy trong tiến trình hợp pháp.
 
-Sau khi finding đạt score ≥ 70, phương pháp kích hoạt **network watch** trên `target_pid` trong 300 giây (đồng bộ cửa sổ correlator). Sysmon E3 (NetworkConnect) được lọc: chỉ lưu connection khởi phát từ PID victim. Mục tiêu: bắt **beacon** sau khi payload chạy trong tiến trình hợp pháp — bổ sung giá trị điều tra cho analyst, không thay thế bước phát hiện 2-of-3.
+Heuristic `is_external_beacon_candidate` đánh dấu IP/hostname ngoài RFC1918; kết nối nội bộ giữ lại cho phân tích lateral movement nhưng không nâng severity. Module `network.py` và test `test_network_watch.py` xác nhận chỉ connection trong cửa sổ watch mới correlate với finding.
 
-Heuristic `is_external_beacon_candidate` đánh dấu IP/hostname ngoài RFC1918. Đây là extension lab, không có trong paper [4]. Module `network.py` và test `test_network_watch.py` xác nhận chỉ connection trong cửa sổ watch mới được correlate — tránh flood log từ toàn hệ thống.
+## 2.38. Tóm tắt chương
 
-## 4.23. Tóm tắt chương
+Chương 2 trình bày phương pháp phát hiện process injection: kế thừa operational primitive và 2-of-3 của [4] chống E1, E2; bổ sung memory congruence và temporal ordering dưới dạng phát biểu hình thức và pseudo-code; mở rộng pipeline provenance file (E3) để truy ngược loader từ victim hợp pháp; telemetry kép Sysmon–Frida (E4) duy trì khả năng phát hiện khi user-mode hook bị né. Module anti-sandbox (E5) **không hiện thực** — hạn chế thảo luận ở Chương 6 và 7. Chương 5 mô tả hiện thực các module trong artifact Noirlycan.
+---
 
-Chương 4 trình bày phương pháp tăng cường phát hiện process injection: kế thừa lõi operational primitive và quy tắc 2-of-3 của [4] để chống né tránh biến thể API (E1) và gộp bước (E2); bổ sung memory congruence và temporal ordering dưới dạng phát biểu hình thức và pseudo-code; mở rộng pipeline provenance file (E3) và telemetry kép Sysmon–Frida (E4). Scoring và classifier rule-based xếp hạng finding cho analyst. Module anti-sandbox (E5) của [4] **không nằm trong phương pháp hiện thực** — hạn chế được thảo luận ở Chương 6 và 7. Chương 5 mô tả hiện thực các module tương ứng trong artifact Noirlycan.
+# CHƯƠNG 3. THIẾT KẾ VÀ HIỆN THỰC HỆ THỐNG NOIRLYCAN
+
+Chương cụ thể hóa phương pháp Chương 2 thành artifact phần mềm — theo định hướng ứng dụng công nghệ trong hướng dẫn HTW: phân tích, thiết kế (Clean Architecture), cài đặt (Python, Frida, Sysmon, Django dashboard). Mục tiêu là tái tạo được (*reproducible*) trên VM Windows lab.
 
 ---
 
-# CHƯƠNG 5. THIẾT KẾ VÀ HIỆN THỰC HỆ THỐNG NOIRLYCAN
-
-Chương này mô tả kiến trúc và hiện thực artifact **Noirlycan Telemetry** — prototype phục vụ phòng lab Windows 10/11 cô lập, triển khai phương pháp Chương 4. Hệ thống được tổ chức theo mô hình phân lớp: thu thập (collectors), xử lý (correlator, triage, classifier), lưu trữ (JSONL, SQLite), và trình bày (dashboard Django). Mọi thiết kế bám sát paper [4] ở tầng correlator; các module provenance và dashboard là đóng góp engineering của luận văn. **Module anti-evasion (E5) của [4] không được hiện thực** — file `kernel/analysis/evasion.py` chỉ ghi nhận tín hiệu, không patch timing hay môi trường sandbox.
+Chương này mô tả artifact **Noirlycan Telemetry** — prototype cho phòng lab Windows 10/11 cô lập, triển khai phương pháp ở Chương 4. Hệ thống tổ chức bốn miền: thu thập (collectors), xử lý (correlator, triage, classifier), lưu trữ (JSONL, SQLite), trình bày (dashboard Django). Tầng correlator bám sát [4]; module provenance và dashboard là đóng góp engineering. **Module anti-evasion (E5) của [4] không được hiện thực** — `kernel/analysis/evasion.py` chỉ ghi nhận tín hiệu sandbox, không patch timing; giới hạn tuyên bố ở 5.10.4.
 
 ---
 
-## 5.1. Kiến trúc tổng thể
+## 3.1. Kiến trúc tổng thể
 
-Sau giai đoạn refactor, codebase Noirlycan tổ chức theo **Clean Architecture** (Uncle Bob) và có thể triển khai **monolith** (mặc định lab) hoặc **microservices** (Docker). **Lõi correlator 2-of-3 của [4] không đổi** — chỉ tách boundary module cho dễ kiểm soát, test và mở rộng. Chi tiết: `docs/clean-architecture-plan.md`.
+Codebase tổ chức theo **Clean Architecture**, triển khai dạng **monolith** (mặc định) hoặc **microservices** (Docker Compose). Tách miền nghiệp vụ khỏi framework cho phép thay tầng I/O mà không động vào quy tắc 2-of-3. **Lõi correlator 2-of-3 của [4] không đổi** — chỉ tách boundary module. Chi tiết refactor: `docs/clean-architecture-plan.md`.
 
-### 5.1.1. Sơ đồ Clean Architecture
+### 3.1.1. Sơ đồ Clean Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -1913,11 +1612,11 @@ Sau giai đoạn refactor, codebase Noirlycan tổ chức theo **Clean Architect
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Quy tắc phụ thuộc:** Presentation → Application → Domain ← Infrastructure. Layer `kernel/` không import Django, Frida hay win32evtlog.
+**Quy tắc phụ thuộc:** Presentation → Application → Domain ← Infrastructure. Layer `kernel/` không import Django, Frida, `win32evtlog`; I/O tiêm vào qua dataclass thuần Python. Nhờ vậy test unit của classifier và correlator chạy trên CI Linux mà không cần Windows hay Frida.
 
-### 5.1.2. Bốn microservice và chế độ triển khai
+### 3.1.2. Bốn microservice và chế độ triển khai
 
-**Bảng 5.1.** Service boundary
+**Bảng 3.1.** Service boundary
 
 | Service | Vai trò | Port | Entry point |
 |---------|---------|------|-------------|
@@ -1926,22 +1625,24 @@ Sau giai đoạn refactor, codebase Noirlycan tổ chức theo **Clean Architect
 | **analysis** | Correlator, reclassify, corpus | 8781 | `noirlycan-analysis` |
 | **dashboard** | UI analyst | 8765 | `noirlycan-telemetry dashboard` |
 
+Bốn service là bốn ranh giới logic, không bắt buộc bốn process. Monolith dùng một process Python; microservices đóng gói từng service thành image Docker, giao tiếp qua HTTP/JSONL trên volume chung.
+
 | Mode | Mô tả | Khi dùng |
 |------|-------|----------|
 | **Monolith** | `run` + `dashboard` in-process, ghi trực tiếp `logs/` | Dev lab, demo luận văn |
 | **Microservices** | `docker compose up` — storage + analysis + dashboard; collector native trên VM | Tách scale, kiểm soát từng service |
 
-Wire format giữa service: `contracts/events.py` (`TelemetryEnvelope`) — tương thích JSONL session.
+Wire format giữa các service là `contracts/events.py` (`TelemetryEnvelope`) — dataclass JSON-serializable tương thích JSONL session.
 
-### 5.1.3. Luồng runtime monolith (`noirlycan-telemetry run`)
+### 3.1.3. Luồng runtime monolith (`noirlycan-telemetry run`)
 
-1. `cli.py` (composition root) khởi tạo `Correlator`, `JsonlWriter`, `SysmonPoller`, `FridaInjectionMonitor`, `FileDropWatcher`.
-2. Vòng lặp: Sysmon batch → correlator; file watcher → triage → correlator; drain Frida → correlator.
-3. `Finding` ghi `logs/session-*.jsonl`; dashboard tail cùng volume.
+1. `cli.py` là composition root, khởi tạo `Correlator`, `JsonlWriter`, `SysmonPoller`, `FridaInjectionMonitor`, `FileDropWatcher`.
+2. Vòng lặp: Sysmon batch → correlator; file watcher → triage → correlator; drain queue Frida xử lý primitive bộ nhớ.
+3. Mỗi `Finding` ghi vào `logs/session-*.jsonl`; dashboard tail cùng volume.
 
-### 5.1.4. Module map (đường dẫn sau refactor)
+### 3.1.4. Module map
 
-**Bảng 5.2.** Ánh xạ module — trách nhiệm
+**Bảng 3.2.** Ánh xạ module — trách nhiệm
 
 | Thành phần | Đường dẫn trong repo | Vai trò |
 |------------|----------------------|---------|
@@ -1962,15 +1663,13 @@ Wire format giữa service: `contracts/events.py` (`TelemetryEnvelope`) — tư�
 | Dashboard | `services/dashboard/` | Django + Daphne + WebSocket |
 | Evasion log | `kernel/analysis/evasion.py` | Ghi signal E5/E6 (không patch) |
 
-Package: `src/noirlycan_telemetry/`, cài `pip install -e .[dev]`.
+Package tập trung tại `src/noirlycan_telemetry/`, cài qua `pip install -e .[dev]`.
 
 ---
 
-## 5.2. Giao diện dòng lệnh (`cli.py`)
+## 3.2. Giao diện dòng lệnh (`cli.py`)
 
-### 5.2.1. Subcommand
-
-`build_parser()` định nghĩa:
+### 3.2.1. Subcommand
 
 | Lệnh | Mục đích |
 |------|----------|
@@ -1983,100 +1682,74 @@ Package: `src/noirlycan_telemetry/`, cài `pip install -e .[dev]`.
 | `corpus` | Thống kê aggregate trên nhiều session JSONL |
 | `reclassify` | Chạy lại classifier trên log cũ |
 
-### 5.2.2. `command_run` — orchestration
+Tách `spawn` riêng vì nhiều mẫu inject ngay trong `DllMain`, attach sau Sysmon E1 là quá muộn.
 
-Tham số quan trọng:
+### 3.2.2. `command_run` — orchestration
 
-- `--watch-sysmon`: bật `SysmonPoller` (cần quyền đọc Event Log).
-- `--watch-path`: thêm thư mục file drop (mặc định: repo root, `D:\`, `D:\thesis`, Downloads, Desktop).
-- `--attach-pid` / `--auto-attach-new-processes`: Frida attach thủ công hoặc theo Sysmon E1.
-- `--minimum-score`: ngưỡng finding (mặc định 50).
-- `--jsonl`: đường dẫn session log.
+Tham số chính: `--watch-sysmon`, `--watch-path`, `--attach-pid`/`--auto-attach-new-processes`, `--minimum-score` (mặc định 50), `--jsonl`.
 
-Luồng xử lý file mới:
+Luồng file mới: `FileDropWatcher.drain()` → `FileEvent` → `_TRIAGE_EXECUTOR` chạy `triage_file` (SHA256, layout PE, entropy, chữ ký) → `correlator.add_file`. Nếu là PE, `enqueue_analysis` đẩy vào hàng đợi spawn Frida.
 
-1. `FileDropWatcher.drain()` → `FileEvent`.
-2. Thread pool `_TRiage_EXECUTOR` gọi `triage_file` → làm giàu SHA256, PE, entropy, signature.
-3. `correlator.add_file(enriched)`.
-4. Nếu PE executable: `enqueue_analysis` spawn dưới Frida (hàng đợi `analysis_queue.py`).
+Heartbeat ghi `logs/.runtime.json` (PID, last-tick) để dashboard biết trạng thái online.
 
-Heartbeat collector ghi `logs/.runtime.json` để dashboard biết trạng thái online.
+### 3.2.3. Tích hợp classifier config
 
-### 5.2.3. Tích hợp classifier config
-
-`ensure_classifier_config()` tạo `.classifier_rules.json` — cho phép chỉnh `minimum_score`, `minimum_operational_kinds`, custom rules mà không sửa code. `Correlator.reload_rules_config()` hot-reload khi file thay đổi.
+`ensure_classifier_config()` tạo `.classifier_rules.json` nếu chưa có. Khi file thay đổi, `Correlator.reload_rules_config()` hot-reload — FP tuning chỉ là chỉnh JSON.
 
 ---
 
-## 5.3. Vòng lặp collector (`services/collector/application/collector_runtime.py`)
+## 3.3. Vòng lặp collector (`collector_runtime.py`)
 
-### 5.3.1. JsonlWriter
+### 3.3.1. JsonlWriter
 
-Ghi từng dòng JSON `{"type": event_type, "value": ...}` — type gồm: `file`, `sysmon`, `primitive`, `finding`, `network`, `frida_raw`, `evasion`. Flush mỗi 32 dòng giảm I/O. Dashboard và `reclassify` đọc cùng format.
+`JsonlWriter` ghi mỗi sự kiện dạng `{"type": event_type, "value": ...}`, `type` ∈ {`file`, `sysmon`, `primitive`, `finding`, `network`, `frida_raw`, `evasion`}. Flush mỗi 32 dòng. Dashboard tail và `reclassify` dùng chung format.
 
-### 5.3.2. Xử lý Sysmon batch
+### 3.3.2. Xử lý Sysmon batch
 
-`process_sysmon_batch()`:
+`process_sysmon_batch()` điều phối: `FileEvent` → `correlator.add_file`; `ProcessEvent` → `correlator.add_process`, nếu `auto_attach` và `should_auto_attach()` true thì gọi `safe_attach`; `NetworkConnectionEvent` → `handle_network_event` chỉ lưu khi PID trong network watch window; `TelemetryEvent` (E8/E10 raw) ghi xuống JSONL.
 
-- `FileEvent` → handler tùy chỉnh hoặc `correlator.add_file`.
-- `ProcessEvent` → `correlator.add_process`; nếu `auto_attach` và `should_auto_attach()` → `safe_attach(monitor, pid)`.
-- `NetworkConnectionEvent` → `handle_network_event` (chỉ lưu nếu PID trong network watch).
-- `TelemetryEvent` generic (E8/E10 raw) → ghi JSONL cho phân tích sau.
+`should_auto_attach` áp dụng heuristic: bỏ qua binary trong `system32` không có parent lạ, chấp nhận `.exe/.dll/.scr/.com` từ thư mục bị triage nghi vấn.
 
-`should_auto_attach`: bỏ qua binary system32 không có parent lạ; chấp nhận `.exe/.dll/.scr/.com` từ nguồn đáng ngờ.
+### 3.3.3. Drain Frida
 
-### 5.3.3. Drain Frida
+`drain_frida()` xử lý queue non-blocking: tín hiệu `evasion` chỉ in cảnh báo, **không** correlate; `frida_process` → `add_process`; `memory_primitive` → `add_primitive` chạy 2-of-3.
 
-`drain_frida()` xử lý queue không blocking:
-
-1. `evasion` signal → in cảnh báo, **không** correlate (E5/E6 awareness only).
-2. `frida_process` → `add_process`, auto-attach con.
-3. `memory_primitive` → `add_primitive` → findings.
-
-`print_finding()` in severity, technique, execution_confirmed, recursive chain, network watch — phục vụ lab không cần dashboard.
+`print_finding()` xuất severity, kỹ thuật, `execution_confirmed`, chuỗi đệ quy và network watch.
 
 ---
 
-## 5.4. Lớp Frida (`services/collector/infrastructure/frida_manager.py` + hooks)
+## 3.4. Lớp Frida (`frida_manager.py` + hooks)
 
-### 5.4.1. FridaInjectionMonitor
+### 3.4.1. FridaInjectionMonitor
 
-- `load_default_hook_script()`: đọc `windows_injection_hooks.js` qua `importlib.resources`.
-- `attach(pid)`: `frida.attach` → `create_script` → `script.load`; một session/script mỗi PID.
-- `_on_message`: parse JSON payload, đẩy `FridaRuntimeEvent` vào `queue.Queue`.
+`FridaInjectionMonitor` quản lý vòng đời session: `load_default_hook_script()` đọc `windows_injection_hooks.js` qua `importlib.resources`; `attach(pid)` gọi `frida.attach` → `create_script` → `script.load`, mỗi PID một session riêng để tránh leak handler; `_on_message` parse payload và đẩy `FridaRuntimeEvent` vào `queue.Queue`.
 
-Chuyển đổi:
+Bộ chuyển đổi: `runtime_event_to_primitive()` map `allocate|write|execute|context_read` sang `MemoryPrimitive`; `runtime_event_to_process()` xử lý spawn notification; quan sát observation-only (`remote_read`, gợi ý TXF) phát ra dạng `api_observation` không tham gia 2-of-3.
 
-- `runtime_event_to_primitive()`: map `allocate|write|execute|context_read` → `MemoryPrimitive`.
-- `runtime_event_to_process()`: spawn notification từ hook.
-- Observation-only (`remote_read`, TXF hint) → `api_observation`, không vào 2-of-3.
+### 3.4.2. Thiết kế hook JavaScript
 
-### 5.4.2. Thiết kế hook JavaScript
+`windows_injection_hooks.js` (~1900 dòng) gồm bốn tầng:
 
-File `windows_injection_hooks.js` (~1900 dòng) cấu trúc:
-
-1. **Helper:** `ptrToNumber`, `ntSuccess`, `readAnsiString`, `protectionToString`.
-2. **Dynamic resolve:** hook `GetProcAddress` / `LdrGetProcedureAddress` — khi target ∈ `DYNAMIC_INJECTION_APIS`, attach lazy hook.
-3. **Per-API handler:** đọc args/retval, trích `baseAddress`, `NumberOfBytes`, `lpStartAddress`, `CONTEXT.Rip`.
+1. **Helper:** `ptrToNumber`, `ntSuccess`, `readAnsiString`, `protectionToString` chuẩn hoá địa chỉ, NTSTATUS, bit-flag `PAGE_*`.
+2. **Dynamic resolve:** hook `GetProcAddress`/`LdrGetProcedureAddress`; khi target rơi vào `DYNAMIC_INJECTION_APIS`, một lazy hook được attach tại địa chỉ vừa resolve để bắt binding muộn.
+3. **Per-API handler:** trích args/retval lấy `baseAddress`, `NumberOfBytes`, `lpStartAddress`, `CONTEXT.Rip`.
 4. **Emit:** `send({type: "memory_primitive", kind, api, actor_pid, target_pid, address, size, details})`.
 
-**Fix D1:** `readInstructionPointerFromContext` cho `SetThreadContext` / `NtSetContextThread` — đặt `address = Rip` trên primitive EXECUTE.
+**Fix D1:** `readInstructionPointerFromContext` áp dụng cho `SetThreadContext` và `NtSetContextThread` để gán `address = Rip`, sửa sai sót nêu trong audit Chương 4.
 
-**Alias Zw*:** manifest và hook dùng tên canonical; stub Zw chuyển tiếp tới Nt.
+**Alias Zw\*:** manifest và hook dùng tên canonical Nt-prefix; stub Zw chuyển tiếp tới Nt để tránh đếm trùng primitive.
 
-Coverage test: `test_hook_manifest_coverage.py`, `test_api_coverage.py` đối chiếu manifest ↔ hook.
+Coverage test `test_hook_manifest_coverage.py` và `test_api_coverage.py` đối chiếu manifest với hook JS, phát hiện sớm API bị bỏ quên.
 
-### 5.4.3. Hạn chế hiện thực
+### 3.4.3. Hạn chế hiện thực
 
-Frida chạy **user-mode** trong target — malware E4/E6 có thể né. Luận văn bổ sung Sysmon (mục 5.6) và khuyến nghị `spawn` mode; **không** có anti-Frida countermeasure.
+Frida vận hành **user-mode** trong target process, nên E4/E6 dạng direct/indirect syscall có thể né hoàn toàn. Luận văn bù bằng kênh Sysmon kernel (5.6) và khuyến nghị `spawn` mode. Không có anti-Frida countermeasure — mẫu chủ động dò Frida có thể terminate; trade-off chấp nhận.
 
 ---
 
-## 5.5. Correlation engine (`services/analysis/domain/correlation.py`)
+## 3.5. Correlation engine (`correlation.py`)
 
-### 5.5.1. Cấu trúc trạng thái
-
-Lớp `Correlator` duy trì:
+### 3.5.1. Cấu trúc trạng thái
 
 | Trường | Kiểu | Mục đích |
 |--------|------|----------|
@@ -2088,9 +1761,9 @@ Lớp `Correlator` duy trì:
 | `_network_watch_until` | `dict[pid, datetime]` | Hậu injection 300s |
 | `_injection_graph` | `InjectionGraph` | Recursive chain |
 
-Cửa sổ mặc định **300 giây** — đồ bộ với paper batch window và network watch.
+Cửa sổ trượt mặc định **300 giây** đồng bộ với batch window [4] và độ dài network watch — một hằng số thời gian thống nhất cho toàn pipeline.
 
-### 5.5.2. State machine đánh giá chuỗi
+### 3.5.2. State machine đánh giá chuỗi
 
 ```
                     add_primitive
@@ -2132,85 +1805,69 @@ Cửa sổ mặc định **300 giây** — đồ bộ với paper batch window v
               [score≥70 → network_watch]
 ```
 
-### 5.5.3. Execution analysis
+Vượt 2-of-3 chưa đủ phát finding: còn cần ràng buộc thời gian, đồng quy địa chỉ, ngưỡng điểm, `score > previous` để tránh phát lặp.
 
-Module `kernel/analysis/primitives.py` (`analyze_execution`) tách **execution transfer** (`ResumeThread`, `CreateRemoteThread`, …) khỏi **context read** (`GetThreadContext`). Finding có W+A nhưng không có transfer API → title *"Probable injection staging chain"*, `execution_confirmed = false`, score cap 75 nếu `missing_execution_transfer`.
+### 3.5.3. Execution analysis
 
-### 5.5.4. Injection graph
+`analyze_execution` (trong `primitives.py`) tách **execution transfer** (`ResumeThread`, `CreateRemoteThread`, `NtQueueApcThread`…) khỏi **context read** (`GetThreadContext`). `GetThreadContext` chỉ đọc state. Khi finding có W+A nhưng thiếu API transfer: title *"Probable injection staging chain"*, `execution_confirmed = false`, score giới hạn 75 qua nhãn `missing_execution_transfer`.
 
-`kernel/analysis/injection_graph.py` — `InjectionGraph.add_finding()` nối finding theo quan hệ actor(target trước) → target mới, set `is_recursive`, `chain_depth`. Chưa có metric prevalence 2% như [4] — chỉ hiển thị dashboard.
+### 3.5.4. Injection graph
 
----
-
-## 5.6. Sysmon, file watch, triage
-
-### 5.6.1. `services/collector/infrastructure/sysmon.py`
-
-- Channel: `Microsoft-Windows-Sysmon/Operational`.
-- `SysmonPoller.poll_once()`: đọc event mới qua `win32evtlog` (Windows only).
-- Parser XML → model: E1 ProcessCreate, E3 NetworkConnect, E11 FileCreate, E15 FileCreateStreamHash, E8/E10 → TelemetryEvent.
-
-Config lab: `configs/sysmon-noirlycan.xml` — bật ImageLoad, ProcessAccess, CreateRemoteThread, FileCreate, NetworkConnect với filter phù hợp lab.
-
-Graceful degradation: nếu Sysmon unavailable, CLI in hint cài đặt/quyền và tiếp tục Frida-only.
-
-### 5.6.2. `services/collector/infrastructure/file_watch.py`
-
-`FileDropWatcher` poll không đệ quy (recursive reserved):
-
-- Bootstrap: snapshot mtime toàn file interesting trong watch paths.
-- `drain()`: file mới hoặc modified → `FileEvent(creator_image="file-scanner")`.
-- `is_interesting_path`: suffix `.exe`, `.dll`, `.ps1`, `.js`, …
-
-Bổ sung Sysmon E11 khi process tạo file; watcher bắt drop ngoài event (copy thủ công, mount nhanh).
-
-### 5.6.3. `services/collector/infrastructure/triage.py`
-
-`FileTriage` dataclass + `triage_file()`:
-
-- SHA256 streaming 1 MB chunks;
-- Entropy Shannon;
-- PE detection, optional `pefile` imports;
-- Authenticode qua subprocess;
-- Rule scoring: unsigned + temp path + high entropy → `suspicious_reasons`.
-
-Kết quả merge vào `FileEvent` trước `add_file` — feeding scoring provenance (+10/+5/+10/+5).
+`injection_graph.py` cài `InjectionGraph`: `add_finding()` nối actor→target, cờ `is_recursive` khi A→B→C, tăng `chain_depth`. Chưa tính metric prevalence 2% như [4] do corpus chưa đủ; đồ thị phục vụ trực quan hoá.
 
 ---
 
-## 5.7. Technique classifier (`kernel/classification/technique_classifier.py`)
+## 3.6. Sysmon, file watch, triage
 
-### 5.7.1. Enum và pipeline
+### 3.6.1. `sysmon.py`
 
-`InjectionTechnique` — 21+ giá trị từ `section_mapping_injection` tới `poolparty`, `mockingjay`, `process_ghosting`, …
+Bộ poll đọc channel `Microsoft-Windows-Sysmon/Operational` qua `win32evtlog`. Parser XML chuyển E1, E3, E11, E15 sang model nghiệp vụ; E8/E10 giữ dạng `TelemetryEvent` raw. Lab dùng `configs/sysmon-noirlycan.xml`. Khi Sysmon không khả dụng, CLI chạy Frida-only.
 
-`classify_finding()`:
+### 3.6.2. `file_watch.py`
 
-1. Load `ClassifierRulesConfig` (gates, confidence override).
-2. `evaluate_custom_rules` (phase `before_builtin`).
-3. Chuỗi if-rule theo specificity giảm dần (instrumentation callback, ghosting, doppelgänging, …).
-4. `_confidence_from_kinds`: HIGH nếu 3 primitive + execution confirmed.
+`FileDropWatcher` poll không đệ quy: bootstrap snapshot mtime; `drain()` so sánh để phát `FileEvent(creator_image="file-scanner")`; `is_interesting_path` lọc suffix `.exe`, `.dll`, `.ps1`, `.js`…
 
-`apply_classification()` gắn `finding.technique`, `technique_confidence`, `technique_rationale`.
+Bổ sung cho Sysmon E11 ở các kịch bản không có tiến trình Windows nào ghi file (copy qua RDP clipboard, mount ổ ảo).
 
-### 5.7.2. Custom rules
+### 3.6.3. `triage.py`
 
-Dashboard và `.classifier_rules.json` cho phép analyst thêm rule JSON — `kernel/classification/custom_rule_engine.py` parse điều kiện API/kind/evidence. Phục vụ lab mà không rebuild code.
+`FileTriage` dataclass và `triage_file()` thực hiện:
+
+- Hash SHA256 streaming 1 MB/chunk.
+- Entropy Shannon toàn file (chỉ báo packing).
+- Phát hiện PE qua magic `MZ`/`PE`; nếu có `pefile` thì liệt kê import.
+- Xác minh Authenticode qua `signtool`/`Get-AuthenticodeSignature`.
+- Rule heuristic: unsigned + `%TEMP%` + entropy cao → `suspicious_reasons`.
+
+Kết quả merge vào `FileEvent` trước `add_file`, đóng góp vào scoring provenance với trọng số +10/+5/+10/+5.
 
 ---
 
-## 5.8. Dashboard analyst (`services/dashboard/`)
+## 3.7. Technique classifier (`technique_classifier.py`)
 
-### 5.8.1. Kiến trúc Django
+### 3.7.1. Enum và pipeline
 
-- `server.py` / `run_dashboard`: khởi ASGI (HTTP + WebSocket).
-- `views.py`: REST-like endpoints — sessions list, session detail, uploads, classifier config, collector start/stop.
-- `consumers.py` + `live_hub.py`: WebSocket broadcast finding mới (`ws_broadcast`).
-- `jet_dashboard.py`: tích hợp Django Jet (nếu bật) cho admin-style UI.
+`InjectionTechnique` định nghĩa hơn 21 giá trị, từ `section_mapping_injection` tới `poolparty`, `mockingjay`, `process_ghosting`. Enum tập trung giúp dashboard và export Word/PDF dùng chung danh mục.
 
-Static assets: `dashboard.js`, `dashboard.css`, `i18n.js` (Vi/En).
+`classify_finding()` bốn bước: nạp `ClassifierRulesConfig`; gọi `evaluate_custom_rules` ở phase `before_builtin`; chuỗi if-rule theo specificity giảm dần (instrumentation callback, ghosting, doppelgänging trước classic DLL injection); `_confidence_from_kinds` gán HIGH khi đủ ba primitive operational và `execution_confirmed = true`, MEDIUM/LOW các trường hợp khác.
 
-### 5.8.2. Tính năng chính
+`apply_classification()` gắn `technique`, `technique_confidence`, `technique_rationale` lên `Finding`.
+
+### 3.7.2. Custom rules
+
+Dashboard và `.classifier_rules.json` cho phép thêm rule JSON; `custom_rule_engine.py` parse điều kiện API, kind, evidence với AND/OR phẳng — hữu ích khi gắn nhãn nhanh cho biến thể mới chưa vào codebase chính.
+
+---
+
+## 3.8. Dashboard analyst (`services/dashboard/`)
+
+### 3.8.1. Kiến trúc Django
+
+Django + Channels: `server.py`/`run_dashboard` khởi ASGI; `views.py` cung cấp endpoint REST cho sessions, uploads, classifier config, collector start/stop; `consumers.py` + `live_hub.py` quản WebSocket, `ws_broadcast` đẩy finding tới client; `jet_dashboard.py` tích hợp Django Jet (tuỳ chọn).
+
+Static: `dashboard.js`, `dashboard.css`, `i18n.js` (Vi/En) — đa ngôn ngữ ở client.
+
+### 3.8.2. Tính năng chính
 
 | Tab / chức năng | Mô tả |
 |-----------------|-------|
@@ -2223,97 +1880,78 @@ Static assets: `dashboard.js`, `dashboard.css`, `i18n.js` (Vi/En).
 | Classifier rules | Sửa JSON rules live |
 | Collector control | Start/stop `run` subprocess, heartbeat |
 
-`AnalysisDatabase` (SQLite) lưu upload metadata, trạng thái queue, liên kết session report.
+`AnalysisDatabase` (SQLite) lưu metadata upload và liên kết session report; SQLite được chọn để giữ artifact dạng file đơn, thuận lợi đóng gói VM lab.
 
-### 5.8.3. Live sync
+### 3.8.3. Live sync
 
-Khi collector ghi finding mới, `live_sync` tail JSONL hoặc nhận signal → `broadcast_refresh` tới WebSocket clients — analyst không cần reload trang.
-
----
-
-## 5.9. Mô hình dữ liệu (`kernel/entities/models.py`)
-
-Các dataclass immutable (frozen):
-
-- `MemoryPrimitive`: kind, actor/target PID+image, address, size, api, details dict.
-- `FileEvent`, `ProcessEvent`, `NetworkConnectionEvent`.
-- `Finding`: primitives tuple, score, evidence, technique fields, `related_file`, injection chain.
-
-Enum `PrimitiveKind`: ALLOCATE, WRITE, EXECUTE, CONTEXT_READ.
-
-JSON serialization qua `collector_runtime.jsonable()` — datetime ISO8601.
+Khi collector ghi finding, `live_sync` tail JSONL hoặc nhận signal và gọi `broadcast_refresh` tới WebSocket. Độ trễ chỉ phụ thuộc flush JSONL (32 dòng) cộng chi phí WebSocket.
 
 ---
 
-## 5.10. Tái lập thí nghiệm (reproducibility)
+## 3.9. Mô hình dữ liệu (`models.py`)
 
-### 5.10.1. Artifact công bố
+Các dataclass nghiệp vụ đều `frozen=True` để thread-safe:
 
-Theo Phụ lục C:
+- `MemoryPrimitive`: `kind`, PID/image actor & target, địa chỉ, kích thước, API, dict `details`.
+- `FileEvent`, `ProcessEvent`, `NetworkConnectionEvent` cho ba kênh thu thập.
+- `Finding`: tuple primitive, score, evidence, trường technique, liên kết file gốc, chuỗi injection.
 
-1. Clone repo NoirlycanThesis.
-2. VM Windows 10/11, Python 3.11+, `uv sync` hoặc `pip install -e .`.
-3. Cài Sysmon với `configs/sysmon-noirlycan.xml`.
-4. Cài Frida (`pip install frida frida-tools`).
-5. Chạy `noirlycan-telemetry run --watch-sysmon --auto-attach-new-processes`.
-6. Dashboard: `noirlycan-telemetry dashboard`.
+`PrimitiveKind` ∈ {`ALLOCATE`, `WRITE`, `EXECUTE`, `CONTEXT_READ`}. Serialize qua `collector_runtime.jsonable()`, chuẩn hoá datetime ISO8601, đệ quy dataclass lồng.
 
-### 5.10.2. Microservices (Docker Compose)
+---
 
-`docker-compose.yml` khởi động `storage-api` (:8780), `analysis-api` (:8781), `dashboard-api` (:8765) với volume chung `./logs`. Collector (Frida/Sysmon) **vẫn chạy native trên Windows VM** — không container hóa vì phụ thuộc kernel hook và Frida attach.
+## 3.10. Tái lập thí nghiệm
+
+### 3.10.1. Artifact công bố
+
+Theo Phụ lục C, sáu bước: (1) Clone repo; (2) VM Windows 10/11, Python 3.11+, `uv sync` hoặc `pip install -e .`; (3) Cài Sysmon kèm `configs/sysmon-noirlycan.xml`; (4) `pip install frida frida-tools`; (5) `noirlycan-telemetry run --watch-sysmon --auto-attach-new-processes`; (6) `noirlycan-telemetry dashboard` ở terminal thứ hai.
+
+### 3.10.2. Microservices (Docker Compose)
+
+`docker-compose.yml` khởi ba container `storage-api` (:8780), `analysis-api` (:8781), `dashboard-api` (:8765) chia sẻ volume `./logs`. Collector **vẫn chạy native trên Windows VM** vì phụ thuộc kernel hook và Frida runtime.
 
 ```bash
 docker compose up --build
 # Dashboard: http://127.0.0.1:8765
 ```
 
-Biến môi trường: `NOIRLYCAN_STORAGE_URL`, `NOIRLYCAN_ANALYSIS_URL` cho dashboard proxy tới storage/analysis khi tách service.
+`NOIRLYCAN_STORAGE_URL` và `NOIRLYCAN_ANALYSIS_URL` cho phép dashboard proxy sang storage/analysis ở host khác.
 
-### 5.10.3. Test tự động
+### 3.10.3. Test tự động
 
 ```bash
 uv run pytest tests/test_correlation.py tests/test_ired_team_classifier.py
 ```
 
-31 test xác nhận methodology + classifier (Chương 6). Toàn bộ suite `tests/` gồm thêm dashboard, sysmon parser, log_store (~80 test).
+31 test xác nhận methodology và classifier. Suite `tests/` mở rộng tới ~80 test gồm dashboard view, parser Sysmon, log_store.
 
-### 5.10.4. Deviation đã biết (audit)
+### 3.10.4. Deviation đã biết (audit)
 
 | ID | Mô tả | Trạng thái repo |
 |----|-------|-----------------|
 | D1 | Execute address | Đã fix SetThreadContext Rip; ResumeThread vẫn thiếu |
 | D2 | Read ∈ write | Đã tách `remote_read` |
 | D3 | Temporal | Đã fix write-after-execute |
-| D4 | Anti-evasion E5 | **Chưa** — `kernel/analysis/evasion.py` log only |
+| D4 | Anti-evasion E5 | **Chưa** — `evasion.py` log only |
 | D5 | Ghosting enum | Đã thêm, phụ thuộc hook precursor |
 
 ---
 
-## 5.11. Hàng đợi phân tích và batch
+## 3.11. Hàng đợi phân tích và batch
 
-Module: `services/collector/application/analysis_queue.py`, `services/analysis/domain/batch_runner.py`.
+### 3.11.1. Analysis queue
 
-### 5.11.1. Analysis queue
+Khi file drop được triage là PE, `enqueue_analysis(logs_dir, path)` thêm entry vào `analysis_queue.json` bằng atomic write của `atomic_io.py`. `drain_analysis_queue()`: pop entry pending; `FridaInjectionMonitor` `spawn` + `resume` thay vì attach muộn; ghi session riêng hoặc merge JSONL.
 
-Khi file drop được triage là PE executable, `enqueue_analysis(logs_dir, path)` thêm vào `analysis_queue.json` (atomic write qua `atomic_io.py`). Collector `drain_analysis_queue()`:
+Cơ chế spawn-from-entry giảm **miss primitive đầu** (E6) — điểm yếu cố hữu khi chỉ dùng `--auto-attach` sau Sysmon E1.
 
-1. Pop pending entry.
-2. `FridaInjectionMonitor` spawn process (`frida.spawn` + `resume`) thay vì attach muộn.
-3. Ghi session riêng hoặc merge JSONL tùy cấu hình.
+### 3.11.2. Batch runner
 
-Cơ chế này giảm **miss primitive đầu** (E6) so với chỉ `--auto-attach` sau Sysmon E1.
+`noirlycan-telemetry batch --manifest samples.jsonl`: đọc danh sách mẫu + expected technique; mỗi mẫu spawn Frida với timeout, thu JSONL riêng; `write_batch_report()` tổng hợp finding count, max score, technique — phục vụ PoC-Bench tương lai.
 
-### 5.11.2. Batch runner
+## 3.12. Chi tiết hook Frida theo nhóm API
 
-`noirlycan-telemetry batch --manifest samples.jsonl`:
-
-- Đọc danh sách đường dẫn mẫu + metadata expected technique.
-- Với mỗi mẫu: spawn dưới Frida, timeout, thu JSONL.
-- `write_batch_report()` tổng hợp finding count, max score, technique — phục vụ PoC-Bench tương lai.
-
-## 5.12. Chi tiết hook Frida theo nhóm API
-
-**Bảng 5.2.** Hook handler — trích `windows_injection_hooks.js`
+**Bảng 3.3.** Hook handler — trích `windows_injection_hooks.js`
 
 | Nhóm API | Handler chính | Trường extract |
 |----------|---------------|----------------|
@@ -2323,7 +1961,7 @@ Cơ chế này giảm **miss primitive đầu** (E6) so với chỉ `--auto-atta
 | NtMapViewOfSection | onEnter | BaseAddress, ViewSize, InheritDisposition |
 | CreateRemoteThread(Ex) | onEnter | lpStartAddress, lpParameter |
 | NtCreateThreadEx | onEnter | StartRoutine, Argument |
-| SetThreadContext | onEnter | lpContext → Rip | 
+| SetThreadContext | onEnter | lpContext → Rip |
 | GetThreadContext | onEnter | lpContext pointer → details |
 | QueueUserAPC / NtQueueApcThread* | onEnter | ApcRoutine, ApcArgument |
 | ResumeThread / NtResumeThread | onEnter | hThread → target PID resolve |
@@ -2332,21 +1970,17 @@ Cơ chế này giảm **miss primitive đầu** (E6) so với chỉ `--auto-atta
 | NtCreateSection | onLeave | SectionHandle |
 | Dynamic GetProcAddress | onLeave | attach lazy hook |
 
-Mỗi handler gọi `emitObservation` cho API phụ trợ (OpenProcess) hoặc `emitPrimitive` cho operational kind. `hookedAddresses` Set tránh double-hook cùng địa chỉ export.
+Mỗi handler gọi `emitObservation` cho API phụ trợ hoặc `emitPrimitive` cho operational kind. Set `hookedAddresses` tránh double-hook khi cùng symbol resolve nhiều lần.
 
-### 5.12.1. Resolve PID victim
+### 3.12.1. Resolve PID victim
 
-Cross-process injection cần `target_pid` chính xác:
+Sai `target_pid` làm primitive rơi vào bucket sai và phá vỡ 2-of-3. Hook áp dụng fallback: có `hProcess`/`ProcessHandle` → `GetProcessId`; chỉ có thread handle → `GetProcessIdOfThread`; self-injection → `Process.id` của Frida (pseudo-handle).
 
-- Tham số `hProcess` / `ProcessHandle` → `GetProcessId`.
-- Fallback: thread handle → `GetProcessIdOfThread`.
-- Self: `Process.id` Frida khi handle pseudo current process.
+Test `test_resolves_target_image_from_child_process` kiểm chứng enrich image từ `ProcessEvent` khi hook thiếu module path.
 
-Sai PID làm lệch bucket correlator — test `test_resolves_target_image_from_child_process` kiểm tra enrich từ ProcessEvent khi hook thiếu image.
+## 3.13. Sysmon — ánh xạ Event ID
 
-## 5.13. Sysmon — ánh xạ Event ID
-
-**Bảng 5.3.** Event ID dùng trong Noirlycan
+**Bảng 3.4.** Event ID dùng trong Noirlycan
 
 | EID | Tên | Model output | Vai trò E3/E4 |
 |-----|-----|--------------|---------------|
@@ -2358,11 +1992,11 @@ Sai PID làm lệch bucket correlator — test `test_resolves_target_image_from_
 | 11 | FileCreate | FileEvent | Provenance E3 |
 | 15 | FileCreateStreamHash | FileEvent | Alternate data stream drop |
 
-Parser `parse_sysmon_xml` tách namespace XML Sysmon chuẩn Microsoft. Unit test `test_sysmon_files.py` dùng fixture XML — không cần Windows khi CI.
+`parse_sysmon_xml` xử lý namespace XML Sysmon, tách `Data Name="..."` thành dict. Test `test_sysmon_files.py` dùng fixture XML nên chạy được trên CI Linux.
 
-## 5.14. Dashboard — endpoint và luồng upload
+## 3.14. Dashboard — endpoint và luồng upload
 
-### 5.14.1. API chính (`views.py`)
+### 3.14.1. API chính (`views.py`)
 
 | Route | Method | Chức năng |
 |-------|--------|-----------|
@@ -2376,7 +2010,7 @@ Parser `parse_sysmon_xml` tách namespace XML Sysmon chuẩn Microsoft. Unit tes
 | `/api/corpus` | GET | `analyze_corpus()` aggregate |
 | `/ws/live` | WebSocket | Push refresh |
 
-### 5.14.2. Luồng upload mẫu
+### 3.14.2. Luồng upload mẫu
 
 ```
 Analyst upload EXE → SHA256 dedupe (AnalysisDatabase)
@@ -2386,15 +2020,13 @@ Analyst upload EXE → SHA256 dedupe (AnalysisDatabase)
   → build_upload_report → dashboard "done — view report"
 ```
 
-Upload không thực thi payload trên host analyst — chỉ trên VM lab có collector.
+Dashboard chỉ lưu trữ payload; thực thi diễn ra trên VM lab cô lập. Host analyst không bao giờ chạy mẫu.
 
-## 5.15. Lưu trữ và tái phân loại
+## 3.15. Lưu trữ và tái phân loại
 
-- `log_store.py`: `new_session_log_path()`, `aggregate_logs()`, `session_detail()`.
-- `reclassify.py`: đọc JSONL cũ, chạy lại `apply_classification` + scoring rules mới — hữu ích khi cập nhật classifier không cần re-run mẫu.
-- `analysis_db.py`: SQLite `uploads`, `sessions` — dashboard query nhanh.
+`log_store.py` cung cấp `new_session_log_path()`, `aggregate_logs()`, `session_detail()` chuẩn hoá I/O JSONL theo phiên. `reclassify.py` mở session cũ, chạy lại `apply_classification` với scoring đã cập nhật — hữu ích khi tinh chỉnh classifier mà không cần chạy lại mẫu. `analysis_db.py` quản SQLite gồm `uploads` và `sessions`.
 
-## 5.16. Cấu hình và phụ thuộc
+## 3.16. Cấu hình và phụ thuộc
 
 | Thành phần | Phụ thuộc | Ghi chú |
 |------------|-----------|---------|
@@ -2405,9 +2037,9 @@ Upload không thực thi payload trên host analyst — chỉ trên VM lab có c
 | Dashboard | Django 4+, channels | ASGI WebSocket |
 | Test | pytest | 31+ methodology tests |
 
-File `pyproject.toml` khai báo entry point `noirlycan-telemetry = noirlycan_telemetry.cli:main`.
+`pyproject.toml` khai báo entry point `noirlycan-telemetry = noirlycan_telemetry.cli:main`.
 
-## 5.17. Sequence: một vòng poll collector
+## 3.17. Sequence: một vòng poll collector
 
 ```
 CLI run loop:
@@ -2419,14 +2051,14 @@ CLI run loop:
   6. sleep(poll_interval)
 ```
 
-Đồng bộ single-threaded cho correlator; triage dùng `ThreadPoolExecutor` tránh block poll Sysmon.
+Correlator single-threaded để loại race condition trên bucket; triage tách `ThreadPoolExecutor` riêng tránh block poll Sysmon trong I/O nặng (hash, Authenticode).
 
-## 5.19. Module phụ trợ
+## 3.19. Module phụ trợ
 
 | Module | Vai trò |
 |--------|---------|
 | `process_resolve.py` | Windows API PID → image path khi Sysmon/Frida thiếu |
-| `injection_graph.py` | Đồ thị finding nối actor→target, recursive chain |
+| `injection_graph.py` | Đồ thị finding actor→target, recursive chain |
 | `payload_classifier.py` | Shellcode vs PE trong buffer (entropy, MZ header) |
 | `kernel/analysis/evasion.py` | **Chỉ log** signal E5/E6 — không bypass |
 | `sandbox_compare.py` | So sánh VT (optional) — ngoài core |
@@ -2435,46 +2067,280 @@ CLI run loop:
 | `custom_rule_engine.py` | DSL rule tùy chỉnh dashboard |
 | `collector_launcher.py` | PID file, start/stop subprocess từ dashboard |
 
-Các module này không thay đổi quy tắc 2-of-3; chúng enrich finding và vận hành lab.
+Các module phụ trợ không can thiệp 2-of-3; chỉ làm giàu finding và điều phối vận hành lab.
 
-## 5.20. Bảo mật và đạo đức triển khai
+## 3.20. Bảo mật và đạo đức triển khai
 
-- Mẫu phân tích **chỉ** trong VM cô lập — không phát tán payload thật.
-- Dashboard upload lưu local SQLite — không cloud mặc định.
-- PoC loader (Phụ lục D) chỉ MessageBox — không weaponized exploit.
-- JSONL có thể chứa path nhạy cảm — analyst tự bảo vệ log.
+- Mẫu **chỉ** thực thi trong VM cô lập, không có route mạng tới hạ tầng SSI.
+- Dashboard upload lưu SQLite local, không sync cloud mặc định.
+- PoC loader (Phụ lục D) chỉ gọi `MessageBox`, không weaponized.
+- JSONL có thể chứa đường dẫn nhạy cảm; analyst tự redact khi chia sẻ.
 
-## 5.21. Tóm tắt chương
+## 3.21. Tóm tắt chương
 
-Chương 5 trình bày hiện thực Noirlycan: kiến trúc phân lớp từ hook Frida và Sysmon kernel tới correlator 2-of-3, scoring, classifier; CLI và collector runtime điều phối pipeline real-time; file watch và triage mở rộng provenance chống E3; dashboard Django hỗ trợ điều tra. Hệ thống **không** tích hợp anti-sandbox [4] (E5). Chương 6 đánh giá hiệu quả trên bộ test và case study section-mapping.
+Chương 3 đã trình bày hiện thực Noirlycan: hook Frida user-mode và kênh Sysmon kernel ở tầng thu thập; correlator 2-of-3 cùng scoring và classifier ở tầng phân tích; CLI và collector runtime điều phối pipeline thời gian thực. File watch và triage mở rộng chiều provenance cho các kịch bản E3 mà Sysmon bỏ sót; dashboard Django phục vụ điều tra trực quan. Giới hạn được tuyên bố: **không** tích hợp anti-sandbox theo nghĩa [4] (E5), chỉ ghi nhận tín hiệu. Chương 6 chuyển sang đánh giá định lượng và case study section-mapping.
+---
+
+# CHƯƠNG 4. THỰC NGHIỆM, KẾT QUẢ VÀ SO SÁNH ĐÁNH GIÁ
+
+Chương mô tả công cụ thực nghiệm, môi trường, dữ liệu, cách tổ chức thí nghiệm, kết quả định lượng và định tính, ví dụ điển hình, **so sánh với nghiên cứu liên quan** và thảo luận (Discussion trong khuôn IMRAD). Nguyên tắc tái tạo được: đủ chi tiết để người có năng lực tương đương lặp lại thực nghiệm.
 
 ---
 
-# CHƯƠNG 6. ĐÁNH GIÁ THỰC NGHIỆM
+Phần đầu chương trình bày **nghiên cứu liên quan và baseline so sánh** theo hướng dẫn HTW — đặt sau phương pháp và hiện thực, trước kết quả thực nghiệm. Căn cứ trung tâm là Di Pietro et al. (ASIA CCS 2025) [4]; các công trình [7], [12] bổ sung nền tảng primitive và behavior graph.
 
-Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc dưới các hình thức né tránh* thông qua artifact Noirlycan, căn cứ phương pháp [4]. Phạm vi đánh giá **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — được tác giả chứng minh tăng recall ~21,2 % trên subset injection — **không được hiện thực** trong luận văn. Do đó, luận văn **không** so sánh recall với paper trên cùng dataset 56.340 mẫu và **không** claim số liệu prevalence 16,5 % hay 21,2 % của [4]. Thay vào đó, đánh giá tập trung: (1) kiểm chứng quy tắc 2-of-3 và biến thể E1/E2 qua test tổng hợp; (2) case study section-mapping — biến thể dominant trong [4]; (3) đánh giá định tính provenance E3; (4) phân tích thiết kế telemetry kép E4; (5) protocol Frida fidelity (E6 liên quan).
+## 4.1. Bối cảnh: cuộc đua vũ trang giữa phát hiện và né tránh
+
+Process injection (T1055 [9]) là kỹ thuật then chốt của malware Windows vì ba lý do gắn với né tránh: (1) thực thi payload trong tiến trình uy tín thay vì tạo tiến trình mới — **né attribution** (E3); (2) chọn tập API khác nhau (`CreateRemoteThread` so với `NtCreateThreadEx`) — **biến thể API** (E1); (3) phát hiện sandbox/debugger rồi không inject — **né sandbox** (E5).
+
+Phương pháp truyền thống chia thành ba nhóm (Bảng 2.1). Cộng đồng đã chuyển từ khớp chuỗi API sang mô hình hành vi trừu tượng hơn — *operational primitive* — nơi Di Pietro et al. [4] là mốc quan trọng nhất.
+
+**Bảng 4.1.** Phân loại hướng tiếp cận phát hiện process injection và khả năng chống né tránh
+
+| Nhóm | Cơ chế cốt lõi | Đại diện | Chống E1 | Chống E2 | Chống E3 | Chống E4 | Chống E5 |
+|------|----------------|----------|----------|----------|----------|----------|----------|
+| Signature / rule API | Khớp chuỗi hoặc tập API cố định | Sigma, YARA, AV | Yếu | Yếu–TB | Yếu | Yếu | TB |
+| Behavior graph | Đồ thị handle, vùng nhớ, tiến trình | Starink et al. [12] | Khá | Khá | TB | TB | Phụ thuộc |
+| Operational primitive | A/W/E + equivalence class | Klein [7], **[4]** | **Mạnh** | **Mạnh** | Yếu | TB | **Cần module** |
+| Memory forensic | Quét vùng thực thi RAM | Barabosch [3], Quincy | Mạnh (offline) | Mạnh (offline) | TB | N/A | N/A |
+| EDR thương mại | Rule + ML + kernel driver | Defender, Elastic, CrowdStrike | Khá–mạnh | Khá | Khá | Mạnh | Khá |
+
+Luận văn chọn [4] làm **căn cứ phương pháp chính** vì đây là công trình duy nhất vừa (a) đề xuất framework phát hiện chịu biến thể triển khai, (b) **định lượng trực tiếp** tác động né sandbox trên dataset 56.340 mẫu, vừa (c) công bố artifact tái lập được [11].
+
+## 4.2. Phát hiện dựa trên signature và rule API
+
+Signature — khớp chuỗi API, hash, byte, hoặc rule Sigma/YARA — phổ biến trong SOC và AV. Rule điển hình cho remote thread injection yêu cầu tuần tự `OpenProcess` → `VirtualAllocEx` → `WriteProcessMemory` → `CreateRemoteThread`. Cách này **dễ bị phá** bởi E1 (thay `CreateRemoteThread` bằng `NtCreateThreadEx`) và E2 (gộp allocate+write vào `NtMapViewOfSection`).
+
+Hạn chế nằm ở **mức trừu tượng quá thấp**: rule mô tả *cách* triển khai thay vì *điều gì* bắt buộc xảy ra trên bộ nhớ. Di Pietro et al. [4] lập luận signature tạo false negative cao trên malware đa hình — củng cố bằng 21,2 % sandbox miss (mục 2.6.4). Luận văn không đề xuất signature mới; hiện thực framework primitive [4] như lớp semantic trên signature.
+
+## 4.3. Klein et al. (2017) — Phân loại operational primitive
+
+Klein et al. [7] đặt ba bước tối thiểu mọi process injection user-mode phải thực hiện:
+
+1. **Allocate** — chuẩn bị vùng nhớ có thể chứa mã thực thi (kể cả đổi protection sang RWX/RX).
+2. **Write** — đặt payload vào vùng đó, trực tiếp (`WriteProcessMemory`) hoặc qua section mapping.
+3. **Execute** — kích hoạt thực thi qua tạo thread mới, hijack thread, hoặc APC.
+
+Đóng góp của Klein là **mô hình khái niệm**: ba primitive mô tả bản chất thao tác mọi kỹ thuật phải tuân theo. Tuy nhiên [7] chưa xây dựng lớp tương đương API, quy tắc quyết định khi chỉ thấy hai trong ba primitive (E2), ràng buộc vùng nhớ, và đánh giá quy mô lớn.
+
+Di Pietro et al. [4] kế thừa và bổ sung bốn thành phần (equivalence class, 2-of-3, memory congruence, temporal ordering) — biến mô hình khái niệm thành **framework phát hiện có thể triển khai**. Noirlycan dùng `PrimitiveKind.ALLOCATE/WRITE/EXECUTE` (`kernel/entities/models.py`) và `PAPER_API_CLASSES` (`kernel/classification/api_manifest.py`), bổ sung `CONTEXT_READ` cho `GetThreadContext`. Cả Klein và [4] giới hạn user-mode; kernel-mode nằm ngoài (Chương 3, O3).
+
+## 4.4. Barabosch et al. (2017) — Phân tích memory dump
+
+Barabosch et al. [3] và các công cụ memory forensic (Quincy, Volatility plugin) tiếp cận injection **offline**: dump RAM, quét vùng executable bất thường, phát hiện shellcode hoặc PE mapping thủ công. Ưu điểm: không phụ thuộc chuỗi API. Nhược điểm: không real-time, chi phí dump RAM cao, khó phân biệt JIT hợp pháp (CLR, V8, JVM), và không đối phó E5. Luận văn xem memory forensic là **bổ trợ điều tra sau sự cố**; Noirlycan kết hợp Frida + Sysmon theo hướng tracer động của [4].
+
+## 4.5. Starink et al. (2023) — Behavior graph và memory congruence
+
+Starink et al. [12] đề xuất **behavior graph**: node là thực thể (process, thread, memory region, handle); cạnh là quan hệ thao tác. Phát hiện injection = tìm subgraph khớp mẫu. Công trình nhấn mạnh ràng buộc **cùng buffer** — mọi primitive phải thao tác trên cùng vùng nhớ vật lý — loại trừ việc hai chuỗi thao tác trên hai vùng nhớ khác nhau bị gom nhầm thành một injection chain.
+
+**Bảng 4.2.** So sánh behavior graph [12] và operational primitive [4]
+
+| Khía cạnh | Starink et al. [12] | Di Pietro et al. [4] |
+|-----------|---------------------|----------------------|
+| Cấu trúc dữ liệu | Đồ thị đầy đủ (node/edge) | Ba primitive + equivalence class |
+| Ràng buộc vùng nhớ | Same buffer (chặt) | Overlap/contain (nới lỏng) |
+| Chống E1 | Phụ thuộc node label API | Equivalence class |
+| Chi phí tính toán | Cao (graph matching) | Thấp (rule 2-of-3 stream) |
+| Đánh giá né sandbox | Không tập trung | Có (21,2 % miss) |
+
+Di Pietro et al. [4] đơn giản hóa *same buffer* thành **memory range congruence**: hai primitive cùng vùng nhớ nếu khoảng `[addr, addr+size)` giao hoặc chứa nhau. Cách này loại false positive khi cùng actor có nhiều allocation độc lập, đồng thời cho phép section mapping. Noirlycan hiện thực trong `_has_memory_congruence()` (`services/analysis/domain/correlation.py`). [4] cân bằng tốt hơn Starink giữa tổng quát và chi phí, tương thích stream processing event-by-event.
+
+## 4.6. Di Pietro, D'Elia, Querzoni (ASIA CCS 2025) — Căn cứ khoa học chính
+
+### 4.6.1. Thông tin công trình và bối cảnh
+
+> Di Pietro, G., D'Elia, D. C., & Querzoni, L. (2025). *Can You Run My Code? A Close Look at Process Injection in Windows Malware.* ASIA CCS '25, Hanoi. DOI: 10.1145/3708821.3736206. Artifact [11].
+
+Tác giả thuộc Sapienza University of Rome; D'Elia là tác giả Bluepill nên module anti-evasion được thiết kế đồng bộ với pipeline. Paper đặt **ba câu hỏi nghiên cứu**:
+
+| ID | Câu hỏi | Ý nghĩa với luận văn |
+|----|---------|----------------------|
+| **RQ1** | Injection phổ biến đến đâu trong malware Windows 2017–2023? | Baseline prevalence; luận văn **không tái lập** |
+| **RQ2** | Có phương pháp tổng quát hơn signature, đủ rẻ cho sandbox quy mô lớn? | Framework 2-of-3 — **đối tượng replication** |
+| **RQ3** | Sandbox công cộng bỏ sót bao nhiêu mẫu vì anti-evasion? | 21,2 % — **động lực** đề tài |
+
+### 4.6.2. Phương pháp cốt lõi
+
+#### (a) Ba operational primitive và equivalence class
+
+Đóng góp của [4] là **ánh xạ mỗi primitive sang lớp tương đương API** (Bảng 2.3). API mới chỉ cần thêm vào lớp tương ứng mà không phải sửa correlator.
+
+**Bảng 4.3.** Lớp tương đương API theo Di Pietro et al. [4] (rút gọn)
+
+| Primitive | Ví dụ API trong lớp | Vai trò chống né tránh |
+|-----------|---------------------|------------------------|
+| Allocate | `VirtualAllocEx`, `NtAllocateVirtualMemory`, `VirtualProtectEx`, `NtCreateSection`, `CreateFileMappingW`, `MapViewOfFile` | Chống E1 |
+| Write | `WriteProcessMemory`, `NtWriteVirtualMemory`, `NtMapViewOfSection`, `RtlCopyMemory` | Chống E1/E2: section mapping = allocate ∧ write |
+| Execute | `CreateRemoteThread(Ex)`, `NtCreateThreadEx`, `QueueUserAPC`, `SetThreadContext`, `ResumeThread`, `LoadLibrary*` | Chống E1 |
+
+Equivalence class cho phép correlator kết luận có injection dựa trên **ngữ nghĩa**, không phụ thuộc tên API — trực tiếp đối phó E1.
+
+#### (b) Quy tắc 2-of-3
+
+Yêu cầu **đủ cả ba** primitive → false negative cao (malware gộp bước hoặc dùng vùng RWX sẵn có — Mockingjay, APC variants); yêu cầu **chỉ một** → false positive cao (debugger, profiler, hot-patching đều gọi `VirtualAllocEx`/`WriteProcessMemory`).
+
+Cân bằng: **quan sát ít nhất hai primitive khác loại** trên cùng cặp `(actor_pid, target_pid)`, kèm memory congruence và temporal ordering. Quy tắc này chống **E2** vì chấp nhận malware nén ba bước thành hai. Noirlycan hiện thực `operational_kind_count(kinds) >= 2` (`services/analysis/domain/correlation.py`); `CONTEXT_READ` được ghi nhận nhưng **không tính** vào 2-of-3.
+
+#### (c) Memory range congruence
+
+Hai primitive *congruent* khi vùng địa chỉ giao nhau:
+
+\[
+[p_1.\text{addr},\, p_1.\text{addr}+p_1.\text{size}) \cap [p_2.\text{addr},\, p_2.\text{addr}+p_2.\text{size}) \neq \emptyset
+\]
+
+Mục đích: tránh gom nhầm allocate ở địa chỉ *a* với write ở địa chỉ *b* không liên quan. Kế thừa Starink [12], đơn giản hóa thành phép kiểm tra giao khoảng O(1).
+
+#### (d) Temporal consistency
+
+Thứ tự tự nhiên: Allocate → Write → Execute. Paper cho phép gộp bước (`NtMapViewOfSection` = allocate + write), lặp allocate (resize, đổi protection RW → RX), nhưng không cho phép EXECUTE trước WRITE trên cùng vùng. Noirlycan hiện thực `_has_temporal_consistency()` với bậc `ALLOCATE=0, WRITE=1, EXECUTE=3`.
+
+### 4.6.3. Hạ tầng thực nghiệm và dataset
+
+- **Nguồn mẫu:** VirusTotal Academic + VX Underground Bazaar, 2017–2023; 334.885 mẫu Windows → **56.340 mẫu** thuộc 2.667 family (lọc qua imphash/ssdeep).
+- **Sandbox:** QEMU + custom tracer (tương tự Bluepill) + **module anti-evasion** (timing, env fingerprint, artifact). Baseline: Cuckoo, Hatching Triage.
+
+Module anti-evasion là thành phần **không thể tách rời** khi trả lời RQ3: thiếu nó, sandbox miss vì malware **chủ động không chạy** payload (E5), không phải vì phương pháp phát hiện yếu.
+
+### 4.6.4. Kết quả chính
+
+**Bảng 4.4.** Tóm tắt kết quả thực nghiệm Di Pietro et al. [4]
+
+| Chỉ số | Giá trị | Diễn giải |
+|--------|---------|-----------|
+| Tỷ lệ mẫu có injection (2017–2023) | **~16,5 %** | Trả lời RQ1; xu hướng tăng |
+| Sandbox miss (thiếu anti-evasion) | **21,2 %** | Trả lời RQ3 — né sandbox che hành vi |
+| Mẫu multi-stage đệ quy (A→B→C) | ~2 % | Injection lồng nhau |
+| Biến thể dominant family đa kỹ thuật | Section-mapping hollowing | Case study *neurevt* |
+
+Hai con số mang ý nghĩa: (1) injection không hiếm — đáng đầu tư phương pháp tổng quát; (2) né môi trường phân tích (E5) làm giảm recall ngay cả khi có phương pháp tốt.
+
+**Lưu ý:** Hai con số thuộc paper [4]. Luận văn **không claim** đã tái lập trên 56.340 mẫu; Noirlycan chưa có module anti-evasion tương đương (Chương 3, O7). Số liệu được trích dẫn làm **động lực**.
+
+### 4.6.5. Taxonomy kỹ thuật và case study *neurevt*
+
+Paper phân loại **12 kỹ thuật injection chính**: Classic Remote Thread, APC, Early Bird APC, SetWindowsHookEx, Thread Hijacking, Process Hollowing (classic + section), AtomBombing, Reflective DLL, Module Stomping, Process Doppelgänging, Process Ghosting/Herpaderping.
+
+**Case study *neurevt*** (Paper §3.5) là ví dụ điển hình **E1 + E2**: thay `VirtualAllocEx` + `WriteProcessMemory` bằng `NtCreateSection` + `NtMapViewOfSection` (gộp allocate và write, chuyển sang NT native né hook); kích hoạt qua `SetThreadContext` + `ResumeThread` trên tiến trình suspended — biến thể **Process Hollowing** dominant [4]. Signature dò `CreateRemoteThread` vô hiệu, nhưng framework 2-of-3 **không bị phá**: correlator vẫn thấy write + execute trên cùng vùng section. Noirlycan có test `test_detects_section_mapping_write_execute_chain` xác nhận kịch bản này đạt score ≥ 70.
+
+**Hạn chế:** test trên loader PoC lab, không phải sample *neurevt* gốc. Luận văn claim **phát hiện đúng pattern primitive**, không claim đã phân tích lại family trên malware thật.
+
+### 4.6.6. Module anti-evasion và quan hệ với đề tài
+
+Paper §6 mô tả module anti-evasion: bypass **timing checks** (sleep acceleration, RDTSC manipulation), bypass **environment fingerprint** (registry VM, MAC, process artifact), tránh malware **skip injection**. Module này giải thích vì sao framework primitive đạt recall cao hơn Cuckoo **trên cùng corpus** — không chỉ vì 2-of-3 mà vì malware thực sự chạy trong môi trường đã che giấu.
+
+**Bảng 4.5.** Vai trò anti-evasion trong [4] so với Noirlycan
+
+| Khía cạnh | Paper [4] | Noirlycan |
+|-----------|-----------|-----------|
+| Anti-evasion timing/env | Tích hợp QEMU | **Out-of-scope** (`kernel/analysis/evasion.py` chỉ ghi signal) |
+| Phát hiện primitive E1/E2 | Có (custom tracer) | Có (Frida + correlator) |
+| Phát hiện khi malware không chạy (E5) | Giảm nhờ anti-evasion | **Không xử lý** |
+| Số liệu 21,2 % miss | Đo trên corpus paper | Trích dẫn, không tái lập |
+
+Luận văn tách hai lớp: (1) chống E1–E4 khi malware *đã* injection — mục tiêu chính; (2) chống E5 khi malware *không* thực hiện — paper giải quyết, luận văn khai báo ngoài phạm vi.
+
+### 4.6.7. Hạn chế tự công bố của paper [4]
+
+| Hạn chế | Mô tả | Ảnh hưởng luận văn |
+|---------|-------|-------------------|
+| User-space only | Kernel injection không trong scope | O3 threat model |
+| Tracer user-mode có thể bị bypass | Direct syscall stub | E4 — Noirlycan bổ sung Sysmon kernel |
+| Dataset đến 2023 | Thiếu PoolParty, Mockingjay đầy đủ | Mở rộng taxonomy qua iRed.team |
+| Phụ thuộc chất lượng trace | Drop event → sai primitive count | Giả định M5 (Frida fidelity) |
+| Không có file provenance end-to-end | Bắt đầu từ process đã chạy | Đóng góp RO3 luận văn |
+
+Mỗi hạn chế ứng với một hướng mở rộng trong Noirlycan, làm cấu trúc Replication + Extension trở nên tự nhiên.
+
+### 4.6.8. Đóng góp khoa học paper và vị trí artifact
+
+**Bảng 4.6.** Đóng góp Di Pietro et al. [4]
+
+| ID | Đóng góp | Loại |
+|----|----------|------|
+| C1 | Framework 2-of-3 + equivalence class + congruence + temporal | Methodology |
+| C2 | Prevalence ~16,5 % trên 56k mẫu | Empirical |
+| C3 | Sandbox miss 21,2 % — định lượng E5 | Comparative |
+| C4 | Anti-evasion ablation | Engineering + Empirical |
+| C5 | Phân tích biến thể theo thời gian (section mapping) | Forensic |
+| C6 | Artifact công khai [11] | Reproducibility |
+
+Artifact `Sap4Sec/process-injection` [11] là cơ sở cho RO3. Noirlycan là **implementation độc lập** trên Frida + Sysmon, audit đối chiếu paper (docs/audit-and-threat-model.md).
+
+## 4.7. Né tránh sandbox và phân tích chống phân tích
+
+Korkin [8] và Hosseini & Antoniou [6] khảo sát kỹ thuật malware né sandbox: phát hiện VM (CPUID, registry, driver), timing attack (sleep, RDTSC delta), kiểm tra tool (Wireshark, Procmon, Frida artifact), và hành vi có điều kiện.
+
+**Bảng 4.7.** Phân loại né tránh sandbox và liên hệ với injection
+
+| Kỹ thuật né tránh | Mục tiêu | Tác động lên phát hiện injection |
+|-------------------|----------|----------------------------------|
+| VM/sandbox fingerprint | E5 | Malware không gọi API → log trống |
+| Timing / delayed execution | E5 | Injection sau window phân tích |
+| User interaction gate | E5 | Sandbox batch fail |
+| Anti-debug (E6) | Dừng trước inject | Miss behavior |
+| Direct syscall (E4) | Né hook | Injection xảy ra nhưng mất API trace |
+
+Chỉ [4] định lượng miss rate 21,2 % gắn trực tiếp với injection trên corpus lớn. Korkin [8] và Hosseini [6] cung cấp taxonomy E5/E6 nhưng không thay số liệu paper. Luận văn dùng để justify anti-evasion là hướng phát triển bắt buộc; Noirlycan **chưa hiện thực** module tương đương.
+
+## 4.8. EDR thương mại và thực hành phòng thủ
+
+EDR/EPP thương mại (Defender, Elastic Defend, CrowdStrike Falcon) kết hợp kernel driver, ETW provider, ML, và threat intelligence; cũng quan sát cross-process memory operation và thread creation — gần với primitive model. Tuy nhiên rule và model đóng nguồn (không audit được equivalence class hay 2-of-3 tương đương [4]); tối ưu production không công bố ablation né sandbox; không cung cấp pipeline provenance file→injection cho lab cá nhân.
+
+Noirlycan **không cạnh tranh** với EDR thương mại. Vị trí: **công cụ lab mã nguồn mở**, minh bạch rule, phục vụ replication [4] và đào tạo analyst. Sysmon [10] được chọn làm lớp kernel vì phổ biến trong forensic community và có schema công khai, tránh tự viết kernel driver.
+
+## 4.9. MITRE ATT&CK và chuẩn hóa taxonomy
+
+MITRE ATT&CK T1055 [9] liệt kê hơn một chục sub-technique injection. Chuẩn hóa này giúp analyst giao tiếp nhưng **không cung cấp thuật toán phát hiện**.
+
+Noirlycan `kernel/classification/technique_classifier.py` map output rule-based lên nhãn ATT&CK, mở rộng từ ~12 kỹ thuật paper lên **36 enum** (17 đạt FULL coverage: hook + classifier + test). Tách biệt giữa "phát hiện có injection" (correlator primitive) và "phân loại kỹ thuật gì" (technique classifier) giữ hai bài toán độc lập. Classifier **chưa được đánh giá** precision/recall trên ground truth corpus (Chương 3).
+
+## 4.10. Khoảng trống nghiên cứu
+
+**Bảng 4.8.** Khoảng trống nghiên cứu và định vị luận văn
+
+| Khoảng trống | Paper [4] | EDR thương mại | Sandbox (Cuckoo) | Noirlycan |
+|--------------|-----------|----------------|------------------|-----------|
+| Framework primitive chống E1/E2 | ✅ Batch QEMU | Một phần (đóng) | Yếu (signature) | ✅ Real-time Windows lab |
+| Prevalence 56k | ✅ | Không công bố | Không | ❌ Out-of-scope |
+| Anti-evasion E5 | ✅ | Một phần | Yếu → 21,2 % miss | ❌ Ghi signal |
+| Telemetry kernel khi E4 | Tracer tùy biến | ✅ | Guest agent dễ detect | ✅ Sysmon E8/E10/E11 |
+| File provenance → injection (E3) | ❌ | Một phần | Một phần | ✅ Pipeline end-to-end |
+| Công cụ analyst lab mở | Artifact batch | Đóng | Cuckoo web UI | ✅ Dashboard + JSONL |
+| Audit replication có test | Artifact paper | N/A | N/A | ✅ 31+ unit test |
+| Đánh giá Frida fidelity (M5) | N/A | N/A | N/A | ⚠️ Protocol đề xuất |
+
+**Khoảng trống trung tâm:** Paper [4] chứng minh phương pháp ở quy mô sandbox batch, nhưng chưa có (a) triển khai vận hành trên endpoint Windows thật với telemetry kép kernel/user, (b) liên kết injection finding với nguồn file drop, (c) threat model formal cho từng hình thức né tránh E1–E6. Noirlycan nhắm (a)–(c) trong phạm vi **Replication + Extension**, không claim phương pháp detection mới thay [4].
 
 ---
 
-## 6.1. Câu hỏi nghiên cứu đánh giá (RQ1–RQ5)
+Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc dưới các hình thức né tránh* thông qua artifact Noirlycan, căn cứ [4]. Phạm vi **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — tăng recall ~21,2 % — **không** được hiện thực; luận văn **không** so sánh recall với paper trên dataset 56.340 mẫu. Đánh giá tập trung năm trục: (1) kiểm chứng 2-of-3 và biến thể E1/E2 qua test; (2) case study section-mapping; (3) provenance E3; (4) telemetry kép E4; (5) protocol Frida fidelity (E6).
 
-**Bảng 6.1.** Câu hỏi đánh giá và ánh xạ nhóm né tránh
+---
+
+## 4.11. Câu hỏi nghiên cứu đánh giá (RQ1–RQ5)
+
+Mỗi RQ ánh xạ tới một hoặc nhiều nhóm né tránh E1–E6 (Chương 2) và tới một loại bằng chứng khả thi (test, case study, đánh giá thiết kế).
+
+**Bảng 4.1.** Câu hỏi đánh giá và ánh xạ nhóm né tránh
 
 | ID | Câu hỏi | Nhóm né tránh | Tiêu chí thành công |
 |----|---------|---------------|---------------------|
-| **RQ1** | Hiện thực [4] có phát hiện biến thể API (E1) và gộp bước (E2) không? | E1, E2 | Test correlation pass; section-mapping score ≥ 70 |
-| **RQ2** | Telemetry kép Sysmon+Frida có bổ sung khi Frida miss (E4)? | E4 | Thiết kế + config E8/E10; case thiếu số liệu syscall thuần |
+| **RQ1** | Hiện thực [4] có phát hiện biến thể API (E1) và gộp bước (E2)? | E1, E2 | Test correlation pass; section-mapping score ≥ 70 |
+| **RQ2** | Telemetry kép Sysmon+Frida có bổ sung khi Frida miss (E4)? | E4 | Thiết kế + config E8/E10; case thiếu syscall thuần |
 | **RQ3** | Pipeline provenance có gắn file-drop với injection (E3)? | E3 | Finding chứa `related_file`, metadata triage |
 | **RQ4** | Classifier có nhận diện kỹ thuật né tránh hiện đại? | E1, E2 | 20 test classifier pass; đúng technique label |
 | **RQ5** | Frida có đủ trung thực (fidelity) cho kết luận khoa học? | E6 | Protocol `frida-fidelity.md`; drop-rate trên VM |
 
-**RQ không áp dụng cho E5:** né sandbox/VM cần module anti-evasion [4] §6 — **out-of-scope**. Số liệu ablation của [4] được trích dẫn là **upper bound** lý thuyết, không phải kết quả luận văn.
+**E5 out-of-scope:** cần module anti-evasion [4] §6. Số liệu ablation [4] được trích dẫn là **upper bound** lý thuyết.
 
 ---
 
-## 6.2. Môi trường và phương pháp đo
+## 4.12. Môi trường và phương pháp đo
 
-### 6.2.1. Môi trường thí nghiệm
+### 4.12.1. Môi trường thí nghiệm
+
+Môi trường đảm bảo tái lập: cấu hình YAML/XML đi kèm mã nguồn, phụ thuộc Python khoá qua `uv.lock`. VM cô lập, snapshot–rollback giữa các lần chạy loader.
 
 | Thành phần | Cấu hình |
 |------------|----------|
@@ -2484,26 +2350,21 @@ Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát h
 | Collector | `noirlycan-telemetry` 0.x, Python 3.11 |
 | Test runner | `uv run pytest` hoặc `python -m pytest` |
 
-Ground truth trên unit test: **do tác giả luận văn gắn nhãn** — primitive và kỹ thuật kỳ vọng được mô tả trực tiếp trong assertion. Đây là mối đe dọa *internal validity* (mục 6.6).
+Ground truth do tác giả gắn nhãn — rủi ro *internal validity* (xem 6.6); test phát biểu theo *specification* [4] (2-of-3, equivalence class, congruence, temporal), không theo implementation, giảm thiểu lệ thuộc.
 
-### 6.2.2. Loại đánh giá
+### 4.12.2. Loại đánh giá
 
-1. **Unit test tổng hợp** — mô phỏng chuỗi API/primitive không cần chạy malware thật.
-2. **Case study có cấu trúc** — section-mapping tương đương *neurevt* [4].
-3. **Case study mở rộng** — `test_aes_loader_chain_upgrades_to_critical` mô phỏng loader lab thực.
-4. **Baseline signature** — rule cố định A→W→E API names so với correlator 2-of-3.
-5. **Đánh giá định tính** — provenance, dashboard (RQ3).
-6. **Protocol fidelity** — benchmark Frida (RQ5), kết quả điền trên VM.
+Sáu loại bằng chứng, từ chặt chẽ tới định tính: (1) Unit test tổng hợp chuỗi API/primitive (CI Linux); (2) Case study section-mapping tương đương *neurevt* [4]; (3) Case study mở rộng `test_aes_loader_chain_upgrades_to_critical`; (4) Baseline signature A→W→E so với correlator 2-of-3; (5) Đánh giá định tính provenance/dashboard (RQ3); (6) Protocol fidelity Frida (RQ5).
 
-Dataset PoC-Bench (5 loader) và Paper-Subset (100 mẫu Sap4Sec) nêu trong outline — **chưa hoàn thiện** cho luận văn bản này; kết quả định lượng chính dựa trên 31 test methodology.
+Dataset PoC-Bench (5 loader) và Paper-Subset (100 mẫu Sap4Sec) **chưa hoàn thiện**; kết quả định lượng dựa trên 31 test methodology.
 
 ---
 
-## 6.3. Bộ test methodology (31 test)
+## 4.13. Bộ test methodology (31 test)
 
-### 6.3.1. Cấu trúc bộ test
+### 4.13.1. Cấu trúc bộ test
 
-Hai file cốt lõi:
+Hai file tách theo trách nhiệm: correlation rules và classification, phản ánh hai tầng — phát hiện sự kiện đáng ngờ rồi gán nhãn MITRE.
 
 ```bash
 uv run pytest tests/test_correlation.py tests/test_ired_team_classifier.py -v
@@ -2511,7 +2372,7 @@ uv run pytest tests/test_correlation.py tests/test_ired_team_classifier.py -v
 
 Kết quả: **31 passed, 0 failed**.
 
-**Bảng 6.2.** Phân bổ test
+**Bảng 4.2.** Phân bổ test
 
 | File | Số test | Phạm vi |
 |------|---------|---------|
@@ -2519,7 +2380,9 @@ Kết quả: **31 passed, 0 failed**.
 | `test_ired_team_classifier.py` | 20 | Phân loại kỹ thuật biến thể |
 | **Tổng** | **31** | RQ1, RQ4 |
 
-### 6.3.2. Chi tiết `test_correlation.py` (11 test)
+### 4.13.2. Chi tiết `test_correlation.py` (11 test)
+
+Bộ test bao phủ *positive path* và *negative path*. Test reject quan trọng vì 2-of-3 nhạy: thiếu congruence hoặc temporal sẽ bùng phát FP.
 
 | Test | Mục đích | RQ |
 |------|----------|-----|
@@ -2535,7 +2398,9 @@ Kết quả: **31 passed, 0 failed**.
 | `test_aes_loader_chain_upgrades_to_critical` | Chuỗi lab đầy đủ → CRITICAL, hollowing_section | RQ1, RQ4 |
 | `test_read_only_apis_do_not_satisfy_two_of_three` | D2 — read ∉ write class | RQ1 |
 
-### 6.3.3. Chi tiết `test_ired_team_classifier.py` (20 test — trích)
+### 4.13.3. Chi tiết `test_ired_team_classifier.py` (20 test — trích)
+
+Hai mươi test biên soạn theo *ired.team* và ATT&CK, gồm biến thể chi tiết (PoolParty, Process Ghosting) lẫn cổ điển (DLL injection, thread hijack), tránh over-fit.
 
 | Test (rút gọn) | Kỹ thuật kỳ vọng |
 |----------------|-------------------|
@@ -2550,28 +2415,28 @@ Kết quả: **31 passed, 0 failed**.
 | `test_instrumentation_callback_classification` | `instrumentation_callback` |
 | … | (10 test bổ sung APC, fiber, window, doppelgänging, …) |
 
-Toàn bộ 20 test **pass** — RQ4 đạt trên tập rule synthetic.
+20 test **pass** — RQ4 đạt trên tập rule synthetic; không tương đương precision/recall trên malware thực (xem 6.9).
 
 ---
 
-## 6.4. Case study: Section-mapping (E2) — biến thể *neurevt*
+## 4.14. Case study: Section-mapping (E2) — biến thể *neurevt*
 
-### 6.4.1. Bối cảnh [4]
+### 4.14.1. Bối cảnh [4]
 
-Paper [4] §3.5 và case study *neurevt* mô tả biến thể Process Hollowing dominant: thay `VirtualAllocEx` + `WriteProcessMemory` bằng `NtCreateSection` + `NtMapViewOfSection` (remote map executable). Execute qua `SetThreadContext` + `ResumeThread`. Đây là ví dụ điển hình **E2 — gộp bước allocate/write**.
+Paper [4] §3.5 (case study *neurevt*) mô tả biến thể Process Hollowing dominant: thay `VirtualAllocEx` + `WriteProcessMemory`, malware mở section bằng `NtCreateSection` rồi map vào process đích bằng `NtMapViewOfSection` với `PAGE_EXECUTE_READWRITE`; thực thi qua `SetThreadContext` + `ResumeThread` trên thread `CREATE_SUSPENDED`. Đây là **E2 — gộp bước allocate/write**: một `NtMapViewOfSection` thay hai bước, né signature đếm đủ ba API.
 
-### 6.4.2. Thiết lập test
+### 4.14.2. Thiết lập test
 
 Test `test_detects_section_mapping_write_execute_chain` mô phỏng:
 
 1. **File drop:** `loader.exe` trong Temp, unsigned, entropy 7,2.
-2. **Process:** PID 1337, `CREATE_SUSPENDED`, parent explorer.
-3. **Primitive W:** `NtMapViewOfSection` → `msedge.exe` PID 4242, address 0x200000, protection EXECUTE_READWRITE.
-4. **Primitive E:** `ResumeThread`, address None.
+2. **Process:** PID 1337, cờ `CREATE_SUSPENDED`, parent `explorer.exe`.
+3. **Primitive W:** `NtMapViewOfSection` → target `msedge.exe` PID 4242, address 0x200000, `PAGE_EXECUTE_READWRITE`.
+4. **Primitive E:** `ResumeThread`, address None — yêu cầu correlator kế thừa target từ context.
 
-### 6.4.3. Kết quả
+### 4.14.3. Kết quả
 
-**Bảng 6.3.** Kết quả case study section-mapping
+**Bảng 4.3.** Kết quả case study section-mapping
 
 | Chỉ số | Giá trị |
 |--------|---------|
@@ -2583,97 +2448,63 @@ Test `test_detects_section_mapping_write_execute_chain` mô phỏng:
 | Baseline signature A→W→E | **FAIL** (thiếu VirtualAllocEx, WriteProcessMemory) |
 | Correlator 2-of-3 | **PASS** |
 
-Kết luận: phương pháp [4] hiện thực trong Noirlycan **phát hiện được** biến thể dominant mà rule signature cố định bỏ sót — trực tiếp phục vụ RQ1 và mục tiêu chống E2.
+Noirlycan **phát hiện** biến thể dominant mà rule signature bỏ sót — phục vụ RQ1, chống E2. Metadata (`related_file`, `evidence.section_mapping`) đủ để analyst phục dựng câu chuyện tấn công.
 
-### 6.4.4. Case study mở rộng — AES loader lab
+### 4.14.4. Case study mở rộng — AES loader lab
 
-`test_aes_loader_chain_upgrades_to_critical` mô phỏng chuỗi thực tế từ loader `aes_decrypt_loader.exe` → Edge:
-
-- Nhiều `NtWriteVirtualMemory`, `NtMapViewOfSection`, `GetThreadContext`, `SetThreadContext`.
-- Score tăng dần: staging < 70 → sau execute **≥ 85 (CRITICAL)**.
-- Technique: `process_hollowing_section`, `execution_confirmed: true`.
-
-Chứng minh correlator **upgrade** finding khi primitive mới làm tăng score — phù hợp vận hành real-time.
+`test_aes_loader_chain_upgrades_to_critical` mô phỏng chuỗi từ `aes_decrypt_loader.exe` → Edge với `NtWriteVirtualMemory`, `NtMapViewOfSection`, `GetThreadContext`, `SetThreadContext` đan xen (pattern shellcode AES). Score tăng dần: staging dưới 70, sau execute xác nhận finding **upgrade ≥ 85 (CRITICAL)**; technique `process_hollowing_section`, `execution_confirmed: true`. Correlator **upgrade** finding khi primitive mới tăng score thay vì tạo finding rời rạc — phù hợp real-time, giảm alert fatigue.
 
 ---
 
-## 6.5. Đánh giá theo từng RQ
+## 4.15. Đánh giá theo từng RQ
 
-### 6.5.1. RQ1 — E1/E2 (methodology [4])
+### 4.15.1. RQ1 — E1/E2 (methodology [4])
 
-**Kết luận: ĐẠT.**
+**ĐẠT.** 11/11 test correlation pass; 2-of-3, congruence, temporal khớp audit sau fix D1–D3; section-mapping score ≥ 70. Hạn chế: test synthetic; RQ1 áp dụng cho *specification correctness*, không cho *real-world recall*.
 
-Bằng chứng:
+### 4.15.2. RQ2 — E4 (telemetry kép)
 
-- 11/11 test correlation pass.
-- Quy tắc 2-of-3, congruence, temporal khớp audit `docs/audit-and-threat-model.md` (✅ cho các mục 2.1–2.6 sau fix D1–D3).
-- Section-mapping score ≥ 70.
+**MỘT PHẦN — thiết kế đạt, số liệu syscall thuần chưa đủ.**
 
-Hạn chế: test synthetic; chưa chạy 100 mẫu Sap4Sec trên VM (kế hoạch PoC-Bench).
-
-### 6.5.2. RQ2 — E4 (telemetry kép)
-
-**Kết luận: MỘT PHẦN — thiết kế đạt, số liệu syscall thuần chưa đủ.**
-
-**Bảng 6.4.** Đánh giá E4
+**Bảng 4.4.** Đánh giá E4
 
 | Tiêu chí | Trạng thái | Ghi chú |
 |----------|------------|---------|
 | Sysmon E8 CreateRemoteThread trong config | ✅ | Kernel callback |
 | Sysmon E10 ProcessAccess | ✅ | OpenProcess cross-process |
 | Parser ghi TelemetryEvent raw | ✅ | JSONL |
-| Thí nghiệm A/B: có/không Frida + sample syscall | ❌ Chưa | Cần driver `frida-fidelity` + sample unhooked |
-| Congruence khi chỉ Sysmon | ❌ Không | Thiếu address — đúng thiết kế |
+| Thí nghiệm A/B Frida + sample syscall | ❌ | Cần driver `frida-fidelity` + sample unhooked |
+| Congruence khi chỉ Sysmon | ❌ | Thiếu address — đúng thiết kế |
 
-Luận văn claim **phòng thủ sâu** (defense-in-depth), không claim thay thế Frida bằng Sysmon cho 2-of-3.
+Luận văn claim **defense-in-depth**, không thay Frida bằng Sysmon cho 2-of-3. Sysmon E10/E8 cho tín hiệu cross-process nhưng không có địa chỉ buffer; vai trò *backstop* khi Frida bị né.
 
-### 6.5.3. RQ3 — E3 (provenance)
+### 4.15.3. RQ3 — E3 (provenance)
 
-**Kết luận: MỘT PHẦN — đạt trên test và thiết kế pipeline.**
+**MỘT PHẦN.** `test_detects_section_mapping_write_execute_chain`: `related_file` khớp loader; `test_resolves_target_image_from_child_process`: lineage qua ProcessEvent. Pipeline FileDropWatcher / Sysmon E11 → triage → `add_process(created_from_file)` → scoring +10. Chưa có metric *thời gian FileCreate → Finding* trên N mẫu thật.
 
-Bằng chứng:
+### 4.15.4. RQ4 — Classifier
 
-- `test_detects_section_mapping_write_execute_chain`: `related_file` khớp loader.
-- `test_resolves_target_image_from_child_process`: lineage process.
-- Pipeline: FileDropWatcher / Sysmon E11 → triage → `add_process(created_from_file)` → scoring +10.
+**ĐẠT trên 20 test.** Bao phủ kỹ thuật [4] (hollowing, APC, DLL, reflective, doppelgänging); mở rộng PoolParty, Ghosting, instrumentation callback. Chưa có precision/recall trên ground-truth dataset.
 
-Chưa có metric định lượng *thời gian FileCreate → Finding* trên N mẫu thật — đề xuất cho bản mở rộng.
+### 4.15.5. RQ5 — Frida fidelity
 
-### 6.5.4. RQ4 — Classifier
-
-**Kết luận: ĐẠT trên tập 20 test.**
-
-- Bao phủ kỹ thuật [4]: hollowing, APC, DLL, reflective, doppelgänging.
-- Mở rộng: PoolParty, Ghosting precursor, instrumentation callback.
-- **Chưa** có precision/recall trên ground-truth dataset 12 kỹ thuật paper — classifier đánh giá bằng test rule-level.
-
-### 6.5.5. RQ5 — Frida fidelity
-
-**Kết luận: CHƯA HOÀN TẤT — protocol sẵn, bảng kết quả VM cần điền.**
-
-Protocol `docs/experiments/frida-fidelity.md` định nghĩa:
-
-- Driver spawn mẫu benign + injection PoC;
-- Đo số primitive Frida vs ground-truth hook count;
-- Drop-rate = missed / expected.
-
-Giả định M5 (audit): overhead Frida chấp nhận được cho lab; **chưa** publish bảng số trong luận văn bản này.
+**CHƯA HOÀN TẤT — protocol sẵn, bảng kết quả VM cần điền.** Protocol `docs/experiments/frida-fidelity.md`: driver spawn benign + injection PoC; đo primitive Frida so với ground-truth ETW kernel; drop-rate = missed / expected theo họ API. Giả định M5: overhead Frida chấp nhận được cho lab. Phát biểu hiện ở mức "đủ minh hoạ phương pháp".
 
 ---
 
-## 6.6. So sánh với baseline signature
+## 4.16. So sánh với baseline signature
 
-### 6.6.1. Baseline định nghĩa
+### 4.16.1. Baseline định nghĩa
 
-**Baseline Σ:** detector rule-based yêu cầu quan sát **lần lượt** ba API:
+**Baseline Σ:** detector rule-based quan sát **lần lượt** ba API trên cùng `(actor, target)` trong cửa sổ thời gian, không equivalence class, không 2-of-3:
 
 $$\texttt{VirtualAllocEx} \rightarrow \texttt{WriteProcessMemory} \rightarrow \texttt{CreateRemoteThread}$$
 
-trên cùng `(actor, target)` trong cửa sổ thời gian (không có equivalence class, không 2-of-3).
+Đại diện rule SIEM/EDR dạng "string match API name" phổ biến.
 
-### 6.6.2. Kết quả so sánh
+### 4.16.2. Kết quả so sánh
 
-**Bảng 6.5.** Baseline signature vs Noirlycan correlator
+**Bảng 4.5.** Baseline signature vs Noirlycan correlator
 
 | Kịch bản | Baseline Σ | Noirlycan 2-of-3 | Ghi chú |
 |----------|------------|------------------|---------|
@@ -2684,13 +2515,13 @@ trên cùng `(actor, target)` trong cửa sổ thời gian (không có equivalen
 | Chỉ WriteProcessMemory | FAIL | FAIL | Cả hai đúng (FP tránh) |
 | WRITE + EXECUTE unrelated mem | FAIL | FAIL | Congruence |
 
-Noirlycan **strictly dominates** baseline trên các biến thể E1/E2 trong bảng — cốt lõi lập luận *tăng cường phát hiện dưới né tránh*.
+Noirlycan dominates baseline trên E1/E2. Hai dòng cuối cả hai FAIL là kết quả mong muốn — giữ specificity.
 
 ---
 
-## 6.7. So sánh với paper [4]
+## 4.17. So sánh với paper [4]
 
-**Bảng 6.6.** Đối chiếu phạm vi [4] vs luận văn
+**Bảng 4.6.** Đối chiếu phạm vi [4] vs luận văn
 
 | Khía cạnh | Di Pietro et al. [4] | Luận văn Noirlycan |
 |-----------|----------------------|---------------------|
@@ -2705,13 +2536,13 @@ Noirlycan **strictly dominates** baseline trên các biến thể E1/E2 trong b�
 | Dashboard analyst | ❌ | ✅ |
 | Recursive chain 2 % | ✅ Báo cáo | ⚠️ Graph only |
 
-**Trung thực khoa học:** Recall trên malware thật trong lab **có thể thấp hơn** [4] vì thiếu E5 — malware phát hiện VM có thể **không inject**, và Noirlycan sẽ không có finding. Đây không phải lỗi implementation 2-of-3 mà là **gap phạm vi** đã khai báo Chương 3.
+Recall malware thật **có thể thấp hơn** [4] vì thiếu E5 (malware phát hiện VM có thể không inject) — **gap phạm vi** đã khai báo (Chương 3). Luận văn mở rộng [4] ở ba điểm: endpoint real-time, provenance E3, dashboard.
 
 ---
 
-## 6.8. Tổng hợp kết quả theo nhóm né tránh
+## 4.18. Tổng hợp kết quả theo nhóm né tránh
 
-**Bảng 6.7.** Tổng hợp đánh giá E1–E6
+**Bảng 4.7.** Tổng hợp đánh giá E1–E6
 
 | Nhóm | Tiêu chí đo | Kết quả | Trạng thái |
 |------|-------------|---------|------------|
@@ -2722,7 +2553,7 @@ Noirlycan **strictly dominates** baseline trên các biến thể E1/E2 trong b�
 | **E5** | Anti-sandbox | Không module | **Ngoài phạm vi** |
 | **E6** | Anti-Frida | `spawn` + evasion log; fidelity pending | **Hạn chế** |
 
-**Bảng 6.8.** Tóm tắt RQ
+**Bảng 4.8.** Tóm tắt RQ
 
 | RQ | Kết luận |
 |----|----------|
@@ -2734,43 +2565,33 @@ Noirlycan **strictly dominates** baseline trên các biến thể E1/E2 trong b�
 
 ---
 
-## 6.9. Mối đe dọa với validity
+## 4.19. Mối đe dọa với validity
 
-### 6.9.1. Internal validity
+### 4.19.1. Internal validity
 
-- Ground truth test do tác giả viết — rủi ro bias nhưng phù hợp kiểm chứng specification [4].
-- Một số edge case (ResumeThread không address) vẫn làm congruence suy yếu (D1 partial).
+Ground truth do tác giả viết — rủi ro confirmation bias, nhưng phù hợp mục đích kiểm chứng specification [4]. Edge case ResumeThread không address làm congruence suy yếu (D1 partial); giảm thiểu bằng kế thừa target qua context process.
 
-### 6.9.2. External validity
+### 4.19.2. External validity
 
-- Chỉ Windows 10/11 user-mode; không Windows Server, không kernel injection.
-- Không E5 → không generalize recall malware anti-VM như [4].
-- Lab cô lập — không đại diện enterprise EDR.
+Chỉ Windows 10/11 user-mode; không Server, không kernel injection. Không E5 → không generalize recall malware anti-VM. FP rate trên enterprise có thể khác.
 
-### 6.9.3. Construct validity
+### 4.19.3. Construct validity
 
-- Frida thay đổi timing — có thể ảnh hưởng race APC; fidelity benchmark (RQ5) nhằm đo mức này.
-- Score 0–100 là heuristic lab, **không** calibrated trên FP/FN thực tế lớn.
+Frida thay đổi timing — có thể ảnh hưởng race condition trong APC injection; fidelity benchmark (RQ5) đo mức ảnh hưởng. Score 0–100 là heuristic lab, chưa calibrated trên FP/FN quy mô lớn; ngưỡng HIGH/CRITICAL có thể cần điều chỉnh thực địa.
 
-### 6.9.4. Conclusion validity
+### 4.19.4. Conclusion validity
 
-Luận văn **không** claim:
+**Không** claim: thay thế sandbox/EDR thương mại; số liệu [4] trên 56.340 mẫu; phát hiện đầy đủ dưới E5/E6/kernel.
 
-- Thay thế sandbox/EDR thương mại;
-- Số liệu thống kê [4];
-- Phát hiện đầy đủ dưới E5/E6/kernel.
-
-Luận văn **có thể** claim (với evidence Chương 6):
-
-- Hiện thực có kiểm chứng 2-of-3 + equivalence [4] trên Windows lab;
-- Tăng cường so với baseline signature trên E1/E2;
-- Extension provenance và telemetry kép cho E3/E4 ở mức thiết kế + test.
+**Claim được** (với evidence Chương 4): hiện thực kiểm chứng 2-of-3 + equivalence [4] trên Windows lab; tăng cường so với baseline signature trên E1/E2; extension provenance và telemetry kép cho E3/E4 ở mức thiết kế + test.
 
 ---
 
-## 6.10. Hạn chế và hướng bổ sung
+## 4.20. Hạn chế và hướng bổ sung
 
-1. **E5:** Tích hợp subset anti-evasion [4] (timing patch, env check) — ưu tiên hướng phát triển Kết luận.
+Theo thứ tự ưu tiên triển khai:
+
+1. **E5:** Tích hợp subset anti-evasion [4] (timing patch, env check, masking artifact VM).
 2. **PoC-Bench:** Năm loader (section-map, shellcode, APC, reflective, hollowing) chạy trên VM với JSONL ground truth.
 3. **Paper-Subset:** 100 mẫu Sap4Sec — đo agreement với log paper.
 4. **E4 benchmark:** Sample direct-syscall so session Frida on/off.
@@ -2778,9 +2599,9 @@ Luận văn **có thể** claim (với evidence Chương 6):
 
 ---
 
-## 6.11. Phân tích chi tiết kết quả scoring
+## 4.21. Phân tích chi tiết kết quả scoring
 
-**Bảng 6.9.** Phân rã điểm case study section-mapping (ước lượng từ `_score`)
+**Bảng 4.9.** Phân rã điểm case study section-mapping (ước lượng từ `_score`)
 
 | Thành phần | Điểm cộng |
 |------------|-----------|
@@ -2793,11 +2614,11 @@ Luận văn **có thể** claim (với evidence Chương 6):
 | PE + unsigned | +5 +10 |
 | **Tổng (cap 100)** | **≥ 70** |
 
-Test assertion `findings[0].score >= 70` — không yêu cầu CRITICAL (85) vì thiếu full context hijack như `test_aes_loader_chain_upgrades_to_critical`.
+Assertion `score >= 70` — không yêu cầu CRITICAL (85) vì thiếu full context hijack. Phản ánh *graded severity*: HIGH cho bằng chứng đủ alert; CRITICAL chỉ cho chuỗi đủ A/W/E và context overlap.
 
-## 6.12. Classifier — ma trận kỹ thuật đã kiểm (20 test)
+## 4.22. Classifier — ma trận kỹ thuật đã kiểm (20 test)
 
-**Bảng 6.10.** Kết quả phân loại rule-based (tất cả PASS)
+**Bảng 4.10.** Kết quả phân loại rule-based (tất cả PASS)
 
 | # | Kỹ thuật test | Nhóm né tránh liên quan |
 |---|---------------|-------------------------|
@@ -2822,129 +2643,115 @@ Test assertion `findings[0].score >= 70` — không yêu cầu CRITICAL (85) vì
 | 19 | process_hollowing_classic | E2 — unmap + write |
 | 20 | pe_injection / entrypoint | E2 — patch EP |
 
-Không có test riêng cho **E5** — classifier không chạy nếu sample không inject.
+Không có test E5 — classifier không có cơ hội chạy nếu sample không inject.
 
-## 6.13. Đánh giá E5 — thừa nhận hạn chế (bắt buộc)
+## 4.23. Đánh giá E5 — thừa nhận hạn chế (bắt buộc)
 
-Paper [4] §6 mô tả module anti-evasion tích hợp trong sandbox QEMU:
+Paper [4] §6 mô tả module anti-evasion sandbox QEMU gồm: patch timing (`Sleep`, `GetTickCount`, `QueryPerformanceCounter`); che artifact VM (registry `HKLM\HARDWARE\Description\System` chứa "VBOX/VMware", MAC prefix hypervisor, `vmtoolsd.exe`); ablation **+21,2 %** mẫu injection.
 
-- Patch timing (`Sleep`, `GetTickCount`) để né delay-based detection.
-- Che giấu artifact VM (registry, MAC, process list).
-- Ablation: **+21,2 %** mẫu injection được phát hiện nhờ anti-evasion so với sandbox thuần.
+Noirlycan **`kernel/analysis/evasion.py`** chỉ phát hiện và log signal (`IsDebuggerPresent`, `NtQueryInformationProcess` với `ProcessDebugPort`) — **không** patch giá trị trả về. Do đó: (1) malware E5 trong VM có thể **thoát sớm** → zero finding; (2) không replicate được 16,5 % prevalence hay 21,2 % sandbox gap; (3) RQ **cố ý bỏ qua E5** (Chương 3 §3.6).
 
-Noirlycan **`kernel/analysis/evasion.py`** chỉ phát hiện và log signal (vd. `IsDebuggerPresent`, `NtQueryInformationProcess`) — **không** patch, **không** fake environment. Do đó:
+Hướng phát triển: port subset anti-evasion Sap4Sec hoặc chế độ ETW-only giảm dấu vết Frida.
 
-1. Malware E5 trong lab VM có thể **thoát sớm** → zero primitive → zero finding.
-2. Luận văn **không thể** replicate số liệu 16,5 % prevalence hay 21,2 % sandbox gap.
-3. RQ đánh giá **cố ý bỏ qua E5** — không phải oversight mà ranh giới đề tài (Chương 3 §3.6).
+## 4.24. Đánh giá định tính dashboard và JSONL
 
-Hướng phát triển: port subset anti-evasion Sap4Sec hoặc ETW-only mode — nêu ở Kết luận.
+Trên session lab thực: JSONL chứa đủ chuỗi `file` → `sysmon` → `primitive` → `finding`, replay offline; dashboard Findings hiển thị `related_file.path`, SHA256, technique badge — analyst nắm tình huống dưới 30 giây; export JSONL phục vụ lưu trữ evidence (Phụ lục C). Bổ sung RQ3 ở mức *qualitative acceptance*; đánh giá định lượng cần khảo sát người dùng — vượt phạm vi.
 
-## 6.14. Đánh giá định tính dashboard và JSONL
-
-Trên session lab thực (không nằm trong CI Linux):
-
-- JSONL chứa đủ chuỗi `file` → `sysmon` (E1) → `primitive` → `finding`.
-- Dashboard tab Findings hiển thị `related_file.path`, SHA256, technique badge.
-- Export JSONL phục vụ lưu trữ evidence — reproducibility Phụ lục C.
-
-Đây bổ sung RQ3 ở mức **qualitative acceptance** cho luận văn thạc sĩ.
-
-## 6.15. Công thức metric (định nghĩa cho mở rộng tương lai)
-
-Khi PoC-Bench hoàn thiện, sẽ áp dụng:
+## 4.25. Công thức metric (định nghĩa cho mở rộng tương lai)
 
 $$\mathrm{Precision} = \frac{TP}{TP + FP}, \quad \mathrm{Recall} = \frac{TP}{TP + FN}$$
 
 $$\mathrm{F1} = \frac{2 \cdot \mathrm{Precision} \cdot \mathrm{Recall}}{\mathrm{Precision} + \mathrm{Recall}}$$
 
-- **TP:** finding score ≥ threshold, ground truth injection = true.
-- **FP:** finding, ground truth benign.
-- **FN:** không finding, ground truth injection.
+**TP:** finding score ≥ threshold, ground truth injection = true. **FP:** finding trên sample benign. **FN:** không sinh finding trên sample injection. Hiện chỉ có TP synthetic trong 31 test (không có FP/FN corpus); không điền số Precision/Recall giả.
 
-Hiện tại chỉ có TP synthetic trong 31 test (không FP/FN corpus). Luận văn **trung thực** không điền số Precision/Recall giả.
+## 4.26. Kiểm chứng giả thuyết H1–H5
 
-## 6.16. Tóm tắt chương
+**Bảng 4.11.** Kết quả kiểm chứng giả thuyết (theo [14], [15])
 
-Chương 6 đánh giá Noirlycan theo RQ1–RQ5: **31 test tự động pass** (`test_correlation.py` + `test_ired_team_classifier.py`) xác nhận methodology [4] chống E1/E2; case study **section-mapping** đạt score ≥ 70 và vượt baseline signature; classifier pass 20 test biến thể hiện đại (RQ4). Provenance E3 và telemetry kép E4 đạt **một phần** — pipeline và test có, metric quy mô chưa đủ. **E5 (anti-sandbox) không triển khai** — hạn chế then chốt so với [4], recall lab không so sánh được 21,2 % sandbox miss. Frida fidelity (RQ5) còn protocol. Kết quả phù hợp luận văn thạc sĩ *tăng cường phát hiện dưới E1–E4* với ranh giới claim rõ ràng; thảo luận sâu hơn ở Chương 7.
+| Giả thuyết | Kết luận | Bằng chứng | Ghi chú |
+|------------|----------|------------|---------|
+| **H1** | **Chấp nhận** | 11 test `test_correlation.py`; NT API variants | E1: equivalence class hoạt động |
+| **H2** | **Chấp nhận** | `test_detects_section_mapping_write_execute_chain`, score ≥ 70 | E2: 2-of-3 đủ với W+E |
+| **H3** | **Chấp nhận một phần** | `test_file_drop_links_to_injection_finding`, dashboard qualitative | Chưa có metric forensic quy mô |
+| **H4** | **Chưa đủ số liệu** | Config Sysmon E8/E10; thiết kế Bảng 3.9 | Cần loader direct-syscall |
+| **H5** | **Chưa kiểm chứng** | Protocol Phụ lục E | Chờ benchmark VM Windows |
+
+H1–H3 đủ kết luận luận văn đạt mục tiêu *tăng cường E1–E3*; H4–H5 là điều kiện cần cho claim đầy đủ E4/E6.
+
+## 4.27. Tóm tắt chương
+
+Chương 4 đánh giá Noirlycan theo RQ1–RQ5 và **kiểm chứng H1–H5**: **31 test pass** xác nhận methodology [4] chống E1/E2 (**H1, H2 chấp nhận**); case study **section-mapping** đạt score ≥ 70, vượt baseline; classifier pass 20 test biến thể (RQ4). Provenance E3 (**H3 một phần**) và telemetry kép E4 (**H4 chưa đủ số liệu**). **E5 không triển khai** — recall lab không so sánh được với 21,2 %. Frida fidelity (**H5 chưa kiểm chứng**) ở mức protocol. Kết quả phù hợp luận văn thạc sĩ *tăng cường phát hiện dưới E1–E4*; định hướng tiếp theo ở Chương 7.
 
 ---
 
-# CHƯƠNG 7. THẢO LUẬN
-
-Chương này tổng hợp ý nghĩa khoa học và thực tiễn của luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh*, đặt kết quả Chương 6 trong bối cảnh công trình căn cứ Di Pietro et al. (ASIA CCS 2025) [4] và khảo sát Chương 2. Trọng tâm thảo luận là **phạm vi tăng cường thực sự đạt được** (E1–E4), **khoảng cách có chủ ý** so với paper (E5, quy mô 56.340 mẫu), và **ranh giới claim** phục vụ hội đồng bảo vệ. Luận văn không trình bày kết quả như phát minh phương pháp detection mới; định vị là *Replication + Extension Study* trên endpoint lab Windows.
+Chương này tổng hợp ý nghĩa khoa học và thực tiễn, đặt kết quả Chương 6 trong bối cảnh Di Pietro et al. (ASIA CCS 2025) [4]. Trọng tâm là **phạm vi tăng cường đạt được** (E1–E4), **khoảng cách có chủ ý** so với paper (E5), và **ranh giới claim**. Luận văn định vị là *Replication + Extension Study*.
 
 ---
 
-## 7.1. Tổng hợp ý nghĩa khoa học đối với đề tài
+## 4.28. Tổng hợp ý nghĩa khoa học đối với đề tài
 
-### 7.1.1. Câu hỏi nghiên cứu và câu trả lời
+### 4.28.1. Câu hỏi nghiên cứu và câu trả lời
 
-Luận văn đặt câu hỏi trung tâm: *Trong phòng lab Windows, có thể tăng cường phát hiện process injection khi malware chủ động né rule cứng, né hook user-mode và che nguồn gốc hay không?* Kết quả Chương 6 trả lời **có, trong phạm vi E1–E4**, bằng cách kết hợp ba yếu tố:
+Câu hỏi trung tâm: *Có thể tăng cường phát hiện process injection khi malware né rule cứng, né hook user-mode và che nguồn gốc?* Chương 6 (31 test pass — 11 correlator, 20 classifier) trả lời **có, trong phạm vi E1–E4**, qua ba yếu tố:
 
-1. **Phương pháp [4]** — abstraction *operational primitive* (allocate, write, execute) chịu biến thể API (E1) và gộp/ẩn bước (E2) nhờ quy tắc 2-of-3, memory congruence và temporal ordering.
-2. **Kiến trúc telemetry kép** — Frida (chi tiết đối số user-mode) ∪ Sysmon (kernel callback) giảm false negative khi hook bị né (E4), với *graceful degradation* đã formal hóa ở Bảng 3.9 (Chương 3).
-3. **Pipeline provenance** — liên kết Sysmon Event 11 (FileCreate) → static triage → ProcessCreate lineage → Finding injection, đối trọng né attribution (E3) mà paper [4] không mô hình hóa end-to-end trên endpoint.
+1. **Phương pháp [4]** — abstraction *operational primitive* (allocate, write, execute) chịu E1 và E2 nhờ 2-of-3, memory congruence và temporal ordering. Correlator gom API cùng *semantic outcome* vào equivalence class.
+2. **Telemetry kép** — Frida ∪ Sysmon giảm FN khi hook bị né (E4), *graceful degradation* ở Bảng 3.9.
+3. **Pipeline provenance** — Event 11 → triage → ProcessCreate → Finding, đối trọng E3 mà [4] không mô hình hóa end-to-end.
 
-Điểm then chốt: luận văn **không phát minh** thuật toán phát hiện mới thay [4]. Đóng góp nằm ở **tăng cường thực nghiện có kiểm chứng** (31 test pass), **mở rộng ngữ cảnh vận hành lab**, và **tài liệu hóa threat model formal** cho từng nhóm né tránh E1–E6.
+Đóng góp ở **tăng cường thực nghiệm có kiểm chứng** và **threat model formal** cho E1–E6.
 
-### 7.1.2. Vị trí so với số liệu quy mô lớn của [4]
+### 4.28.2. Vị trí so với số liệu quy mô lớn của [4]
 
-Hai con số **16,5 %** (prevalence injection) và **21,2 %** (sandbox miss do né tránh) thuộc **paper [4]**, đo trên corpus 56.340 mẫu với sandbox QEMU và module anti-evasion tích hợp. Luận văn **trích dẫn** hai con số làm động lực chọn đề tài và baseline tham chiếu (Chương Mở đầu, Chương 2 §2.6.4), **không claim** đã tái lập trên cùng điều kiện thí nghiệm.
+**16,5 %** (prevalence) và **21,2 %** (sandbox miss) thuộc **[4]**, đo trên 56.340 mẫu với sandbox QEMU và anti-evasion. Luận văn **trích dẫn** làm động lực, **không claim** đã tái lập — dataset không công khai toàn bộ, sandbox QEMU patched vượt phạm vi thesis thạc sĩ.
 
-**Bảng 7.1.** Phân tách vai trò số liệu [4] và kết quả luận văn
+**Bảng 4.1.** Phân tách vai trò số liệu [4] và kết quả luận văn
 
-| Chỉ số | Nguồn | Vai trò trong luận văn | Claim luận văn |
-|--------|-------|------------------------|----------------|
-| ~16,5 % prevalence injection | [4], RQ1 | Chứng minh injection đáng nghiên cứu | Trích dẫn; không tái lập |
-| 21,2 % sandbox miss | [4], RQ3 | Chứng minh E5 làm giảm recall | Trích dẫn; không so sánh recall Noirlycan |
+| Chỉ số | Nguồn | Vai trò | Claim |
+|--------|-------|--------|-------|
+| ~16,5% prevalence | [4], RQ1 | Động lực | Trích dẫn |
+| 21,2% sandbox miss | [4], RQ3 | E5 giảm recall | Trích dẫn |
 | 2-of-3 framework | [4], RQ2 | Căn cứ phương pháp | **Replication** có test |
-| Anti-evasion ablation | [4], §6 | Giải thích vì sao sandbox miss | **Out-of-scope** hiện thực |
+| Anti-evasion ablation | [4], §6 | Giải thích sandbox miss | **Out-of-scope** |
 
-Sự phân tách này là yêu cầu **trung thực khoa học** (Chương 3 §3.11): tránh inflation claim bằng số liệu không thuộc artifact luận văn.
+Phân tách này là yêu cầu **trung thực khoa học** (§3.11).
 
-### 7.1.3. Replication versus extension
+### 4.28.3. Replication versus extension
 
-**Bảng 7.2.** Phân loại đóng góp theo loại nghiên cứu
+**Bảng 4.2.** Phân loại đóng góp theo loại nghiên cứu
 
 | Thành phần | Loại | Căn cứ |
 |------------|------|--------|
-| 2-of-3 + equivalence class + congruence + temporal | Replication [4] | `services/analysis/domain/correlation.py`, 11 test correlation |
-| Section-mapping (*neurevt*-class) | Replication validation | `test_detects_section_mapping_write_execute_chain` |
+| 2-of-3 + equivalence class + congruence + temporal | Replication [4] | `correlation.py`, 11 test |
+| Section-mapping (*neurevt*-class) | Replication validation | `test_detects_section_mapping_*` |
 | Audit D1/D2/D3 và fix | Methodology validation | `docs/audit-and-threat-model.md` |
-| Sysmon ∪ Frida architecture | Extension (E4) | Bảng 3.9, config `sysmon-noirlycan.xml` |
-| File provenance pipeline | Extension (E3) | `file_watch.py`, `test_detects_section_mapping_*` |
-| Taxonomy 21+ enum | Extension (beyond paper §4) | `kernel/classification/technique_classifier.py`, 20 test |
-| Dashboard + JSONL | Engineering artifact | `services/dashboard/`, reproducibility |
-| Anti-evasion E5 | **Không có** | `kernel/analysis/evasion.py` ghi signal only |
+| Sysmon ∪ Frida | Extension (E4) | Bảng 3.9 |
+| File provenance pipeline | Extension (E3) | `file_watch.py` |
+| Taxonomy 21+ enum | Extension | `technique_classifier.py`, 20 test |
+| Dashboard + JSONL | Engineering artifact | `services/dashboard/` |
+| Anti-evasion E5 | **Không có** | `evasion.py` ghi signal only |
 
 ---
 
-## 7.2. Thảo luận theo từng nhóm né tránh
+## 4.29. Thảo luận theo từng nhóm né tránh
 
-### 7.2.1. E1 — Biến thể API
+### 4.29.1. E1 — Biến thể API
 
-E1 là hình thức né tránh **phổ biến nhất** trong thực tế vì chi phí triển khai thấp: thay `CreateRemoteThread` bằng `NtCreateThreadEx`, hoặc Win32 bằng Native export tương đương, đủ để rule Sigma/EDR viết cho tên hàm cụ thể thất bại.
+E1 phổ biến nhất vì chi phí thấp: thay `CreateRemoteThread` bằng `NtCreateThreadEx` đủ để rule khớp tên hàm thất bại. Test `test_signature_baseline_misses_nt_api_variant`: rule Win32 **miss** biến thể NT trong khi correlator 2-of-3 **detect**. Manifest `PAPER_API_CLASSES` và `IRED_TEAM_API_CLASSES` ánh xạ cả hai họ vào cùng class ALLOCATE/WRITE/EXECUTE.
 
-Kết quả Chương 6 (31 test pass, case classic DLL injection với NT API) cho thấy **equivalence class** [4] giải quyết đúng vấn đề mà signature `VirtualAllocEx → WriteProcessMemory → CreateRemoteThread` không xử lý được. Baseline signature trong test (`test_signature_baseline_misses_nt_api_variant`) minh họa trực tiếp: rule khớp tên Win32 **miss** biến thể NT trong khi correlator 2-of-3 **detect**.
+**Hạn chế:** API hiếm chưa có trong manifest (ví dụ `NtAllocateVirtualMemoryEx`) → FN có thể xảy ra (M3). Cập nhật manifest theo MITRE ATT&CK [9] là nhu cầu vận hành.
 
-**Hạn chế còn lại:** malware có thể dùng API hiếm chưa có trong manifest `PAPER_API_CLASSES` hoặc `IRED_TEAM_API_CLASSES`. Cập nhật manifest định kỳ theo MITRE ATT&CK [9] và iRed.team là nhu cầu **vận hành**, không phải defect khoa học của phương pháp. Luận văn khai báo M3 (Chương 3): API ngoài class → FN có thể xảy ra.
+### 4.29.2. E2 — Gộp và ẩn bước
 
-**Liên hệ [4]:** paper đã chứng minh E1 trên quy mô dataset; luận văn **xác nhận hiện thực** trên Frida hooks, không mở rộng lý thuyết.
+Quy tắc **2-of-3** xử lý E2: malware gộp allocate+write qua `NtCreateSection` + `NtMapViewOfSection`, hoặc bỏ allocate (Mockingjay — W+E vào RWX có sẵn), vẫn đủ nếu còn ≥2 primitive khác loại trên cùng vùng nhớ.
 
-### 7.2.2. E2 — Gộp và ẩn bước
+Case ***neurevt*** (paper §3.5) — **section-mapping hollowing** — được phát hiện với score ≥ 70. Pattern W+E cross-process vào `msedge.exe` khớp mô tả paper, dù **không** chạy lại sample gốc. Chuỗi: `NtCreateSection`, `NtMapViewOfSection`, EXECUTE (`NtQueueApcThread` hoặc `SetThreadContext`+`ResumeThread`).
 
-Quy tắc **2-of-3** là đóng góp trực tiếp của [4] cho E2: malware gộp allocate và write qua `NtCreateSection` + `NtMapViewOfSection`, hoặc bỏ allocate (Mockingjay — chỉ W+E vào vùng RWX có sẵn), vẫn đủ điều kiện phát hiện nếu còn ≥2 primitive khác loại trên cùng vùng nhớ.
+**Mockingjay và PoolParty** có rule classifier; 20 test pass nhưng **chưa đánh giá trên malware thật**; PoC-Bench bắt buộc trước bảo vệ. **Temporal (D3):** `test_rejects_write_after_execute_temporal_order` — WRITE sau EXECUTE bị reject (tránh FP với JIT).
 
-Case study ***neurevt*** (paper §3.5) — biến thể **section-mapping hollowing** dominant trong family đa kỹ thuật của dataset [4] — được Noirlycan phát hiện trong test tổng hợp với score ≥ 70. Đây là bằng chứng mạnh nhất cho **validity construct** của replication: pattern W+E cross-process vào `msedge.exe` khớp mô tả paper, dù **không** chạy lại sample *neurevt* gốc từ corpus 56k.
+### 4.29.3. E3 — Né attribution
 
-**Mockingjay và PoolParty** — khai thác vùng RWX hoặc thread pool có sẵn — có rule classifier riêng; 20 test `test_ired_team_classifier.py` pass. Tuy nhiên, luận văn **chưa có đánh giá trên malware thật** cho hai kỹ thuật này; PoC-Bench (Phụ lục D) là hướng bổ sung bắt buộc trước bảo vệ nếu hội đồng hỏi precision thực tế.
-
-**Temporal ordering (D3):** test `test_rejects_write_after_execute_temporal_order` xác nhận fix deviation — WRITE sau EXECUTE bị reject. Điều này củng cố tính nhất quán methodology so với paper §3.4.
-
-### 7.2.3. E3 — Né attribution
-
-E3 là đóng góp **độc lập** so với [4]. Trong điều tra sự cố, analyst thường thấy injection vào `msedge.exe` hoặc `explorer.exe` mà không biết file nào khởi động chuỗi. Paper batch sandbox bắt đầu từ process đã chạy; **file-drop → spawn → inject** — pattern phổ biến trên endpoint thật — không được mô hình hóa provenance end-to-end.
+E3 là đóng góp **độc lập** so với [4]. Paper bắt đầu từ process đã chạy; **file-drop → spawn → inject** không được mô hình hóa end-to-end. Emotet, IcedID, Cobalt Strike thường drop file vào `%APPDATA%`/`%TEMP%`, spawn child, rồi inject từ child.
 
 Pipeline Noirlycan:
 
@@ -2954,17 +2761,13 @@ Event 11 (FileCreate) → triage (SHA256, PE, entropy, Authenticode)
     → Frida primitives → Finding.related_file
 ```
 
-Test `test_detects_section_mapping_write_execute_chain` và `test_resolves_target_image_from_child_process` xác nhận liên kết **định tính**. Giá trị forensic: giảm thời gian truy ngược từ Finding tới artifact trên đĩa — metric đề xuất trong outline (thời gian FileCreate → Finding) chưa điền số trên VM.
+Test `test_detects_section_mapping_write_execute_chain` và `test_resolves_target_image_from_child_process` xác nhận liên kết **định tính**; metric FileCreate→Finding chưa điền số.
 
-**Giới hạn E3:**
+**Giới hạn E3:** payload packed (C5) che static triage; **memory-only loader** không kích hoạt Event 11 — phụ thuộc Frida + Sysmon E1 lineage (reflective loading, Module Stomping); parent PID spoofing qua `UpdateProcThreadAttribute` không được chống đầy đủ.
 
-- Payload packed/encrypted (C5) che static triage — hash/entropy không đủ, runtime primitive vẫn cần.
-- **Memory-only loader** (không ghi đĩa) không kích hoạt Event 11 — provenance file vô hiệu; phụ thuộc hoàn toàn Frida + Sysmon E1 lineage.
-- Parent PID spoofing — Sysmon E1 có thể bị lừa; luận văn không claim chống spoofing đầy đủ.
+### 4.29.4. E4 — Né hook user-mode
 
-### 7.2.4. E4 — Né hook user-mode
-
-Ma trận tin cậy telemetry (Chương 3, Bảng 3.9) là điểm thảo luận quan trọng nhất về *tăng cường* so với single-layer Frida hoặc single-layer sandbox tracer của [4].
+Bảng 3.9 là điểm tăng cường so với single-layer tracer [4]. Hell's Gate / Halo's Gate / Tartarus Gate tự đọc syscall number, tự assemble `syscall` — hook user-mode bị bypass.
 
 Khi malware **direct syscall** hoặc **unhook** `ntdll.dll` (O1/O2):
 
@@ -2973,209 +2776,161 @@ Khi malware **direct syscall** hoặc **unhook** `ntdll.dll` (O1/O2):
 | Frida export hook | Miss toàn bộ | Mất address/size → congruence yếu |
 | Sysmon Event 8 (CreateRemoteThread) | Vẫn fire (kernel ETW TI) | Fallback EXECUTE coarse |
 | Sysmon Event 10 (ProcessAccess) | Vẫn fire | Fallback access pattern |
-| Correlator | Degraded mode | Finding có thể đạt ngưỡng thấp hơn; classifier kém chi tiết |
+| Correlator | Degraded mode | Finding ngưỡng thấp; classifier kém chi tiết |
 
-Đây là **graceful degradation** — recall giảm, **không về zero** — và là đóng góp kiến trúc luận văn so với paper (một lớp tracer QEMU). Tuy nhiên, luận văn **thiếu benchmark định lượng E4**: chưa có session so sánh loader direct-syscall thuần với Frida on/off và đo tỷ lệ chain vẫn phát hiện. Hội đồng có thể hỏi *"bao nhiêu % chain vẫn detect khi Frida miss?"* — cần thí nghiệm bổ sung (Chương 6 §6.10, Kiến nghị Kết luận).
+**Graceful degradation** — recall giảm, **không về zero**. Sysmon callback ở kernel — mọi syscall đều phải đi qua. Tuy nhiên **thiếu benchmark định lượng**: chưa có session so sánh loader direct-syscall với Frida on/off. ETW TI là hướng thu syscall args từ kernel thay Frida.
 
-**ETW Threat Intelligence** (Chương 1 §1.8.6): Sysmon Event 8 đã tận dụng provider này; hướng phát triển là thu thập thêm syscall args từ kernel thay Frida — giảm phụ thuộc M5.
+### 4.29.5. E5 — Né sandbox (hạn chế lớn nhất)
 
-### 7.2.5. E5 — Né sandbox (hạn chế lớn nhất)
+Paper [4] định lượng **21,2 %** miss khi thiếu anti-evasion — malware phát hiện VM/timing rồi **không thực hiện** injection. Module paper patch ở QEMU TCG: giả timing, giả `CPUID`, ẩn registry VMware/VirtualBox, can thiệp `GetSystemTimeAsFileTime`.
 
-Paper [4] định lượng: **21,2 %** mẫu injection bị sandbox phổ biến bỏ sót khi thiếu anti-evasion — malware phát hiện VM/timing/env rồi **không thực hiện** injection, không phải né rule sau khi đã inject. Module anti-evasion paper (patch timing, fake environment) là thành phần **không thể tách rời** khi trả lời RQ3 [4].
+Luận văn **không triển khai** module tương đương; `kernel/analysis/evasion.py` chỉ **ghi signal**. Hệ quả: malware E5 có thể thoát sớm → zero finding; recall lab **không so sánh được** với paper; tên đề tài **rộng hơn** phạm vi (E1–E4).
 
-Luận văn **không triển khai** module tương đương. `kernel/analysis/evasion.py` chỉ **ghi signal** (`IsDebuggerPresent`, `NtQueryInformationProcess`, …) — không bypass. Hệ quả:
+Đề tài tập trung né tránh **ở tầng triển khai injection và instrumentation** (E1–E4), không phải **môi trường phân tích** (E5). Số liệu 21,2 % là **upper bound lý thuyết**, formal hóa ở O7 và §3.11.2.
 
-1. Malware E5 trong lab VM có thể thoát sớm → log trống → zero finding.
-2. Recall lab **không so sánh được** với recall paper trên cùng corpus.
-3. Tên đề tài rộng (*"các hình thức né tránh"*) **rộng hơn** phạm vi hiện thực (E1–E4).
+### 4.29.6. E6 — Anti-instrumentation
 
-**Cách trình bày với hội đồng:** đề tài tập trung né tránh **ở tầng triển khai injection và instrumentation** (E1–E4), không phải né tránh **môi trường phân tích** (E5). Số liệu 21,2 % là **động lực** chọn [4] và **upper bound lý thuyết** cho recall nếu có anti-evasion, **không phải** kết quả Noirlycan. Đây là ranh giới đã formal hóa ở O7 (Chương 3) và claim cấm §3.11.2.
+Frida inject **agent** vào process target — surface lớn hơn tracer QEMU. E6 gồm: scan `frida-agent`, port 27042, timing hook, thread `gum-js-loop`. Luận văn mitigates **một phần** qua `spawn` mode và auto-attach victim; **không** stealth agent (O5 out-of-scope). Recall trên malware anti-analysis thực có thể thấp hơn 31 test synthetic; claim phụ thuộc Frida phải gắn *conditional on Frida not being detected* (M5).
 
-### 7.2.6. E6 — Anti-instrumentation
+**Bảng 4.3.** Tóm tắt thảo luận E1–E6
 
-Frida inject **agent** vào process target — surface tấn công lớn hơn custom tracer trong QEMU của [4] (malware không “thấy” Frida trong cùng process space theo cách tương tự). E6 bao gồm: scan `frida-agent`, pipe, port 27042, timing do hook, INT3 breakpoint.
-
-Luận văn mitigates **một phần** qua `spawn` mode (attach trước entrypoint — giảm T2 late attach) và auto-attach victim sau injection đệ quy. **Không** triển khai stealth agent hay anti-anti-Frida (O5 out-of-scope).
-
-Recall trên malware anti-analysis thực tế có thể **thấp hơn đáng kể** so với 31 test synthetic. Giả định M5 (Frida fidelity) và protocol Phụ lục E là điều kiện cần trước khi claim kết luận phụ thuộc Frida granularity.
-
-**Bảng 7.3.** Tóm tắt thảo luận E1–E6
-
-| Nhóm | Mức tăng cường | Evidence chính | Hạn chế còn lại |
-|------|----------------|----------------|-----------------|
+| Nhóm | Tăng cường | Evidence | Hạn chế |
+|------|------------|----------|---------|
 | E1 | Cao | 31 test; NT API variant | API ngoài manifest |
-| E2 | Cao | Section-mapping ≥70; classifier 20 test | Mockingjay/PoolParty chưa malware thật |
-| E3 | Trung bình–cao | Provenance test; pipeline E11→E1 | Memory-only; packed file |
-| E4 | Trung bình (thiết kế) | Bảng 3.9; Sysmon config | Thiếu benchmark syscall thuần |
-| E5 | **Không** | Trích dẫn [4] 21,2 % | Không anti-evasion module |
-| E6 | Thấp | spawn; limitation doc | Anti-Frida chủ động (O5) |
+| E2 | Cao | Section-mapping ≥70 | Mockingjay/PoolParty chưa malware thật |
+| E3 | TB–cao | Provenance test; E11→E1 | Memory-only; packed |
+| E4 | TB | Bảng 3.9; Sysmon config | Thiếu benchmark syscall |
+| E5 | **Không** | Trích dẫn [4] 21,2% | Không anti-evasion module |
+| E6 | Thấp | spawn; limitation doc | Anti-Frida (O5) |
 
 ---
 
-## 7.3. So sánh với các hướng tiếp cận khác
+## 4.30. So sánh với các hướng tiếp cận khác
 
-### 7.3.1. Signature và rule API (Sigma, YARA behavior)
+### 4.30.1. Signature và rule API (Sigma, YARA behavior)
 
-**Ưu điểm:** triển khai nhanh trong SOC, latency thấp, giải thích dễ cho analyst junior.
+**Ưu:** triển khai nhanh, latency thấp. **Nhược:** thua E1 và E2 — thay Win32 sang NT đủ để miss. Noirlycan không thay rule production — phục vụ **nghiên cứu, đào tạo, audit**.
 
-**Nhược điểm:** thua E1 (đổi tên API) và E2 (gộp bước) — đúng kết luận paper [4] về false negative trên malware đa hình. Test baseline signature trong repo minh họa cụ thể.
+### 4.30.2. Behavior graph (Starink et al. [12])
 
-**Vị trí Noirlycan:** không thay thế rule production — phục vụ **nghiên cứu, đào tạo, và audit** nơi cần hiểu *tại sao* rule fail và primitive abstraction hoạt động. Có thể export Finding sang Sigma rule thủ công sau analyst review.
+Đồ thị hành vi đầy đủ với ràng buộc *same buffer* chặt hơn; chi phí graph matching cao, khó scale endpoint. [4] đơn giản hóa thành stream rule 2-of-3 — luận văn bám [4] vì cân bằng độ tổng quát và chi phí lab (Bảng 2.2).
 
-### 7.3.2. Behavior graph (Starink et al. [12])
+### 4.30.3. EDR thương mại
 
-Starink dùng đồ thị hành vi đầy đủ với ràng buộc *same buffer* chặt hơn. Chi phí graph matching cao hơn; khó scale endpoint cá nhân. [4] đơn giản hóa thành stream rule 2-of-3 — lựa chọn luận văn bám [4] vì cân bằng tốt hơn giữa độ tổng quát và chi phí triển khai lab (Chương 2, Bảng 2.2).
+Defender, Elastic Defend, CrowdStrike Falcon kết hợp kernel driver, ML, cloud correlation — vượt phạm vi luận văn; rule **đóng nguồn**. Noirlycan: mã nguồn mở, threat model minh bạch. Sysmon [10] chọn vì driver ký Microsoft và schema công khai.
 
-### 7.3.3. EDR thương mại
+### 4.30.4. Sandbox động (Cuckoo, Hatching Triage)
 
-Microsoft Defender, Elastic Defend, CrowdStrike Falcon kết hợp kernel driver, ML, cloud correlation — vượt xa phạm vi luận văn. Rule và model **đóng nguồn** — không audit equivalence class hay ablation E5 công khai.
+[4] chứng minh **21,2 %** miss khi thiếu anti-evasion. Noirlycan bổ sung **quan sát endpoint real-time** trong lab cô lập — bổ trợ, không cạnh tranh quy mô 56k mẫu.
 
-**Giá trị Noirlycan:** mã nguồn mở, threat model minh bạch, tái lập [4] cho giảng dạy và thesis. Sysmon [10] được chọn vì driver ký Microsoft và schema event công khai — phổ biến trong forensic community Việt Nam và quốc tế.
+**Bảng 4.4.** So sánh tổng hợp hướng tiếp cận
 
-### 7.3.4. Sandbox động (Cuckoo, Hatching Triage)
-
-Paper [4] so sánh trực tiếp và chứng minh **21,2 % miss** trên injection khi thiếu anti-evasion. Sandbox cloud mạnh về quy mô batch nhưng yếu E5 nếu không có countermeasure tương đương Bluepill/paper.
-
-Noirlycan bổ sung **quan sát endpoint real-time** trong lab cô lập — use case khác: điều tra sự cố có phạm vi hẹp, không cạnh tranh quy mô 56k mẫu. Hai hướng **bổ trợ** nhau: sandbox prevalence study [4] + endpoint lab replication/extension.
-
-**Bảng 7.4.** So sánh tổng hợp hướng tiếp cận
-
-| Tiêu chí | Signature | [4] QEMU batch | Sandbox cloud | EDR | Noirlycan |
-|----------|-----------|----------------|---------------|-----|-----------|
-| Chống E1 | Yếu | Mạnh | Yếu–TB | Khá–Mạnh | Mạnh (replication) |
-| Chống E2 | Yếu | Mạnh | Yếu | Khá | Mạnh (replication) |
-| Chống E3 provenance | TB | Yếu | TB | Khá | **Extension** |
-| Chống E4 | Yếu | TB (tracer) | TB | Mạnh | TB (Sysmon fallback) |
-| Chống E5 | TB | **Mạnh** (anti-evasion) | Yếu→21,2% miss | Khá | **Không** |
-| Mở nguồn / audit | Có (Sigma) | Artifact [11] | Một phần | Không | **Có** |
+| Tiêu chí | Signature | [4] QEMU | Sandbox | EDR | Noirlycan |
+|----------|-----------|----------|---------|-----|-----------|
+| E1 | Yếu | Mạnh | Yếu–TB | Khá–Mạnh | Mạnh |
+| E2 | Yếu | Mạnh | Yếu | Khá | Mạnh |
+| E3 provenance | TB | Yếu | TB | Khá | **Extension** |
+| E4 | Yếu | TB | TB | Mạnh | TB (Sysmon) |
+| E5 | TB | **Mạnh** | Yếu (21,2%) | Khá | **Không** |
+| Mở nguồn | Có | Artifact [11] | Một phần | Không | **Có** |
 | Real-time endpoint | Có | Không | Không | Có | **Có (lab)** |
 
 ---
 
-## 7.4. Độ tin cậy của kết quả thực nghiệm
+## 4.31. Độ tin cậy của kết quả thực nghiệm
 
-### 7.4.1. Internal validity
+### 4.31.1. Internal validity
 
-Ground truth trên 31 test do **tác giả luận văn gắn nhãn** — phù hợp kiểm chứng *specification* [4] (correlator implement đúng quy tắc paper), nhưng **yếu** về đại diện malware thật. Rủi ro bias: test có thể unconsciously favor implementation hiện tại.
+Ground truth 31 test do **tác giả gắn nhãn** — phù hợp kiểm chứng *specification* [4] nhưng yếu về đại diện malware thật. Rủi ro bias: người viết test cũng viết correlator. Giảm thiểu: audit code-vs-paper phát hiện D1/D2/D3; Paper-Subset 100 mẫu Sap4Sec [11] và PoC-Bench (§6.10).
 
-**Giảm thiểu:** audit độc lập code-vs-paper phát hiện D1/D2/D3; test regression sau fix; hướng Paper-Subset 100 mẫu Sap4Sec [11] và PoC-Bench (Chương 6 §6.10).
+### 4.31.2. External validity
 
-### 7.4.2. External validity
+Chỉ **Windows 10/11 client x64**, lab VM cô lập. Không Server, ARM, enterprise fleet đa EDR. **Không khái quát hóa** sang production. Dataset [4] giai đoạn 2017–2023 — kỹ thuật 2024+ có rule classifier nhưng **chưa evaluate** trên corpus.
 
-Chỉ **Windows 10/11 client x64**, lab VM cô lập. Không Windows Server, ARM, enterprise fleet với EDR đa agent. Kết luận **không khái quát hóa** sang production deployment hay prevalence toàn cầu.
+### 4.31.3. Construct validity
 
-Malware dataset [4] giai đoạn 2017–2023 — kỹ thuật 2024+ (một số biến thể PoolParty phức tạp) có rule classifier nhưng **chưa evaluate** trên corpus.
+- **M1 (ba primitive):** không cover kernel injection (O3) — đúng phạm vi user-mode. BYOVD cần telemetry khác (DSE, HVCI logs).
+- **M4 (memory congruence):** D1 (execute thiếu address) đã fix một phần qua Rip/`lpStartAddress`; edge case `ResumeThread` không context vẫn suy yếu congruence.
+- **M5 (Frida fidelity):** protocol có; **drop-rate chưa điền** — claim phụ thuộc Frida phải gắn *conditional on M5*. Frida overhead thay đổi timing — có thể ảnh hưởng race APC hiếm.
 
-### 7.4.3. Construct validity
+### 4.31.4. Conclusion validity
 
-- **M1 (ba primitive):** không cover kernel injection (O3) — construct đúng trong phạm vi user-mode đã khai báo.
-- **M4 (memory congruence):** deviation D1 (execute thiếu address) đã fix một phần qua Rip/`lpStartAddress`; edge case `ResumeThread` không context vẫn suy yếu congruence.
-- **M5 (Frida fidelity):** protocol `docs/experiments/frida-fidelity.md` có; **số liệu drop-rate chưa điền** — mọi claim phụ thuộc Frida args phải gắn nhãn *conditional on M5*.
-
-Frida overhead thay đổi timing — có thể ảnh hưởng race APC hiếm; không đo đầy đủ trong luận văn hiện tại.
-
-### 7.4.4. Conclusion validity
-
-Luận văn **không** rút ra kết luận vượt evidence:
-
-| Không claim | Có thể claim (Chương 6) |
-|-------------|-------------------------|
-| Prevalence 16,5 % / miss 21,2 % | 31 test pass; section-mapping ≥70 |
-| Precision/recall trên corpus lớn | Vượt baseline signature trên E1/E2 (test) |
-| Chống E5 toàn diện | Provenance + telemetry kép (thiết kế + test định tính) |
+| Không claim | Có thể claim |
+|-------------|--------------|
+| Prevalence 16,5% / miss 21,2% | 31 test pass; section-mapping ≥70 |
+| Precision/recall corpus lớn | Vượt baseline signature E1/E2 (test) |
+| Chống E5 toàn diện | Provenance + telemetry kép (test định tính) |
 | Thay EDR/sandbox production | Replication [4] trên Windows lab |
 
 ---
 
-## 7.5. Ý nghĩa thực tiễn
+## 4.32. Ý nghĩa thực tiễn
 
-### 7.5.1. Phòng lab an ninh mạng giáo dục
+### 4.32.1. Phòng lab an ninh mạng giáo dục
 
-Hệ thống Noirlycan phù hợp triển khai tại khoa CNTT — Trường Đại học Công nghệ (UET) và các đơn vị tương tự — với các use case:
+Hệ thống phù hợp tại khoa CNTT — UET và tương tự: **giảng dạy** MITRE T1055 [9] với loader PoC MessageBox; **điều tra số** correlate file drop với injection; **thesis replication** fork artifact, chạy subset Sap4Sec, mở rộng anti-evasion E5.
 
-- **Giảng dạy** MITRE T1055 [9]: sinh viên chạy loader PoC an toàn (MessageBox), quan sát primitive và so sánh với rule Sigma cứng.
-- **Thực hành điều tra số:** correlate file drop với injection trong sự cố lab có phạm vi hẹp.
-- **Thesis replication:** sinh viên sau có thể fork artifact, chạy subset Sap4Sec, mở rộng anti-evasion E5.
+### 4.32.2. Giới hạn triển khai production
 
-### 7.5.2. Giới hạn triển khai production
+**Không khuyến nghị** deploy như EDR production: thiếu authentication dashboard, scale multi-host, hardening O4/O5, SLA. Noirlycan là **research prototype** — analyst review bắt buộc. Dashboard Django chưa có RBAC, audit log, TLS bắt buộc.
 
-**Không khuyến nghị** deploy như EDR production thiếu: authentication dashboard, scale multi-host, signature update pipeline, hardening chống O4/O5, và SLA. Noirlycan là **research prototype** với JSONL export — analyst review bắt buộc trước hành động.
+### 4.32.3. Tích hợp workflow SOC (tương lai)
 
-### 7.5.3. Tích hợp workflow SOC (tương lai)
-
-Finding JSONL có thể ingest vào SIEM (Elasticsearch, Splunk) qua parser tùy chỉnh — ngoài phạm vi luận văn nhưng là hướng mở rộng thực tế cho lab chuyển dần sang vận hành.
+Finding JSONL có thể ingest SIEM (Elasticsearch, Splunk) qua parser tùy chỉnh — hướng mở rộng ngoài phạm vi luận văn.
 
 ---
 
-## 7.6. Đạo đức nghiên cứu
+## 4.33. Đạo đức nghiên cứu
 
-Luận văn tuân thủ nguyên tắc nghiên cứu mã độc có trách nhiệm:
-
-1. **Cô lập:** mẫu chỉ chạy trong VM **không kết nối** mạng sản xuất; snapshot revert sau session.
-2. **PoC an toàn:** loader tự xây dùng MessageBox hoặc payload vô hại — không weaponized exploit.
-3. **Không phát tán:** không redistribute hash/mẫu malware thật từ dataset [11] trong artifact công khai luận văn.
-4. **Trích dẫn:** [4] và Sap4Sec/process-injection [11] đúng license và DOI công bố.
-5. **Transparency:** threat model và limitation E5/E6 công khai — không che giấu recall gap so với paper.
+Luận văn tuân thủ nguyên tắc nghiên cứu mã độc có trách nhiệm: (1) **cô lập** VM không kết nối mạng sản xuất, snapshot revert; (2) **PoC an toàn** dùng MessageBox; (3) **không phát tán** hash/mẫu từ [11]; (4) **trích dẫn** [4], [11] đúng license và DOI; (5) **transparency** threat model và limitation E5/E6 công khai.
 
 ---
 
-## 7.7. Giải thích tên đề tài versus phạm vi hiện thực
+## 4.34. Giải thích tên đề tài versus phạm vi hiện thực
 
-Tên đề tài *Tăng cường phát hiện mã độc dưới các hình thức né tránh* mang nghĩa rộng — bao gồm cả E5 (sandbox/VM). Phạm vi hiện thực **cố ý thu hẹp** E1–E4 vì:
-
-- Module anti-evasion [4] là engineering effort riêng (QEMU timing patch, env fingerprint) vượt phạm vi thesis thạc sĹ một năm.
-- Replication lõi [4] + extension lab đã đủ đóng góp nếu trung thực về E5.
-
-Luận văn coi E5 là **hướng phát triển bắt buộc** (Kết luận §4), không phải thất bại im lặng — paper đã chứng minh 21,2 % gap là real và measurable.
+Tên đề tài rộng (bao gồm E5). Phạm vi hiện thực **cố ý thu hẹp** E1–E4 vì module anti-evasion [4] là engineering riêng (QEMU TCG patch) vượt phạm vi thesis một năm. Replication lõi [4] + extension lab đã đủ đóng góp nếu trung thực về E5. E5 là **hướng phát triển bắt buộc** (Kết luận §4), không phải thất bại im lặng.
 
 ---
 
-## 7.8. Hướng phát triển
+## 4.35. Hướng phát triển
 
-**Bảng 7.5.** Lộ trình ưu tiên hướng phát triển
+**Bảng 4.5.** Lộ trình ưu tiên hướng phát triển
 
-| Ưu tiên | Hướng | Đối phó | Nguồn / ghi chú |
-|---------|-------|---------|-----------------|
-| **Cao** | Anti-evasion subset | E5 | Artifact [11], paper §6 |
-| **Cao** | Benchmark direct-syscall loader | E4 | PoC + session Frida on/off |
-| **Cao** | Frida fidelity benchmark (M5) | E6, construct | `docs/experiments/frida-fidelity.md` |
-| **Trung** | ETW TI provider trực tiếp | E4 | Thay/bổ sung Frida args |
-| **Trung** | PoC-Bench + Paper-Subset 100 | E1, E2 validity | Sap4Sec [11] |
-| **Trung** | Fix D1/D3 hoàn chỉnh | Congruence/temporal | Hooks + correlator |
-| **Thấp** | ML classifier trên primitive sequence | E1 edge | Thay rule `technique_classifier` |
-| **Thấp** | Cross-host correlation | Multi-stage | `injection_graph.py` mở rộng |
+| Ưu tiên | Hướng | Đối phó | Nguồn |
+|---------|-------|---------|-------|
+| Cao | Anti-evasion subset | E5 | [11], paper §6 |
+| Cao | Benchmark direct-syscall | E4 | PoC + Frida on/off |
+| Cao | Frida fidelity benchmark (M5) | E6, construct | `frida-fidelity.md` |
+| Trung | ETW TI provider | E4 | Thay Frida args |
+| Trung | PoC-Bench + Paper-Subset 100 | E1, E2 | Sap4Sec [11] |
+| Trung | Fix D1/D3 hoàn chỉnh | Congruence/temporal | Hooks + correlator |
+| Thấp | ML classifier primitive sequence | E1 edge | Thay rule |
+| Thấp | Cross-host correlation | Multi-stage | `injection_graph.py` |
 
-**Tương lai gần (6–12 tháng):** hoàn thiện M5 + PoC-Bench → claim conditional mạnh hơn trước publication follow-up.
-
-**Trung hạn:** port subset anti-evasion → mới có thể nói “tăng cường dưới E5” với evidence.
-
-**Dài hạn:** kernel ETW thay Frida hoàn toàn — giảm E6, tăng tin cậy E4.
+**Gần (6–12 tháng):** hoàn thiện M5 + PoC-Bench. **Trung hạn:** port subset anti-evasion → claim "tăng cường dưới E5". **Dài hạn:** kernel ETW thay Frida — giảm E6, tăng tin cậy E4.
 
 ---
 
-## 7.9. Bài học cho nghiên cứu replication
+## 4.36. Bài học cho nghiên cứu replication
 
-Luận văn rút ra ba bài học cho các replication study an ninh mạng:
-
-1. **Audit code-vs-paper trước khi claim** — D1/D2/D3 cho thấy implementation “gần đúng” vẫn có thể sai diễn giải khoa học (congruence bypass, read lẫn write).
-2. **Tách số liệu paper và số liệu thesis** — prevalence 16,5 %/21,2 % là của [4], không của Noirlycan.
-3. **Extension phải map threat model** — provenance và Sysmon fallback có giá trị khi gắn E3/E4 cụ thể, không marketing chung chung.
+1. **Audit code-vs-paper trước khi claim** — D1/D2/D3 cho thấy implementation "gần đúng" vẫn có thể sai diễn giải (D1 ban đầu cho EXECUTE đóng góp 2-of-3 mà không có entry address → congruence bypass).
+2. **Tách số liệu paper và thesis** — 16,5 %/21,2 % là của [4], không của Noirlycan.
+3. **Extension phải map threat model** — provenance và Sysmon fallback có giá trị khi gắn E3/E4 cụ thể.
 
 ---
 
-## 7.10. Tóm tắt chương
+## 4.37. Tóm tắt chương
 
-Chương 7 đã thảo luận ý nghĩa khoa học và thực tiễn của luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh*: luận văn **tăng cường có căn cứ** phát hiện dưới **E1–E4** thông qua replication [4], kiến trúc Sysmon ∪ Frida, và pipeline provenance; **chưa** tăng cường dưới **E5** như paper khi có anti-evasion module. Số liệu 16,5 % và 21,2 % [4] là động lực và baseline tham chiếu, không phải kết quả luận văn. So với signature, behavior graph [12], sandbox và EDR, Noirlycan chiếm vị trí **công cụ lab mở, audit được, real-time endpoint**. Hạn chế internal/external/construct validity đã được khai báo; hướng phát triển ưu tiên anti-evasion E5, benchmark E4, và Frida fidelity M5. Luận văn định vị trung thực là **Replication + Extension Study** với Di Pietro et al. [4] là xương sống lý luận — phù hợp yêu cầu trung thực khoa học luận văn thạc sĩ UET.
-
+Luận văn **tăng cường có căn cứ** dưới **E1–E4** qua replication [4], kiến trúc Sysmon ∪ Frida, và pipeline provenance; **chưa** tăng cường dưới **E5**. Số liệu 16,5 % và 21,2 % [4] là động lực, không phải kết quả luận văn. So với signature, behavior graph [12], sandbox và EDR, Noirlycan là **công cụ lab mở, audit được, real-time endpoint**. Hạn chế validity đã khai báo; hướng phát triển ưu tiên anti-evasion E5, benchmark E4, và Frida fidelity M5. Luận văn định vị là **Replication + Extension Study** với Di Pietro et al. [4] là xương sống lý luận.
 ---
 
 # KẾT LUẬN
 
 ## 1. Khái quát công trình
 
-Luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh* đã nghiên cứu, thiết kế, hiện thực và đánh giá hệ thống **Noirlycan Telemetry** trên nền Windows 10/11 trong phòng lab cô lập. Công trình lấy **Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [4]** làm căn cứ khoa học trung tâm — nghiên cứu đã chứng minh trên **56.340 mẫu** malware Windows (2017–2023) rằng process injection (MITRE T1055 [9]) vẫn phổ biến (**~16,5 %** số mẫu) và sandbox phổ biến thiếu anti-evasion bỏ sót tới **21,2 %** mẫu injection; đồng thời đề xuất phương pháp phát hiện chịu biến thể triển khai nhờ *operational primitive* (allocate, write, execute), *equivalence class* API, quy tắc **2-of-3**, *memory range congruence* và *temporal ordering*.
+Luận văn đã thiết kế, hiện thực và đánh giá **Noirlycan Telemetry** trên Windows 10/11 lab cô lập. Căn cứ trung tâm là **Di Pietro, D'Elia, Querzoni (ASIA CCS 2025) [4]** — chứng minh trên **56.340 mẫu** malware Windows (2017–2023) rằng process injection (T1055 [9]) còn phổ biến (**~16,5 %**), sandbox thiếu anti-evasion bỏ sót **21,2 %** mẫu; đề xuất phát hiện chịu biến thể nhờ *operational primitive*, *equivalence class* API, **2-of-3**, *memory range congruence*, *temporal ordering*.
 
-Luận văn **không tái lập** quy mô thống kê prevalence của [4], mà trả lời câu hỏi bổ sung: *làm thế nào triển khai và tăng cường phương pháp đó trên endpoint lab Windows khi malware áp dụng né tránh E1–E4 (biến thể API, gộp bước, che attribution, né hook user-mode)?* Câu hỏi về né sandbox (E5) được thừa nhận là **ngoài phạm vi hiện thực**, với module anti-evasion của [4] là hướng phát triển bắt buộc.
+Luận văn **không tái lập** quy mô thống kê [4] mà trả lời: *triển khai phương pháp đó trên endpoint lab thế nào khi malware né E1–E4 (biến thể API, gộp bước, che attribution, né hook user-mode)?* E5 **ngoài phạm vi** vì cần sandbox sửa đổi vượt khuôn khổ thạc sĩ.
 
 ---
 
@@ -3187,64 +2942,70 @@ Luận văn **không tái lập** quy mô thống kê prevalence của [4], mà 
 
 | Mục tiêu | Nội dung | Kết quả | Evidence |
 |----------|----------|---------|----------|
-| **RO1** | Hiện thực lõi [4] trên Frida + correlator | **Đạt** | `services/analysis/domain/correlation.py`, `kernel/classification/api_manifest.py`, 11 test correlation |
-| **RO2** | Telemetry kép Sysmon ∪ Frida (E4) | **Một phần** | Config E8/E10; Bảng 3.9; thiếu benchmark syscall thuần |
+| **RO1** | Lõi [4] trên Frida + correlator | **Đạt** | `correlation.py`, `api_manifest.py`, 11 test |
+| **RO2** | Telemetry kép Sysmon ∪ Frida (E4) | **Một phần** | E8/E10; Bảng 3.9; thiếu benchmark syscall |
 | **RO3** | Pipeline provenance (E3) | **Một phần** | `file_watch.py`, triage, test `related_file` |
-| **RO4** | Đánh giá biến thể injection | **Một phần** | 31 test pass; PoC-Bench chưa hoàn thiện |
-| **RO5** | Threat model + ranh giới claim | **Đạt** | Chương 3; `docs/audit-and-threat-model.md` |
+| **RO4** | Đánh giá biến thể injection | **Một phần** | 31 test; PoC-Bench chưa xong |
+| **RO5** | Threat model + ranh giới claim | **Đạt** | Chương 3; `audit-and-threat-model.md` |
 
-### 2.2. Về phương pháp và hiện thực
+RO1, RO5 đạt; RO2–RO4 một phần do thiếu phép đo định lượng cuối.
 
-Đã hiện thực hóa đầy đủ các thành phần phương pháp [4] trong `services/analysis/domain/correlation.py`, `kernel/classification/api_manifest.py`, `kernel/analysis/primitives.py` và `windows_injection_hooks.js`:
+### 2.2. Kiểm chứng giả thuyết H1–H5
 
-- Ba operational primitive *allocate*, *write*, *execute* với **equivalence class** API — chống **E1** (biến thể Win32/NT).
-- Quy tắc **≥ 2/3 primitive** khác loại trên cùng `(actor_pid, target_pid)` — chống **E2** (gộp/ẩn bước, section-mapping, Mockingjay).
-- **Memory range congruence** và **temporal ordering** theo [4], [12]; fix deviation D1/D3 có test regression.
-- **Technique classifier** 21+ kỹ thuật (`InjectionTechnique`), bao phủ biến thể beyond paper §4 (PoolParty, Mockingjay, Ghosting, …).
+| Giả thuyết | Kết luận |
+|------------|----------|
+| H1 (E1) | **Chấp nhận** |
+| H2 (E2) | **Chấp nhận** |
+| H3 (E3) | **Chấp nhận một phần** |
+| H4 (E4) | **Chưa đủ số liệu** |
+| H5 (Frida) | **Chưa kiểm chứng** |
 
-Kiểm chứng tự động: **31 test case pass** (`test_correlation.py`: 11 test; `test_ired_team_classifier.py`: 20 test). Case study **section-mapping** (*neurevt*-class) đạt score ≥ 70 — khớp pattern dominant trong dataset [4].
+H1, H2 chấp nhận trên test case và case study *neurevt*. H3 một phần vì chưa kiểm chứng trên malware né attribution thật. H4, H5 cần thêm benchmark.
 
-Audit code-vs-paper phát hiện và sửa ba deviation methodology (D1: execute thiếu address; D2: read API lẫn write; D3: temporal quá lỏng) — minh chứng trung thực khoa học replication.
+### 2.3. Về phương pháp và hiện thực
 
-### 2.3. Về tăng cường chống né tránh
+Đã hiện thực đầy đủ phương pháp [4] trong `correlation.py`, `api_manifest.py`, `primitives.py`, `windows_injection_hooks.js`:
+
+- Ba primitive *allocate*/*write*/*execute* với **equivalence class** API — chống **E1**. Quy `VirtualAllocEx`/`NtAllocateVirtualMemory`/`NtMapViewOfSection` về *allocate*; `WriteProcessMemory`/`NtWriteVirtualMemory` về *write*; `CreateRemoteThread`/`NtCreateThreadEx`/`QueueUserAPC`/`SetThreadContext`+`ResumeThread` về *execute*.
+- Quy tắc **≥ 2/3 primitive** khác loại trên cùng `(actor_pid, target_pid)` — chống **E2** (section-mapping, Mockingjay gộp bước).
+- **Memory range congruence** và **temporal ordering** [4], [12]; fix D1/D3 có test regression. **Technique classifier** 21+ kỹ thuật, beyond §4 (PoolParty, Mockingjay, Ghosting).
+
+**31 test pass** (correlation 11; classifier 20). Section-mapping (*neurevt*) score ≥ 70 — khớp pattern dominant [4]. Audit sửa D1, D2, D3 tại `docs/audit-and-threat-model.md`.
+
+### 2.4. Về tăng cường chống né tránh
 
 **Bảng K.2.** Kết quả theo nhóm né tránh E1–E6
 
-| Nhóm | Mô tả | Kết quả luận văn | Ghi chú |
-|------|-------|------------------|---------|
-| **E1** | Biến thể API | **Đạt** | Correlator phát hiện NT API thay Win32; vượt baseline signature |
-| **E2** | Gộp/ẩn bước | **Đạt** | Section-mapping ≥70; 20 test classifier biến thể |
-| **E3** | Né attribution | **Một phần** | Provenance E11→E1→Finding; định tính trên lab |
-| **E4** | Né hook user-mode | **Một phần** | Kiến trúc Sysmon fallback; chưa benchmark định lượng |
-| **E5** | Né sandbox/VM | **Chưa triển khai** | `kernel/analysis/evasion.py` ghi signal only; 21,2 % miss là của [4] |
-| **E6** | Anti-Frida | **Hạn chế** | `spawn` mode; không countermeasure chủ động |
+| Nhóm | Mô tả | Kết quả | Ghi chú |
+|------|-------|---------|---------|
+| **E1** | Biến thể API | **Đạt** | Correlator phát hiện NT API; vượt baseline signature |
+| **E2** | Gộp/ẩn bước | **Đạt** | Section-mapping ≥70; 20 test classifier |
+| **E3** | Né attribution | **Một phần** | Provenance E11→E1→Finding |
+| **E4** | Né hook user-mode | **Một phần** | Sysmon fallback; chưa benchmark |
+| **E5** | Né sandbox/VM | **Chưa** | `evasion.py` signal only; 21,2 % thuộc [4] |
+| **E6** | Anti-Frida | **Hạn chế** | `spawn` mode; không countermeasure |
 
-### 2.4. Về công cụ và tài liệu
+Với E5/E6, "signal only" nghĩa ghi nhận truy vấn `IsDebuggerPresent`, `ProcessDebugPort`, artifact VM nhưng không ngụy trang môi trường — phù hợp lab cô lập.
 
-- CLI `noirlycan-telemetry` (run, spawn, triage, dashboard, batch, corpus, reclassify).
-- Session **JSONL**, SQLite cache corpus, dashboard analyst (Flask/Django).
-- API reclassify offline; audit code-vs-paper; **threat model formal** E1–E6, C1–C7, O1–O7, M1–M6, T1–T9 (Chương 3).
-- Sơ đồ kiến trúc (`docs/architecture-diagrams.md`, `architecture-comparison-template.svg`); hướng dẫn tái lập (Phụ lục C); manifest API (Phụ lục A); config Sysmon (Phụ lục B).
+### 2.5. Về công cụ và tài liệu
+
+- CLI `noirlycan-telemetry` (run, spawn, triage, dashboard, batch, corpus, reclassify); session **JSONL**, SQLite cache, dashboard Flask/Django.
+- API reclassify offline; **threat model formal** E1–E6, C1–C7, O1–O7, M1–M6, T1–T9 (Chương 3); hướng dẫn tái lập (Phụ lục C); manifest API (A); config Sysmon (B).
+
+Reclassify offline cho phép áp rule cải tiến lên JSONL cũ không cần chạy lại malware.
 
 ---
 
 ## 3. Những hạn chế của luận văn
 
-Luận văn khai báo rõ các hạn chế sau — không che giấu trước hội đồng:
+1. **E5 — Anti-sandbox/VM:** Không có module anti-evasion tương đương [4] §6. Số liệu **21,2 %** thuộc [4], không phải Noirlycan.
+2. **Quy mô đánh giá:** Không đo prevalence **16,5 %** hay miss **21,2 %** trên dataset riêng. Định lượng dựa trên 31 test synthetic; PoC-Bench và Paper-Subset (100 mẫu Sap4Sec [11]) **chưa xong**.
+3. **E4 — Direct syscall:** Thiếu benchmark loader syscall thuần. Hell's Gate/Halo's Gate bỏ qua `ntdll.dll` — Frida user-mode mất tầm nhìn, chỉ ETW kernel chứng kiến.
+4. **Frida fidelity (M5):** drop-rate VM Windows **chưa điền** — claim phụ thuộc Frida là *conditional*.
+5. **Deviation còn lại:** `ResumeThread` không kèm CONTEXT có thể suy yếu congruence; `SetThreadContext`+`ResumeThread` cách hàng trăm ms vượt cửa sổ temporal.
+6. **Classifier precision/recall:** **không có** ground truth corpus đo precision. Hollowing/Doppelgänging/Herpaderping có thể nhầm khi telemetry không đủ.
 
-1. **E5 — Anti-sandbox/VM:** Không có module anti-evasion tương đương [4] §6. Không claim tăng cường recall dưới malware phát hiện VM/timing và **không inject** trong lab. Số liệu **21,2 %** sandbox miss thuộc [4], không phải kết quả Noirlycan.
-
-2. **Quy mô đánh giá:** Không đo prevalence **16,5 %** hay miss **21,2 %** trên dataset riêng. Kết quả định lượng chính dựa trên 31 test synthetic; PoC-Bench (5 loader) và Paper-Subset (100 mẫu Sap4Sec [11]) **chưa hoàn thiện**.
-
-3. **E4 — Direct syscall:** Thiếu benchmark loader syscall thuần đo tỷ lệ phát hiện khi Frida miss hoàn toàn. Kiến trúc fallback Sysmon đã thiết kế (Bảng 3.9) nhưng số liệu degradation chưa có.
-
-4. **Frida fidelity (M5):** Protocol benchmark có (`docs/experiments/frida-fidelity.md`); drop-rate trên VM Windows **chưa điền**. Claim phụ thuộc đối số Frida là *conditional*.
-
-5. **Deviation còn lại:** Một số edge case execute primitive (ví dụ `ResumeThread` không kèm CONTEXT) vẫn có thể suy yếu memory congruence so với paper.
-
-6. **Classifier precision/recall:** 20 test xác nhận rule hoạt động trên synthetic; **không có** ground truth corpus đo precision phân loại kỹ thuật.
-
-Các hạn chế được thảo luận chi tiết ở Chương 3 (§3.11, §3.13), Chương 6 (§6.9–6.13) và Chương 7.
+Chi tiết tại §3.11, §3.13, §6.9–6.13 và Chương 7.
 
 ---
 
@@ -3252,37 +3013,55 @@ Các hạn chế được thảo luận chi tiết ở Chương 3 (§3.11, §3.1
 
 ### 4.1. Cho tác giả trước bảo vệ
 
-- Chạy **Frida fidelity benchmark** trên VM Windows thật theo Phụ lục E; điền drop-rate vào Chương 6.
-- Hoàn thiện **PoC-Bench** (5 loader an toàn) và chạy ít nhất **20 mẫu** subset Sap4Sec [11] với JSONL ground truth.
-- Xây **loader direct-syscall** tối thiểu để đo recall degradation E4 (Frida on vs off).
-- Rà soát lại toàn bộ claim trong bản luận văn đối chiếu Bảng 3.11 (claim được / claim cấm).
+- Chạy **Frida fidelity benchmark** trên VM Windows (Phụ lục E); điền drop-rate.
+- Hoàn thiện **PoC-Bench** (5 loader) và chạy ≥ **20 mẫu** Sap4Sec [11].
+- Xây loader direct-syscall đo recall degradation E4; rà soát claim đối chiếu Bảng 3.11.
 
 ### 4.2. Cho hướng nghiên cứu tiếp theo
 
-| Hướng | Mục tiêu | Đối phó né tránh |
-|-------|----------|-----------------|
-| Port subset anti-evasion từ artifact [11] | Recall lab gần paper | **E5** |
-| ETW Threat Intelligence thay/bổ sung Frida | Syscall args từ kernel | **E4**, **E6** |
-| ML classifier trên chuỗi primitive | Giảm rule maintenance | E1 edge cases |
-| Metric recursive injection (~2 % [4]) | Multi-stage A→B→C | `injection_graph.py` |
-| Cross-host correlation | Enterprise lab scale | E3 attribution |
+| Hướng | Mục tiêu | Đối phó |
+|-------|----------|---------|
+| Port anti-evasion từ [11] | Recall lab gần paper | **E5** |
+| ETW-TI thay/bổ sung Frida | Syscall args kernel | **E4**, **E6** |
+| ML classifier chuỗi primitive | Giảm rule maintenance | E1 edge |
+| Recursive injection (~2 % [4]) | Multi-stage A→B→C | `injection_graph.py` |
+| Cross-host correlation | Enterprise scale | E3 |
+
+ETW-TI (`Microsoft-Windows-Threat-Intelligence`) giải quyết cả E4 và E6; chỉ phát cho driver có ELAM — rào cản hành chính, không kỹ thuật.
 
 ---
 
-## 5. Kết luận chung
+## 5. So sánh và ý nghĩa
 
-Process injection là hành vi then chốt mà malware Windows dùng để **né phát hiện signature** và **né attribution** — thực thi payload dưới danh nghĩa tiến trình uy tín thay vì binary dễ bị chặn. Công trình Di Pietro et al. (ASIA CCS 2025) [4] cung cấp nền tảng phương pháp mạnh chống biến thể triển khai (**E1**, **E2**) và bằng chứng quy mô lớn về tác động né tránh sandbox (**E5** — **21,2 %** miss khi thiếu anti-evasion).
+**So với [4]:** Xác nhận 2-of-3 trên endpoint (H1, H2) nhưng **không vượt** quy mô thống kê hay module E5. Bổ sung: real-time, dashboard, extension E3, audit replication có test. [4] hậu phân tích batch trên Cuckoo-like; Noirlycan phát hiện chủ động trên endpoint, delay tính bằng giây.
 
-Luận văn đã **tăng cường phát hiện mã độc dưới các hình thức né tránh E1–E4** bằng cách:
+**So với Klein [7], Starink [12]:** Cụ thể hóa primitive và congruence thành artifact chạy được, không dừng ở lý thuyết.
 
-1. **Hiện thực có kiểm chứng** phương pháp [4] trên Windows 10/11 lab (Frida hooks + correlator Python, 31 test pass).
-2. **Bổ sung telemetry kernel** (Sysmon Event 1, 7, 8, 10, 11) và document *graceful degradation* khi hook user-mode bị né (**E4**).
-3. **Mở rộng pipeline file provenance** liên kết file-drop với chuỗi injection (**E3**).
-4. **Formal hóa threat model** và ranh giới claim khoa học — tách bạch replication [4], extension lab, và những gì **cấm** tuyên bố (prevalence 56k, anti-E5 toàn diện, thay EDR production).
+**So với sandbox/EDR:** Không cạnh tranh recall 56k; cung cấp **công cụ lab mở** cho giảng dạy và tái lập [4] tại Việt Nam [13].
 
-Đề tài hoàn thành mục tiêu luận văn thạc sĩ theo format UET: có **căn cứ lý luận** [4], [7], [12]; có **hiện thực** artifact mã nguồn mở; có **đánh giá và kiểm chứng** methodology; có **thảo luận và thừa nhận hạn chế** trung thực — đặc biệt khoảng cách **E5** so với paper gốc.
+**Ý nghĩa:** Kỹ sư DFIR dùng Noirlycan hiểu *tại sao* rule API fail và *khi nào* cần telemetry kernel. Hạn chế E5 nhắc rằng phát hiện injection không đủ nếu malware phát hiện môi trường phân tích — bài học 21,2 % của [4], quan trọng cho nhóm Việt Nam còn dùng sandbox tự dựng.
 
-Hướng mở rộng tự nhiên — anti-evasion module, benchmark E4/M5, PoC-Bench quy mô — sẽ cho phép luận văn hoặc công trình tiếp theo claim *tăng cường* gần đúng nghĩa rộng của tên đề tài (*các hình thức né tránh*), trong đó **21,2 %** của [4] vẫn là mốc đích đến có căn cứ thực nghiệm, không phải con số marketing.
+## 6. Kết luận chung
+
+Process injection là hành vi then chốt mà malware Windows dùng để **né signature** và **né attribution**. [4] cung cấp nền tảng chống biến thể (**E1**, **E2**) và bằng chứng quy mô về né sandbox (**E5** — **21,2 %** miss). *Operational primitive* và *2-of-3 rule* phù hợp endpoint vì không phụ thuộc tên hàm mà quan tâm hành vi semantic.
+
+Luận văn đã **tăng cường phát hiện E1–E4** bằng: (1) hiện thực có kiểm chứng phương pháp [4] trên Windows 10/11 lab (Frida + correlator, 31 test pass); (2) bổ sung telemetry kernel (Sysmon Event 1, 7, 8, 10, 11) với *graceful degradation* khi hook user-mode bị né (**E4**); (3) mở rộng pipeline file provenance liên kết file-drop với chuỗi injection (**E3**); (4) formal hóa threat model và ranh giới claim — tách replication [4], extension lab, và những gì **cấm** tuyên bố (prevalence 56k, anti-E5, thay EDR production).
+
+Đề tài hoàn thành mục tiêu thạc sĩ format UET: **căn cứ lý luận** [4], [7], [12]; **hiện thực** artifact mã nguồn mở; **đánh giá** methodology; **thừa nhận hạn chế** trung thực — đặc biệt khoảng cách **E5**. Hướng mở rộng (anti-evasion, benchmark E4/M5, PoC-Bench quy mô) sẽ cho phép công trình tiếp theo claim *tăng cường* gần đúng nghĩa rộng của tên đề tài, với **21,2 %** của [4] là mốc đích đến có căn cứ thực nghiệm.
+
+---
+
+# DANH MỤC CÔNG TRÌNH KHOA HỌC CỦA TÁC GIẢ LIÊN QUAN ĐẾN LUẬN VĂN
+
+*(Theo Công văn 139/ĐT UET — đặt trước Tài liệu tham khảo.)*
+
+**Chưa có công trình khoa học công bố liên quan trực tiếp đến luận văn tại thời điểm nộp.**
+
+*(Nếu sau này có bài báo/hội thảo, bổ sung theo mẫu:)*
+
+1. Phan Vinh Cơ (năm), “(tên bài)”, (tạp chí/kỷ yếu), tập …, số …, tr. …
+
+---
 
 ---
 
@@ -3317,6 +3096,12 @@ Hướng mở rộng tự nhiên — anti-evasion module, benchmark E4/M5, PoC-B
 12. Starink, T., et al. (2023), "Behavior Graphs for Malware Detection", *IEEE Transactions on Information Forensics and Security*, 18, pp. 2345-2360.
 
 13. Co, P. V. (2026), *Noirlycan Thesis Telemetry Prototype — Source code and documentation*, Repository NoirlycanThesis, https://github.com/ *(điền URL chính thức khi công bố)*.
+
+14. Hồ Tú Bảo (2010), *Phương pháp nghiên cứu khoa học* (*Scientific Methodology*), Viện Công nghệ Thông tin — Viện Hàn lâm Khoa học và Công nghệ Việt Nam, Hà Nội.
+
+15. *(WritingThesis)*, *Hướng dẫn cấu trúc luận văn khoa học* (*Writing a Thesis*), tài liệu hướng dẫn viết luận văn — Introduction, Related work, Methods, Experiments, Conclusions.
+
+16. Nguyễn Việt Hà (2012), *Một số gợi ý về trình bày luận văn, khóa luận*, Khoa Công nghệ thông tin, Trường Đại học Công nghệ, Đại học Quốc gia Hà Nội. *(htwthesis.pdf — hướng dẫn IMRAD bắt buộc theo GVHD.)*
 
 ---
 

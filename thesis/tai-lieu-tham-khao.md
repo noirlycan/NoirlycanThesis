@@ -29,3 +29,9 @@
 12. Starink, T., et al. (2023), "Behavior Graphs for Malware Detection", *IEEE Transactions on Information Forensics and Security*, 18, pp. 2345-2360.
 
 13. Co, P. V. (2026), *Noirlycan Thesis Telemetry Prototype — Source code and documentation*, Repository NoirlycanThesis, https://github.com/ *(điền URL chính thức khi công bố)*.
+
+14. Hồ Tú Bảo (2010), *Phương pháp nghiên cứu khoa học* (*Scientific Methodology*), Viện Công nghệ Thông tin — Viện Hàn lâm Khoa học và Công nghệ Việt Nam, Hà Nội.
+
+15. *(WritingThesis)*, *Hướng dẫn cấu trúc luận văn khoa học* (*Writing a Thesis*), tài liệu hướng dẫn viết luận văn — Introduction, Related work, Methods, Experiments, Conclusions.
+
+16. Nguyễn Việt Hà (2012), *Một số gợi ý về trình bày luận văn, khóa luận*, Khoa Công nghệ thông tin, Trường Đại học Công nghệ, Đại học Quốc gia Hà Nội. *(htwthesis.pdf — hướng dẫn IMRAD bắt buộc theo GVHD.)*
