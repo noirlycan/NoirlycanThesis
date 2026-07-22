@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from noirlycan_backend.domain.agent_sessions import ensure_agent_session_file, sanitize_agent_id
+from noirlycan_backend.domain.findings_groups import file_drop_key
 from noirlycan_backend.domain.permissions import (
     DEFAULT_ROLE_PERMISSIONS,
     normalize_role_permissions,
@@ -164,6 +165,12 @@ class ConsoleDatabase:
 
                 CREATE TABLE IF NOT EXISTS console_removed_findings (
                     finding_key TEXT PRIMARY KEY,
+                    removed_by TEXT,
+                    removed_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS console_removed_file_drops (
+                    drop_key TEXT PRIMARY KEY,
                     removed_by TEXT,
                     removed_at TEXT NOT NULL
                 );
@@ -885,6 +892,24 @@ class ConsoleDatabase:
                 (finding_key, actor, _utc_now()),
             )
             self._audit(connection, actor, "finding.remove", {"finding_key": finding_key})
+
+    def list_removed_file_drops(self) -> set[str]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT drop_key FROM console_removed_file_drops"
+            ).fetchall()
+        return {file_drop_key(row["drop_key"]) or row["drop_key"] for row in rows}
+
+    def remove_file_drop(self, drop_key: str, *, actor: str | None = None) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT OR REPLACE INTO console_removed_file_drops (drop_key, removed_by, removed_at)
+                VALUES (?, ?, ?)
+                """,
+                (drop_key, actor, _utc_now()),
+            )
+            self._audit(connection, actor, "file_drop.remove", {"drop_key": drop_key})
 
     def record_kill(self, *, agent_id: str, pid: int, image: str | None, actor: str | None) -> None:
         self.enqueue_agent_command(agent_id, "kill", {"pid": pid, "image": image})

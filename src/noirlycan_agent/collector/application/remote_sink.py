@@ -109,7 +109,7 @@ class ConsoleRemoteClient:
             "ip_address": _local_ip_for_server(self.base_url),
         }
         response = self._post("/api/ingest/hello", payload)
-        self._apply_console_response(response)
+        self._apply_console_response(response, force=True)
         self._absorb_commands(response)
         self._last_heartbeat_at = time.monotonic()
         return response
@@ -146,6 +146,7 @@ class ConsoleRemoteClient:
         try:
             response = self._post("/api/ingest/heartbeat", payload)
             self._heartbeat_supported = True
+            self._apply_console_response(response)
             self._absorb_commands(response)
             self._last_heartbeat_at = now
         except Exception as exc:
@@ -212,7 +213,7 @@ class ConsoleRemoteClient:
         threshold = SEVERITY_RANK.get(self.runtime.auto_kill_min_severity, 5)
         return SEVERITY_RANK.get(str(severity).upper(), 0) >= threshold
 
-    def _apply_console_response(self, response: dict[str, Any] | None) -> None:
+    def _apply_console_response(self, response: dict[str, Any] | None, *, force: bool = False) -> None:
         if not isinstance(response, dict):
             return
         agent_raw = response.get("agent")
@@ -222,15 +223,21 @@ class ConsoleRemoteClient:
         version = int(response.get("rules_version") or 0)
         if not isinstance(rules_raw, dict):
             return
-        if version > self.policy_version and self.logs_dir is not None:
+        should_apply = force or version > self.policy_version
+        if should_apply:
             try:
-                self.policy = apply_server_policy(rules_raw, self.logs_dir, version=version)
+                if self.logs_dir is not None:
+                    self.policy = apply_server_policy(rules_raw, self.logs_dir, version=version)
+                else:
+                    self.policy = AgentPolicy.from_ruleset_dict(rules_raw, version=version)
                 self.policy_version = version
                 self.runtime = AgentRuntimePolicy.from_policy(self.policy)
-                print(f"[+] Policy synced from console (v{version})", flush=True)
+                label = "startup" if force else "update"
+                print(f"[+] Policy synced from console ({label}, v{version})", flush=True)
             except Exception as exc:
                 print(f"[!] Policy sync failed: {exc}", flush=True)
-        elif self.policy is None:
+            return
+        if self.policy is None:
             self.runtime = AgentRuntimePolicy(
                 auto_kill=bool(rules_raw.get("auto_kill")),
                 auto_kill_min_severity=str(rules_raw.get("auto_kill_min_severity") or "CRITICAL").upper(),

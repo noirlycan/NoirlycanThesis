@@ -23,10 +23,15 @@ def _victim_label(finding: dict[str, Any]) -> str:
     image = finding.get("target_image")
     if image:
         return _image_name(str(image))
-    target_pid = finding.get("target_pid")
-    if target_pid is not None:
-        return f"unknown (pid {target_pid})"
     return "unknown"
+
+
+def _injection_group_count(groups: list[dict[str, Any]]) -> int:
+    return len([group for group in groups if group.get("vpid") is not None])
+
+
+def _visible_finding_count(groups: list[dict[str, Any]]) -> int:
+    return sum(int(group.get("count") or 0) for group in groups)
 
 
 def _finding_key(finding: dict[str, Any]) -> str:
@@ -73,21 +78,47 @@ def _load_session_stats(logs_dir: Path, session_rel: str, agent_id: str) -> dict
     }
 
 
-def _file_drops_for_display(stats: dict[str, Any]) -> list[dict[str, Any]]:
+def file_drop_key(path: str | None) -> str:
+    if not path:
+        return ""
+    text = str(path).strip().replace("\\", "/")
+    while "//" in text:
+        text = text.replace("//", "/")
+    return text.lower()
+
+
+def _file_drops_for_display(
+    stats: dict[str, Any],
+    *,
+    removed_drops: set[str] | None = None,
+) -> list[dict[str, Any]]:
     """Merge completed triages with pending file-drop detections for dashboard lists."""
-    rows: list[dict[str, Any]] = [dict(item) for item in (stats.get("recent_triages") or [])]
-    seen = {str(item.get("path") or "").lower() for item in rows if item.get("path")}
+    hidden = removed_drops or set()
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in stats.get("recent_triages") or []:
+        if not isinstance(item, dict):
+            continue
+        path = str(item.get("path") or "")
+        key = file_drop_key(path)
+        if not path or key in hidden or key in seen:
+            continue
+        row = dict(item)
+        row["drop_key"] = key
+        rows.append(row)
+        seen.add(key)
     for pending in stats.get("pending_file_drops") or []:
         if not isinstance(pending, dict):
             continue
         path = str(pending.get("path") or "")
-        key = path.lower()
-        if not path or key in seen:
+        key = file_drop_key(path)
+        if not path or key in hidden or key in seen:
             continue
         rows.append(
             {
                 "timestamp": pending.get("timestamp"),
                 "path": path,
+                "drop_key": key,
                 "sha256": pending.get("sha256"),
                 "entropy": pending.get("entropy"),
                 "signed": pending.get("signed"),
@@ -275,6 +306,7 @@ def load_all_agents_findings(
     agent_sessions: list[dict[str, Any]],
     agents: list[dict[str, Any]],
     removed: set[str] | None = None,
+    removed_file_drops: set[str] | None = None,
 ) -> dict[str, Any]:
     directory = resolve_logs_dir(logs_dir)
     hostnames = {str(agent["id"]): _agent_hostname(agents, str(agent["id"])) for agent in agents}
@@ -300,8 +332,12 @@ def load_all_agents_findings(
         severity = stats.get("severity") or {}
         networks = stats.get("recent_network") or []
         beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
-        triages = _file_drops_for_display(stats)
-        chains = stats.get("injection_chains") or []
+        triages = _file_drops_for_display(stats, removed_drops=removed_file_drops)
+        agent_groups = group_findings(
+            visible,
+            removed=removed,
+            agent_hostnames={agent_id: hostnames.get(agent_id, agent_id)},
+        )
         agent_stats.append(
             {
                 "agent_id": agent_id,
@@ -312,14 +348,12 @@ def load_all_agents_findings(
                     (str(a.get("status") or "offline") for a in agents if str(a.get("id")) == agent_id),
                     "offline",
                 ),
-                "findings": int((stats.get("totals") or {}).get("findings", len(visible))),
+                "findings": _visible_finding_count(agent_groups) or len(visible),
                 "critical": int(severity.get("critical", 0)),
                 "high": int(severity.get("high", 0)),
                 "medium": int(severity.get("medium", 0)),
                 "low": int(severity.get("low", 0)),
-                "injection_chains": len(chains) or len(
-                    [f for f in visible if f.get("target_pid") is not None]
-                ),
+                "injection_chains": _injection_group_count(agent_groups),
                 "file_drops": len(triages),
                 "beacons": len(beacons),
             }
@@ -336,7 +370,7 @@ def load_all_agents_findings(
     all_chains: list[dict[str, Any]] = []
     totals = Counter()
     for stats in merged_stats:
-        all_triages.extend(_file_drops_for_display(stats))
+        all_triages.extend(_file_drops_for_display(stats, removed_drops=removed_file_drops))
         all_network.extend(stats.get("recent_network") or [])
         all_beacons.extend(
             n for n in (stats.get("recent_network") or []) if n.get("beacon_candidate") or n.get("is_external")
@@ -377,6 +411,7 @@ def overview_payload(
     session: str | None = None,
     agent_id: str | None = None,
     removed: set[str] | None = None,
+    removed_file_drops: set[str] | None = None,
     agent_sessions: list[dict[str, Any]] | None = None,
     agents: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
@@ -386,6 +421,7 @@ def overview_payload(
             agent_sessions=agent_sessions,
             agents=agents or [],
             removed=removed,
+            removed_file_drops=removed_file_drops,
         )
     else:
         bundle = load_console_findings(logs_dir, session=session, agent_id=agent_id, removed=removed)
@@ -407,8 +443,8 @@ def overview_payload(
         aid = str(critical_finding.get("agent_id") or "")
         if aid in hostnames:
             critical_finding = {**critical_finding, "hostname": hostnames[aid]}
-    chains = stats.get("injection_chains") or []
-    triages = _file_drops_for_display(stats)
+    groups = bundle.get("groups") or []
+    triages = _file_drops_for_display(stats, removed_drops=removed_file_drops)
     networks = stats.get("recent_network") or stats.get("network") or []
     beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
 
@@ -419,7 +455,6 @@ def overview_payload(
         list(stats.get("recent_primitives") or [])
         + list(stats.get("recent_processes") or [])
     )[:30]
-    totals = stats.get("totals") or {}
     registered_agents = len(agents or []) if agent_id is None and agent_sessions is not None else None
     return {
         "session": bundle.get("session"),
@@ -428,11 +463,9 @@ def overview_payload(
         "scope": bundle.get("scope") or ("agent" if agent_id else "session"),
         "logs_dir": bundle.get("logs_dir"),
         "kpis": {
-            "findings": int(totals.get("findings", len(findings))) - len(removed or set()),
+            "findings": _visible_finding_count(groups) or len(findings),
             "critical": len(critical),
-            "injection_chains": len(chains) or len(
-                [g for g in bundle.get("groups") or [] if g.get("vpid") is not None]
-            ),
+            "injection_chains": _injection_group_count(groups),
             "file_drops": len(triages),
             "beacons": len(beacons),
             "agents": registered_agents if registered_agents is not None else len(bundle.get("agent_stats") or []),
@@ -446,5 +479,4 @@ def overview_payload(
         "triages": triages,
         "network": networks,
         "beacons": beacons,
-        "min_primitives": stats.get("min_primitive_kinds") or 2,
     }

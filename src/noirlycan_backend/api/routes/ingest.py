@@ -12,6 +12,7 @@ from noirlycan_backend.api.deps import get_database, get_logs_dir
 from noirlycan_backend.domain.findings_groups import load_console_findings
 from noirlycan_backend.domain.reports import finding_to_markdown, session_report_markdown
 from noirlycan_backend.infrastructure.live_hub import schedule_broadcast
+from noirlycan_core.runtime.config import touch_collector_heartbeat
 from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir, new_session_log_path
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
@@ -68,6 +69,12 @@ def _append_event(session_path, payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def _touch_remote_capture(logs_dir, *, watching: str = "") -> None:
+    """Mark live capture online on the console host when a remote agent is active."""
+    paths = [item.strip() for item in watching.split(",") if item.strip()] or None
+    touch_collector_heartbeat(logs_dir=logs_dir, watch_paths=paths)
+
+
 @router.post("")
 def ingest_event(
     body: IngestEvent,
@@ -99,6 +106,8 @@ def ingest_event(
         if isinstance(payload["value"], dict):
             payload["value"]["agent_id"] = agent_id
     _append_event(session_path, payload)
+    if agent_id:
+        _touch_remote_capture(logs_dir)
     commands: list[dict[str, Any]] = []
     if agent_id:
         commands = database.pop_agent_commands(agent_id)
@@ -120,6 +129,7 @@ def agent_hello(
     authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     database = get_database()
+    logs_dir = ensure_logs_dir(get_logs_dir())
     token = _bearer_token(authorization)
     auth = database.authenticate_agent(body.agent_id, token)
     if auth == "invalid":
@@ -138,6 +148,7 @@ def agent_hello(
         ip_address=_resolve_agent_ip(request, body.ip_address),
     )
     database.ensure_agent_session(body.agent_id)
+    _touch_remote_capture(logs_dir, watching=body.watching)
     commands = database.pop_agent_commands(body.agent_id)
     schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
     payload = database.rules_payload_for_agent()
@@ -161,9 +172,12 @@ def agent_heartbeat(
             detail="Register this agent on the dashboard and use its enrollment token",
         )
     database.touch_agent_ip(body.agent_id, _resolve_agent_ip(request, body.ip_address))
+    logs_dir = ensure_logs_dir(get_logs_dir())
+    _touch_remote_capture(logs_dir, watching=body.watching)
     commands = database.pop_agent_commands(body.agent_id)
     schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
-    return {"ok": True, "commands": commands}
+    payload = database.rules_payload_for_agent()
+    return {"ok": True, "commands": commands, **payload}
 
 
 @router.post("/goodbye")

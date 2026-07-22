@@ -13,6 +13,7 @@ from noirlycan_backend.api.deps import reset_runtime_paths, warm_database
 from noirlycan_backend.api.routes import (
     agents,
     auth,
+    file_drops,
     findings,
     ingest,
     overview,
@@ -61,6 +62,7 @@ def create_app(*, ui_dist: Path | None = None) -> FastAPI:
     app.include_router(auth.router, prefix="/api")
     app.include_router(overview.router, prefix="/api")
     app.include_router(findings.router, prefix="/api")
+    app.include_router(file_drops.router, prefix="/api")
     app.include_router(rules.router, prefix="/api")
     app.include_router(agents.router, prefix="/api")
     app.include_router(users.router, prefix="/api")
@@ -71,7 +73,7 @@ def create_app(*, ui_dist: Path | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
-        return {"status": "ok", "service": "backend"}
+        return {"status": "ok", "service": "backend", "api_version": "0.2.0"}
 
     if ui_dist and ui_dist.is_dir():
         assets = ui_dist / "assets"

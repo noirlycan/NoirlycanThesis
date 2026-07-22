@@ -10,7 +10,7 @@ import { FindingModal } from "./components/FindingModal";
 import { NetworkView } from "./components/NetworkView";
 import { RulesView } from "./components/RulesView";
 import { useLiveSocket } from "./hooks/useLiveSocket";
-import { collectTags, flowLabel, primitiveBarHeight, severityDonut } from "./lib/finding-ui";
+import { collectTags, flowLabel, groupTargetLabel, primitiveBarHeight, severityDonut } from "./lib/finding-ui";
 import { filterFindingGroups, filterRecords, matchesSearch, normalizeSearch } from "./lib/search";
 import { applyTheme, readStoredTheme, type Theme } from "./lib/theme";
 import type { FindingGroup, FindingMember, OverviewData, Permissions, Ruleset, TabId, User } from "./types";
@@ -474,8 +474,7 @@ function FindingsView({
               <div className="group-header-body">
                 <div className="mono" style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.45 }}>
                   <span style={{ color: "var(--muted)" }}>{group.source}</span> ──▶{" "}
-                  <span style={{ color: "#ec7b1a" }}>{group.victim}</span>{" "}
-                  <span style={{ color: "var(--dim)" }}>{group.vpid ?? ""}</span>
+                  <span style={{ color: "#ec7b1a" }}>{groupTargetLabel(group.victim, group.vpid)}</span>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--dim)", marginTop: 4, lineHeight: 1.45 }}>{group.summary}</div>
               </div>
@@ -665,12 +664,12 @@ export default function App() {
 
   useEffect(() => {
     if (!user || !getToken()) return;
-    if (tab === "rules" && can(perms, "rules")) {
+    if (tab === "rules" && can(perms, "rules") && rules === null) {
       api.rules()
         .then((payload) => setRules(payload.rules))
         .catch((err) => setToast(String(err)));
     }
-  }, [tab, user, perms]);
+  }, [tab, user, perms, rules]);
 
   useEffect(() => {
     if (!user || live) return;
@@ -785,6 +784,7 @@ export default function App() {
             </div>
             <div className="mono" style={{ fontSize: 11, color: "var(--dim)", marginTop: 6 }}>
               Frida + Sysmon · {overview?.collector_online ? "online" : "offline"}
+              {overview?.collector_remote && !overview?.collector_local ? " · remote agent" : null}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 6px 2px" }}>
@@ -959,6 +959,16 @@ export default function App() {
                 events={(searchActive ? filteredEvents : (scopedOverview?.recent_events as Record<string, unknown>[] | undefined) || [])}
                 triages={(searchActive ? filteredTriages : (scopedOverview?.triages as Record<string, unknown>[] | undefined) || [])}
                 searchQuery={searchQuery}
+                canDel={can(perms, "del")}
+                onDelete={async (path, dropKey) => {
+                  try {
+                    await api.deleteFileDrop(path, dropKey);
+                    setToast("File drop removed from history");
+                    refresh();
+                  } catch (err) {
+                    setToast(String(err));
+                  }
+                }}
               />
             ) : null}
             {tab === "network" ? (

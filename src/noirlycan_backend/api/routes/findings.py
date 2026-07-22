@@ -3,13 +3,20 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 
 from noirlycan_backend.api.auth import get_current_user, require_permission
 from noirlycan_backend.api.deps import get_database, get_logs_dir
 from noirlycan_backend.domain.agent_sessions import resolve_console_session
+from noirlycan_backend.domain.file_drop_removal import remove_file_drop_from_history
 from noirlycan_backend.domain.findings_groups import load_console_findings
 
 router = APIRouter(prefix="/findings", tags=["findings"])
+
+
+class RemoveFileDropBody(BaseModel):
+    path: str = Field(default="")
+    key: str = Field(default="")
 
 
 @router.get("")
@@ -41,3 +48,17 @@ def delete_finding(
     database = get_database()
     database.remove_finding(finding_key, actor=user.get("email"))
     return {"ok": True, "removed": finding_key}
+
+
+@router.post("/file-drop/remove")
+def remove_file_drop(
+    body: RemoveFileDropBody,
+    user: dict[str, Any] = Depends(require_permission("del")),
+) -> dict[str, Any]:
+    database = get_database()
+    return remove_file_drop_from_history(
+        database,
+        path=body.path,
+        key=body.key,
+        actor=user.get("email"),
+    )

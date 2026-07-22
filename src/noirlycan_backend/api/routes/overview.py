@@ -8,6 +8,9 @@ from noirlycan_backend.api.auth import get_current_user
 from noirlycan_backend.api.deps import get_database, get_logs_dir
 from noirlycan_backend.domain.agent_sessions import resolve_console_session
 from noirlycan_backend.domain.findings_groups import overview_payload
+from noirlycan_backend.infrastructure.console_db import effective_agent_status
+from noirlycan_core.analysis.domain.classifier_config import load_classifier_config
+from noirlycan_core.runtime.agent_policy import load_agent_policy
 from noirlycan_core.runtime.config import (
     is_collector_online,
     load_runtime_config,
@@ -26,6 +29,7 @@ def get_overview(
     database = get_database()
     logs_dir = get_logs_dir()
     removed = database.list_removed_findings()
+    removed_file_drops = database.list_removed_file_drops()
     agents = database.list_agents()
     agent_sessions = database.list_agent_sessions()
 
@@ -36,16 +40,26 @@ def get_overview(
             session=session_rel,
             agent_id=agent_id,
             removed=removed,
+            removed_file_drops=removed_file_drops,
         )
     else:
         payload = overview_payload(
             logs_dir,
             removed=removed,
+            removed_file_drops=removed_file_drops,
             agent_sessions=agent_sessions,
             agents=agents,
         )
     runtime = load_runtime_config(logs_dir)
-    payload["collector_online"] = is_collector_online(runtime)
+    policy = load_agent_policy(logs_dir)
+    payload["min_primitives"] = (
+        policy.min_primitives if policy is not None else load_classifier_config(logs_dir).minimum_operational_kinds
+    )
+    local_capture = is_collector_online(runtime)
+    remote_capture = any(effective_agent_status(agent) == "online" for agent in agents)
+    payload["collector_online"] = local_capture or remote_capture
+    payload["collector_local"] = local_capture
+    payload["collector_remote"] = remote_capture
     payload["sessions"] = [path.name for path in list_log_files(logs_dir)]
     payload["agent_sessions"] = agent_sessions
     payload["agents"] = agents

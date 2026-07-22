@@ -305,25 +305,56 @@ export function RulesView({ rules, onChange, onSave, onReset }: Props) {
 
       <div className="card" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <div>
-          <div style={{ marginBottom: 8 }}>Correlation logic</div>
-          <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-            <span>Min primitives</span>
-            <select
-              value={rules.min_primitives}
-              onChange={(e) => onChange({ ...rules, min_primitives: Number(e.target.value) })}
+          <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 20 }}>Correlation logic</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="toggle-title">Minimum primitives to flag</div>
+              <div className="toggle-desc">Số thao tác allocate / write / execute cùng chain để coi là injection.</div>
+            </div>
+            <div className="segmented" role="group" aria-label="Minimum primitives">
+              {[2, 3].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`segmented-btn${Number(rules.min_primitives) === value ? " active" : ""}`}
+                  onClick={() => onChange({ ...rules, min_primitives: value })}
+                >
+                  {value} of 3
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: "var(--dim)", marginBottom: 4 }}>
+            Thay đổi có hiệu lực sau khi bấm <strong>Save ruleset</strong> (agent nhận policy mới ở lần ingest tiếp theo).
+          </div>
+          <div className="toggle-row">
+            <div className="toggle-copy">
+              <div className="toggle-title">Memory-range congruence</div>
+              <div className="toggle-desc">Chỉ nối các thao tác trên cùng khoảng địa chỉ [α, α+β].</div>
+            </div>
+            <button
+              type="button"
+              className={`toggle-switch${rules.congruence ? " on" : ""}`}
+              aria-pressed={rules.congruence}
+              onClick={() => onChange({ ...rules, congruence: !rules.congruence })}
             >
-              <option value={2}>2 of 3</option>
-              <option value={3}>3 of 3</option>
-            </select>
-          </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={rules.congruence} onChange={(e) => onChange({ ...rules, congruence: e.target.checked })} />
-            Memory-range congruence
-          </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={rules.temporal} onChange={(e) => onChange({ ...rules, temporal: e.target.checked })} />
-            Temporal ordering
-          </label>
+              <span className="toggle-knob" />
+            </button>
+          </div>
+          <div className="toggle-row">
+            <div className="toggle-copy">
+              <div className="toggle-title">Temporal ordering</div>
+              <div className="toggle-desc">alloc → write → execute (cho phép hoán vị hợp lệ).</div>
+            </div>
+            <button
+              type="button"
+              className={`toggle-switch${rules.temporal ? " on" : ""}`}
+              aria-pressed={rules.temporal}
+              onClick={() => onChange({ ...rules, temporal: !rules.temporal })}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </div>
         </div>
         <div>
           <div style={{ marginBottom: 8 }}>Monitoring</div>

@@ -96,6 +96,23 @@ export const api = {
   deleteFinding(key: string) {
     return request<{ ok: boolean }>(`/api/findings/${encodeURIComponent(key)}`, { method: "DELETE" });
   },
+  async deleteFileDrop(path: string, key?: string) {
+    const body = JSON.stringify({ path, key: key || "" });
+    try {
+      return await request<{ ok: boolean; removed: string }>("/api/file-drops/remove", {
+        method: "POST",
+        body,
+      });
+    } catch (err) {
+      if (!String(err).includes("Not Found")) {
+        throw err;
+      }
+      return request<{ ok: boolean; removed: string }>("/api/findings/file-drop/remove", {
+        method: "POST",
+        body,
+      });
+    }
+  },
   rules() {
     return request<{ rules: Ruleset }>("/api/rules");
   },

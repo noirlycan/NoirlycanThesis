@@ -62,6 +62,12 @@ export function tagStyle(tag: string): { background: string; color: string; bord
   return { background: "var(--panel2)", color: "var(--muted)", border: "var(--border)" };
 }
 
+export function groupTargetLabel(victim: string, vpid: number | string | null | undefined): string {
+  if (vpid == null || vpid === "") return victim;
+  if (victim.includes("(pid")) return victim;
+  return `${victim} (pid ${vpid})`;
+}
+
 export function flowLabel(finding: Record<string, unknown> | undefined): string {
   if (!finding) return "";
   const actor = `${String(finding.actor_image || "unknown").split(/[/\\]/).pop()} ${finding.actor_pid || ""}`.trim();

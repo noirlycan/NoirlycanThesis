@@ -17,10 +17,14 @@ export function ActivityView({
   events,
   triages,
   searchQuery,
+  canDel,
+  onDelete,
 }: {
   events: Record<string, unknown>[];
   triages: Record<string, unknown>[];
   searchQuery: string;
+  canDel?: boolean;
+  onDelete?: (path: string, dropKey?: string) => void | Promise<void>;
 }) {
   return (
     <div className="grid-2">
@@ -63,9 +67,11 @@ export function ActivityView({
         {triages.slice(0, 10).map((drop, index) => {
           const badge = dropBadge(drop);
           const name = String(drop.path || drop.filename || "file").split(/[/\\]/).pop();
+          const path = String(drop.path || drop.filename || "");
+          const dropKey = String(drop.drop_key || "");
           return (
             <div
-              key={`${name}-${index}`}
+              key={`${String(drop.drop_key || path || name)}-${index}`}
               style={{
                 padding: "12px 14px",
                 border: "1px solid var(--border)",
@@ -89,7 +95,22 @@ export function ActivityView({
                 >
                   {badge.label}
                 </span>
-                <span style={{ fontWeight: 600 }}>{name}</span>
+                <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{name}</span>
+                {canDel && path ? (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ padding: "2px 8px", fontSize: 14, lineHeight: 1, color: "var(--muted)" }}
+                    title="Remove from history"
+                    aria-label={`Remove ${name} from history`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void onDelete?.(path, dropKey || undefined);
+                    }}
+                  >
+                    ×
+                  </button>
+                ) : null}
               </div>
               <div className="mono" style={{ fontSize: 11, color: "var(--dim)", lineHeight: 1.6 }}>
                 {drop.sha256 ? `sha256 ${String(drop.sha256).slice(0, 24)}…` : null}

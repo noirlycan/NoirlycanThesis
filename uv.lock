@@ -682,17 +682,19 @@ name = "noirlycan-telemetry"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "email-validator" },
-    { name = "fastapi" },
     { name = "pefile" },
-    { name = "pyjwt" },
-    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.optional-dependencies]
 agent = [
     { name = "frida" },
     { name = "pywin32", marker = "sys_platform == 'win32'" },
+]
+backend = [
+    { name = "email-validator" },
+    { name = "fastapi" },
+    { name = "pyjwt" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 console = [
     { name = "channels" },
@@ -717,9 +719,21 @@ full = [
     { name = "django", version = "5.2.15", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "django", version = "6.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "django-jet-reboot" },
+    { name = "email-validator" },
+    { name = "fastapi" },
     { name = "frida" },
+    { name = "pyjwt" },
     { name = "pytest" },
     { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+lab = [
+    { name = "email-validator" },
+    { name = "fastapi" },
+    { name = "frida" },
+    { name = "pyjwt" },
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.metadata]
@@ -736,19 +750,29 @@ requires-dist = [
     { name = "django-jet-reboot", marker = "extra == 'console'", specifier = ">=1.3.10" },
     { name = "django-jet-reboot", marker = "extra == 'dashboard'", specifier = ">=1.3.10" },
     { name = "django-jet-reboot", marker = "extra == 'full'", specifier = ">=1.3.10" },
-    { name = "email-validator", specifier = ">=2.0" },
-    { name = "fastapi", specifier = ">=0.115" },
+    { name = "email-validator", marker = "extra == 'backend'", specifier = ">=2.0" },
+    { name = "email-validator", marker = "extra == 'full'", specifier = ">=2.0" },
+    { name = "email-validator", marker = "extra == 'lab'", specifier = ">=2.0" },
+    { name = "fastapi", marker = "extra == 'backend'", specifier = ">=0.115" },
+    { name = "fastapi", marker = "extra == 'full'", specifier = ">=0.115" },
+    { name = "fastapi", marker = "extra == 'lab'", specifier = ">=0.115" },
     { name = "frida", marker = "extra == 'agent'" },
     { name = "frida", marker = "extra == 'full'" },
+    { name = "frida", marker = "extra == 'lab'" },
     { name = "pefile" },
-    { name = "pyjwt", specifier = ">=2.8" },
+    { name = "pyjwt", marker = "extra == 'backend'", specifier = ">=2.8" },
+    { name = "pyjwt", marker = "extra == 'full'", specifier = ">=2.8" },
+    { name = "pyjwt", marker = "extra == 'lab'", specifier = ">=2.8" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'full'" },
     { name = "pywin32", marker = "sys_platform == 'win32' and extra == 'agent'" },
     { name = "pywin32", marker = "sys_platform == 'win32' and extra == 'full'" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },
+    { name = "pywin32", marker = "sys_platform == 'win32' and extra == 'lab'" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'backend'", specifier = ">=0.32" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'full'", specifier = ">=0.32" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'lab'", specifier = ">=0.32" },
 ]
-provides-extras = ["agent", "backend", "dashboard", "console", "dev", "full"]
+provides-extras = ["agent", "backend", "dashboard", "console", "dev", "lab", "full"]
 
 [[package]]
 name = "packaging"

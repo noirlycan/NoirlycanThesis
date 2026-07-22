@@ -80,6 +80,8 @@ export interface OverviewData {
   network?: Record<string, unknown>[];
   beacons?: Record<string, unknown>[];
   collector_online?: boolean;
+  collector_local?: boolean;
+  collector_remote?: boolean;
   min_primitives?: number;
   agents?: { id: string; hostname: string; ip_address?: string; status: string }[];
   active_agent_id?: string | null;

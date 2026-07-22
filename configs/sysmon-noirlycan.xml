@@ -1,56 +1,54 @@
-<Sysmon schemaversion="4.90">
+<Sysmon schemaversion="4.91">
   <HashAlgorithms>SHA256</HashAlgorithms>
-  <CheckRevocation>False</CheckRevocation>
+  <CheckRevocation>false</CheckRevocation>
 
   <EventFiltering>
-    <!-- Log process creation broadly so parent/child lineage is available. -->
-    <ProcessCreate onmatch="exclude" />
 
-    <!-- Log executable/script drops in common staging locations. -->
+    <!-- Log all process creation -->
+    <ProcessCreate onmatch="include" />
+
+    <!-- Log executable/script drops -->
     <FileCreate onmatch="include">
-      <RuleGroup name="Executable/script drops" groupRelation="or">
-        <TargetFilename condition="end with">.exe</TargetFilename>
-        <TargetFilename condition="end with">.dll</TargetFilename>
-        <TargetFilename condition="end with">.scr</TargetFilename>
-        <TargetFilename condition="end with">.com</TargetFilename>
-        <TargetFilename condition="end with">.ps1</TargetFilename>
-        <TargetFilename condition="end with">.js</TargetFilename>
-        <TargetFilename condition="end with">.jse</TargetFilename>
-        <TargetFilename condition="end with">.vbs</TargetFilename>
-        <TargetFilename condition="end with">.vbe</TargetFilename>
-        <TargetFilename condition="end with">.hta</TargetFilename>
-        <TargetFilename condition="end with">.bat</TargetFilename>
-        <TargetFilename condition="end with">.cmd</TargetFilename>
-      </RuleGroup>
+      <TargetFilename condition="end with">.exe</TargetFilename>
+      <TargetFilename condition="end with">.dll</TargetFilename>
+      <TargetFilename condition="end with">.scr</TargetFilename>
+      <TargetFilename condition="end with">.com</TargetFilename>
+      <TargetFilename condition="end with">.ps1</TargetFilename>
+      <TargetFilename condition="end with">.js</TargetFilename>
+      <TargetFilename condition="end with">.jse</TargetFilename>
+      <TargetFilename condition="end with">.vbs</TargetFilename>
+      <TargetFilename condition="end with">.vbe</TargetFilename>
+      <TargetFilename condition="end with">.hta</TargetFilename>
+      <TargetFilename condition="end with">.bat</TargetFilename>
+      <TargetFilename condition="end with">.cmd</TargetFilename>
     </FileCreate>
 
-    <!-- Useful context for user-mode hooking and dynamic API resolution. -->
+    <!-- DLLs commonly involved in API resolution/hooking -->
     <ImageLoad onmatch="include">
-      <RuleGroup name="Injection-relevant DLL loads" groupRelation="or">
-        <ImageLoaded condition="end with">\ntdll.dll</ImageLoaded>
-        <ImageLoaded condition="end with">\kernel32.dll</ImageLoaded>
-      </RuleGroup>
+      <ImageLoaded condition="end with">\ntdll.dll</ImageLoaded>
+      <ImageLoaded condition="end with">\kernel32.dll</ImageLoaded>
     </ImageLoad>
 
-    <!-- Sysmon cannot see all NT APIs, but these events help with correlation. -->
+    <!-- Interesting process access rights -->
     <ProcessAccess onmatch="include">
-      <RuleGroup name="Suspicious process access" groupRelation="or">
-        <GrantedAccess condition="is">0x1fffff</GrantedAccess>
-        <GrantedAccess condition="is">0x143a</GrantedAccess>
-        <GrantedAccess condition="is">0x1038</GrantedAccess>
-        <GrantedAccess condition="is">0x1028</GrantedAccess>
-      </RuleGroup>
+      <GrantedAccess condition="is">0x1fffff</GrantedAccess>
+      <GrantedAccess condition="is">0x143a</GrantedAccess>
+      <GrantedAccess condition="is">0x1038</GrantedAccess>
+      <GrantedAccess condition="is">0x1028</GrantedAccess>
     </ProcessAccess>
 
-    <!-- Outbound network from processes under network watch after HIGH findings. -->
-    <NetworkConnect onmatch="include">
-      <RuleGroup name="Outbound connections" groupRelation="or">
-        <DestinationIp condition="is not">127.0.0.1</DestinationIp>
-        <DestinationIp condition="is not">::1</DestinationIp>
-      </RuleGroup>
+    <!-- Outbound network activity -->
+    <NetworkConnect onmatch="exclude">
+      <DestinationIp condition="is">127.0.0.1</DestinationIp>
+      <DestinationIp condition="is">::1</DestinationIp>
     </NetworkConnect>
 
-    <CreateRemoteThread onmatch="exclude" />
+    <!-- Detect remote thread injection -->
+    <CreateRemoteThread onmatch="include" />
+
+    <!-- Disable noisy ADS hashing -->
     <FileCreateStreamHash onmatch="exclude" />
+
   </EventFiltering>
+
 </Sysmon>

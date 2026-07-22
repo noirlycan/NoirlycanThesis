@@ -3,6 +3,7 @@ from __future__ import annotations
 from noirlycan_backend.api.routes import (
     agents,
     auth,
+    file_drops,
     findings,
     ingest,
     overview,
@@ -16,6 +17,7 @@ from noirlycan_backend.api.routes import (
 __all__ = [
     "agents",
     "auth",
+    "file_drops",
     "findings",
     "ingest",
     "overview",

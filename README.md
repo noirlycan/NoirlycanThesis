@@ -123,25 +123,113 @@ noirlycan-agent run --server 192.168.1.10:8765 --agent-id vm01 --token YOUR_TOKE
 
 Credentials persist in `logs\.agent_identity.json` next to the working directory.
 
-### 3. Install Sysmon (strongly recommended)
+### 3. Agent dependencies (Frida + pywin32)
 
-Sysmon supplies process names, lineage, and network events. Without it, target process names may show as `unknown (pid N)`.
+`--watch-sysmon` and Frida hooks need the **`[agent]`** extra. Install inside the venv:
 
-Download [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon), place `Sysmon64.exe` in `Sysmon\`, then **Admin PowerShell**:
+```powershell
+cd C:\Noirlycan\agent   # repo root on VM
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[agent]"
+
+python -c "import frida; import win32evtlog; print('OK', frida.__version__)"
+```
+
+If you see `Frida unavailable` or `pywin32 is required`, the agent was started outside `.venv` or without `[agent]`.
+
+### 4. Sysmon configuration
+
+Sysmon is **not** bundled in the repo (license). The lab ships **`configs/sysmon-noirlycan.xml`** and **`scripts/install-sysmon.ps1`**. You must download the binary separately.
+
+#### Layout on the VM
+
+```text
+NoirlycanThesis/
+  Sysmon/
+    Sysmon64.exe          ← download from Microsoft Sysinternals (not in git)
+  configs/
+    sysmon-noirlycan.xml  ← lab rules (committed)
+  scripts/
+    install-sysmon.ps1
+```
+
+Download: [Sysmon for Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) → extract **`Sysmon64.exe`** into `Sysmon\`.
+
+#### What `configs/sysmon-noirlycan.xml` logs
+
+| Sysmon EID | Rule in config | Used by Noirlycan for |
+|------------|----------------|------------------------|
+| **1** ProcessCreate | Log all (exclude none) | Parent/child lineage, **target process name**, auto-attach candidates |
+| **3** NetworkConnect | Outbound, not localhost | Post-finding network watch (beacon hints) |
+| **7** ImageLoad | `ntdll.dll`, `kernel32.dll` | Process/DLL context for correlation |
+| **8** CreateRemoteThread | Log all (exclude none) | Remote-thread injection context |
+| **10** ProcessAccess | Selected `GrantedAccess` masks | Cross-process open / injection staging |
+| **11** FileCreate | `.exe`, `.dll`, `.ps1`, `.vbs`, … | File-drop provenance (with agent file watch) |
+
+Rules intentionally broad for **isolated lab VMs** — expect volume on busy hosts. Tune `configs/sysmon-noirlycan.xml` for your experiment; reload with `-c` (below).
+
+Full config path: [`configs/sysmon-noirlycan.xml`](configs/sysmon-noirlycan.xml).
+
+#### Install (Admin PowerShell)
+
+From repo root:
 
 ```powershell
 .\scripts\install-sysmon.ps1
 ```
 
-Add the VM user to **Event Log Readers**, then sign out/in. Update config after git pull:
+Equivalent manual install:
+
+```powershell
+.\Sysmon\Sysmon64.exe -accepteula -i .\configs\sysmon-noirlycan.xml
+```
+
+#### Update config after `git pull`
 
 ```powershell
 .\Sysmon\Sysmon64.exe -c .\configs\sysmon-noirlycan.xml
 ```
 
-Relevant event IDs: **1** process create, **3** network, **7** image load, **8** remote thread, **10** process access, **11** file create.
+#### Reinstall (broken or old config)
 
-### 4. File-drop experiment
+```powershell
+.\Sysmon\Sysmon64.exe -u force
+.\Sysmon\Sysmon64.exe -accepteula -i .\configs\sysmon-noirlycan.xml
+```
+
+#### Permissions
+
+The agent reads **`Microsoft-Windows-Sysmon/Operational`** via pywin32. Either:
+
+- Run the agent in **Administrator** PowerShell, **or**
+- Add the VM user to local group **Event Log Readers**, then **sign out and sign in** (or reboot).
+
+Verify the channel exists:
+
+```powershell
+Get-WinEvent -LogName 'Microsoft-Windows-Sysmon/Operational' -MaxEvents 3
+```
+
+#### Troubleshooting
+
+| Agent message | Fix |
+|---------------|-----|
+| `pywin32 is required on Windows` | `pip install -e ".[agent]"` in activated `.venv` |
+| `Install Sysmon first` / winerror **4201** | Install Sysmon with `install-sysmon.ps1`; channel missing |
+| `Access denied reading ... Operational` | Admin shell or **Event Log Readers** + re-login |
+| Target process shows `unknown (pid N)` | Sysmon EID 1 not ingested — complete install + `--watch-sysmon` |
+| Terminal slow after CRITICAL finding | Expected with broad EID 3 rules; agent throttles Sysmon ingest |
+
+#### Run agent with Sysmon
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+noirlycan-agent run --config .\noirlycan-agent.toml --watch-sysmon --auto-attach-new-processes
+```
+
+Successful startup has **no** `[!] Sysmon unavailable` line.
+
+### 5. File-drop experiment
 
 `run` watches common folders by default (Downloads, Desktop, `D:\`, repo root). Drop a **new** executable name:
 
@@ -240,6 +328,7 @@ Key docs:
 
 - [`docs/clean-architecture-plan.md`](docs/clean-architecture-plan.md) — service boundaries  
 - [`docs/architecture-diagrams.md`](docs/architecture-diagrams.md) — diagrams  
+- [`configs/sysmon-noirlycan.xml`](configs/sysmon-noirlycan.xml) — Sysmon lab rules (see **Sysmon configuration** above)  
 - [`deploy/agent/README.md`](deploy/agent/README.md) — minimal VM install  
 
 ## Limitations

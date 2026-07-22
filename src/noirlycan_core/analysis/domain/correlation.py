@@ -195,7 +195,10 @@ class Correlator:
         rules_config = self.reload_rules_config()
         minimum_score = self.effective_minimum_score(rules_config)
         kinds = {primitive.kind for primitive in primitives}
-        if operational_kind_count(kinds) < rules_config.minimum_operational_kinds:
+        min_kinds = rules_config.minimum_operational_kinds
+        if policy is not None:
+            min_kinds = policy.min_primitives
+        if operational_kind_count(kinds) < min_kinds:
             return findings
         if rules_config.ignore_same_process_findings and actor_pid == target_pid:
             return findings
