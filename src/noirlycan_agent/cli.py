@@ -44,6 +44,7 @@ from noirlycan_core.runtime.config import (
     save_runtime_config,
     touch_collector_heartbeat,
 )
+from noirlycan_agent.collector.application.policy_sync import apply_runtime_policy, resolve_active_policy
 from noirlycan_agent.collector.infrastructure.file_watch import FileDropWatcher, default_watch_paths
 from noirlycan_agent.collector.infrastructure.frida_manager import FridaInjectionMonitor
 from noirlycan_agent.collector.infrastructure.sysmon import SysmonPoller
@@ -151,7 +152,12 @@ def command_run(args: argparse.Namespace) -> int:
     logs_dir = _logs_dir_from_writer(writer)
     ensure_classifier_config(logs_dir)
     correlator = Correlator(minimum_score=args.minimum_score, logs_dir=logs_dir)
-    monitor = _create_monitor_or_none()
+    monitor = _create_monitor_or_none(logs_dir)
+    apply_runtime_policy(
+        correlator,
+        resolve_active_policy(logs_dir, remote.policy if remote else None),
+        monitor=monitor,
+    )
     if monitor is not None:
         for pid in args.attach_pid:
             _safe_attach(monitor, pid)
@@ -168,11 +174,18 @@ def command_run(args: argparse.Namespace) -> int:
 
     try:
         while True:
+            apply_runtime_policy(
+                correlator,
+                resolve_active_policy(logs_dir, remote.policy if remote else None),
+                monitor=monitor,
+            )
+            auto_attach = _effective_auto_attach(args, logs_dir, remote)
             file_watcher, file_watch_active = _sync_file_watcher(
                 args,
                 file_watcher,
                 file_watch_active,
                 logs_dir,
+                remote,
             )
             _WATCH_PATHS = file_watcher.paths if file_watcher is not None else []
             touch_collector_heartbeat(
@@ -188,7 +201,7 @@ def command_run(args: argparse.Namespace) -> int:
                     correlator,
                     writer,
                     monitor,
-                    auto_attach=args.auto_attach_new_processes,
+                    auto_attach=auto_attach,
                     args=args,
                     logs_dir=logs_dir,
                 )
@@ -197,7 +210,7 @@ def command_run(args: argparse.Namespace) -> int:
                     monitor,
                     correlator,
                     writer,
-                    auto_attach=args.auto_attach_new_processes,
+                    auto_attach=auto_attach,
                 )
             drain_agent_commands(remote)
             time.sleep(args.poll_interval)
@@ -228,9 +241,14 @@ def command_spawn(args: argparse.Namespace) -> int:
     remote = _remote_client(writer)
     logs_dir = _logs_dir_from_writer(writer)
     correlator = Correlator(minimum_score=args.minimum_score, logs_dir=logs_dir)
-    monitor = _create_monitor_or_none()
+    monitor = _create_monitor_or_none(logs_dir)
     if monitor is None:
         return 2
+    apply_runtime_policy(
+        correlator,
+        resolve_active_policy(logs_dir, remote.policy if remote else None),
+        monitor=monitor,
+    )
 
     device = frida.get_local_device()
     pid = device.spawn(spawn_argv)
@@ -240,6 +258,11 @@ def command_spawn(args: argparse.Namespace) -> int:
     sysmon = _create_sysmon_or_none(args.watch_sysmon)
     try:
         while True:
+            apply_runtime_policy(
+                correlator,
+                resolve_active_policy(logs_dir, remote.policy if remote else None),
+                monitor=monitor,
+            )
             if sysmon is not None:
                 _process_sysmon_batch(
                     sysmon,
@@ -274,7 +297,14 @@ def _attach_remote(args: argparse.Namespace, writer: JsonlWriter) -> "JsonlWrite
     mode = "spawn" if getattr(args, "command", "") == "spawn" else "run"
     agent_id = str(getattr(args, "agent_id", "") or "").strip() or None
     session_name = writer.path.name if writer.path is not None else None
-    remote = ConsoleRemoteClient(server, token, agent_id=agent_id, session_name=session_name, mode=mode)
+    remote = ConsoleRemoteClient(
+        server,
+        token,
+        agent_id=agent_id,
+        session_name=session_name,
+        mode=mode,
+        logs_dir=writer.path.parent if writer.path is not None else None,
+    )
     watching = ", ".join(getattr(args, "watch_path", []) or [])
     try:
         remote.hello(watching=watching)
@@ -335,8 +365,31 @@ def _auto_static_triage_enabled(args: argparse.Namespace, logs_dir: Path | None)
     return config.auto_static_triage_enabled
 
 
-def _create_file_watcher(args: argparse.Namespace) -> FileDropWatcher | None:
-    paths = default_watch_paths(args.watch_path)
+def _effective_auto_attach(
+    args: argparse.Namespace,
+    logs_dir: Path | None,
+    remote: ConsoleRemoteClient | None,
+) -> bool:
+    if getattr(args, "auto_attach_new_processes", False):
+        return True
+    policy = resolve_active_policy(logs_dir, remote.policy if remote else None)
+    return policy.auto_attach if policy is not None else False
+
+
+def _policy_watch_paths(
+    args: argparse.Namespace,
+    logs_dir: Path | None,
+    remote: ConsoleRemoteClient | None,
+) -> list[str]:
+    policy = resolve_active_policy(logs_dir, remote.policy if remote else None)
+    if policy and policy.folders:
+        existing = [str(Path(item).expanduser().resolve()) for item in policy.folders if Path(item).expanduser().exists()]
+        if existing:
+            return existing
+    return default_watch_paths(args.watch_path)
+
+
+def _create_file_watcher(paths: list[str]) -> FileDropWatcher | None:
     if not paths:
         print("[!] No watch paths exist for file-drop monitoring", file=sys.stderr, flush=True)
         return None
@@ -352,10 +405,11 @@ def _sync_file_watcher(
     watcher: FileDropWatcher | None,
     was_active: bool,
     logs_dir: Path | None,
+    remote: ConsoleRemoteClient | None = None,
 ) -> tuple[FileDropWatcher | None, bool]:
     want_active = _file_drop_watch_enabled(args, logs_dir)
     if want_active and watcher is None:
-        watcher = _create_file_watcher(args)
+        watcher = _create_file_watcher(_policy_watch_paths(args, logs_dir, remote))
         if watcher is not None and was_active is False:
             print("[+] File drop watch enabled", flush=True)
     elif not want_active and watcher is not None:

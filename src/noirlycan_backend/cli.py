@@ -8,7 +8,10 @@ from noirlycan_core.analysis.domain.batch_runner import run_batch, write_batch_r
 from noirlycan_core.analysis.domain.reclassify import reclassify_session, write_reclassified_report
 from noirlycan_core.analysis.domain.sandbox_compare import default_vt_api_key, run_compare_batch
 from noirlycan_core.analysis.domain.session_analytics import analyze_corpus
+from noirlycan_backend.infrastructure.console_db import ConsoleDatabase
+from noirlycan_backend.domain.demo_session import import_jsonl_session, write_demo_session
 from noirlycan_backend.server import run_api
+from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir, resolve_logs_dir
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -24,6 +27,8 @@ def main(argv: list[str] | None = None) -> int:
         return command_corpus(args)
     if args.command == "reclassify":
         return command_reclassify(args)
+    if args.command == "seed-demo":
+        return command_seed_demo(args)
     parser.print_help()
     return 2
 
@@ -77,6 +82,27 @@ def build_parser() -> argparse.ArgumentParser:
     reclassify.add_argument("--minimum-score", type=int, default=50)
     reclassify.add_argument("--output", type=Path)
     reclassify.add_argument("--write", choices=["sidecar", "in_place"])
+
+    seed = subparsers.add_parser("seed-demo", help="Seed a demo agent session for dashboard testing")
+    seed.add_argument("--logs-dir", type=Path)
+    seed.add_argument("--agent-id", default="lab-vm-win01")
+    seed.add_argument("--hostname", default="LAB-VM-WIN01")
+    seed.add_argument(
+        "--variant",
+        choices=["primary", "secondary"],
+        default="primary",
+        help="Demo fixture set (secondary = smaller second VM session)",
+    )
+    seed.add_argument(
+        "--fleet",
+        action="store_true",
+        help="Seed lab-vm-win01 + lab-vm-win02 demo sessions for multi-agent overview testing",
+    )
+    seed.add_argument(
+        "--import-file",
+        type=Path,
+        help="Import an existing JSONL session into the agent log (instead of built-in demo data)",
+    )
     return parser
 
 
@@ -133,6 +159,60 @@ def command_corpus(args: argparse.Namespace) -> int:
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"[+] Corpus report written to {args.output}")
     print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
+def command_seed_demo(args: argparse.Namespace) -> int:
+    logs_dir = ensure_logs_dir(args.logs_dir)
+    database = ConsoleDatabase(logs_dir)
+
+    if args.fleet:
+        targets = [
+            ("lab-vm-win01", "LAB-VM-WIN01", "primary"),
+            ("lab-vm-win02", "LAB-VM-WIN02", "secondary"),
+        ]
+        for agent_id, hostname, variant in targets:
+            rel, path, count = write_demo_session(logs_dir, agent_id=agent_id, variant=variant)
+            database.set_agent_session_rel(agent_id, rel)
+            database.upsert_agent(
+                agent_id,
+                hostname=hostname,
+                os_name="Windows",
+                mode="run",
+                watching=r"C:\Lab\loader.exe" if variant == "primary" else r"C:\Tools\dropper.exe",
+            )
+            print(f"[+] Agent: {agent_id} · {count} events · {rel}")
+        print("[+] Fleet demo ready — open Overview for all-agent stats")
+        return 0
+
+    agent_id = str(args.agent_id).strip()
+    if args.import_file:
+        rel, path, count = import_jsonl_session(
+            logs_dir,
+            agent_id=agent_id,
+            source=Path(args.import_file).expanduser().resolve(),
+        )
+        source_label = args.import_file
+    else:
+        rel, path, count = write_demo_session(
+            logs_dir,
+            agent_id=agent_id,
+            variant=str(args.variant),
+        )
+        source_label = f"built-in demo fixtures ({args.variant})"
+    database.set_agent_session_rel(agent_id, rel)
+    database.upsert_agent(
+        agent_id,
+        hostname=str(args.hostname),
+        os_name="Windows",
+        mode="run",
+        watching=r"C:\Lab\loader.exe",
+    )
+    print(f"[+] Agent: {agent_id}")
+    print(f"[+] Session: {rel} ({count} events)")
+    print(f"[+] Path: {path}")
+    print(f"[+] Source: {source_label}")
+    print(f"[+] Open dashboard with ?agent_id={agent_id}")
     return 0
 
 

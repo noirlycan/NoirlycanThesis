@@ -7,24 +7,33 @@ import urllib.error
 import urllib.request
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from noirlycan_core.kernel.entities.models import Finding
+from noirlycan_core.runtime.agent_policy import AgentPolicy, load_agent_policy
 from noirlycan_agent.collector.application.collector_runtime import JsonlWriter, jsonable
+from noirlycan_agent.collector.application.policy_sync import apply_server_policy
 
 
 SEVERITY_RANK = {"INFO": 1, "LOW": 2, "MEDIUM": 3, "HIGH": 4, "CRITICAL": 5}
 
 
 @dataclass
-class AgentRules:
+class AgentRuntimePolicy:
     auto_kill: bool = False
     auto_kill_min_severity: str = "CRITICAL"
-    min_primitives: int = 2
+
+    @classmethod
+    def from_policy(cls, policy: AgentPolicy) -> AgentRuntimePolicy:
+        return cls(
+            auto_kill=policy.auto_kill,
+            auto_kill_min_severity=policy.auto_kill_min_severity,
+        )
 
 
 class ConsoleRemoteClient:
-    """Forward telemetry events to the FastAPI console."""
+    """Console backend client: hello, ingest, policy sync, and command drain."""
 
     def __init__(
         self,
@@ -35,6 +44,7 @@ class ConsoleRemoteClient:
         session_name: str | None = None,
         mode: str = "run",
         timeout: float = 8.0,
+        logs_dir: Path | str | None = None,
     ) -> None:
         host = server.strip()
         if not host.startswith("http://") and not host.startswith("https://"):
@@ -45,7 +55,10 @@ class ConsoleRemoteClient:
         self.session_name = session_name
         self.mode = mode
         self.timeout = timeout
-        self.rules = AgentRules()
+        self.logs_dir = Path(logs_dir).expanduser().resolve() if logs_dir else None
+        self.policy_version = load_agent_policy(self.logs_dir).version if self.logs_dir else 0
+        self.policy = load_agent_policy(self.logs_dir)
+        self.runtime = AgentRuntimePolicy.from_policy(self.policy) if self.policy else AgentRuntimePolicy()
         self.agent_auto_kill = False
         self._pending_kills: list[dict[str, Any]] = []
 
@@ -58,16 +71,7 @@ class ConsoleRemoteClient:
             "watching": watching,
         }
         response = self._post("/api/ingest/hello", payload)
-        rules_raw = response.get("rules") if isinstance(response, dict) else {}
-        if isinstance(rules_raw, dict):
-            self.rules = AgentRules(
-                auto_kill=bool(rules_raw.get("auto_kill")),
-                auto_kill_min_severity=str(rules_raw.get("auto_kill_min_severity") or "CRITICAL").upper(),
-                min_primitives=int(rules_raw.get("min_primitives") or 2),
-            )
-        agent_raw = response.get("agent") if isinstance(response, dict) else {}
-        if isinstance(agent_raw, dict):
-            self.agent_auto_kill = bool(agent_raw.get("auto_kill"))
+        self._apply_console_response(response)
         return response
 
     def write(self, event_type: str, value: Any) -> None:
@@ -85,6 +89,7 @@ class ConsoleRemoteClient:
                 commands = response.get("commands")
                 if isinstance(commands, list):
                     self._pending_kills.extend(item for item in commands if isinstance(item, dict))
+                self._apply_console_response(response)
         except Exception as exc:
             print(f"[!] Console ingest failed: {exc}", flush=True)
 
@@ -101,10 +106,34 @@ class ConsoleRemoteClient:
         return pending
 
     def should_auto_kill(self, severity: str, *, agent_auto_kill: bool = False) -> bool:
-        if not agent_auto_kill and not self.rules.auto_kill:
+        if not agent_auto_kill and not self.runtime.auto_kill:
             return False
-        threshold = SEVERITY_RANK.get(self.rules.auto_kill_min_severity, 5)
+        threshold = SEVERITY_RANK.get(self.runtime.auto_kill_min_severity, 5)
         return SEVERITY_RANK.get(str(severity).upper(), 0) >= threshold
+
+    def _apply_console_response(self, response: dict[str, Any] | None) -> None:
+        if not isinstance(response, dict):
+            return
+        agent_raw = response.get("agent")
+        if isinstance(agent_raw, dict):
+            self.agent_auto_kill = bool(agent_raw.get("auto_kill"))
+        rules_raw = response.get("rules")
+        version = int(response.get("rules_version") or 0)
+        if not isinstance(rules_raw, dict):
+            return
+        if version > self.policy_version and self.logs_dir is not None:
+            try:
+                self.policy = apply_server_policy(rules_raw, self.logs_dir, version=version)
+                self.policy_version = version
+                self.runtime = AgentRuntimePolicy.from_policy(self.policy)
+                print(f"[+] Policy synced from console (v{version})", flush=True)
+            except Exception as exc:
+                print(f"[!] Policy sync failed: {exc}", flush=True)
+        elif self.policy is None:
+            self.runtime = AgentRuntimePolicy(
+                auto_kill=bool(rules_raw.get("auto_kill")),
+                auto_kill_min_severity=str(rules_raw.get("auto_kill_min_severity") or "CRITICAL").upper(),
+            )
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -145,7 +174,7 @@ class ConsoleRemoteClient:
 
 
 class RemoteJsonlWriter:
-    """Write locally and optionally mirror to the console."""
+    """Write locally and mirror events to the console."""
 
     def __init__(self, local: JsonlWriter, remote: ConsoleRemoteClient | None = None) -> None:
         self.local = local

@@ -43,8 +43,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(apiUrl(path), { ...init, headers });
 
   if (response.status === 401) {
-    setToken(null);
-    onUnauthorized?.();
+    // Only clear the session if this response matches the token we sent (avoids stale me() races).
+    if (token && getToken() === token) {
+      setToken(null);
+      if (!path.startsWith("/api/auth/login")) {
+        onUnauthorized?.();
+      }
+    }
     throw new AuthError(await response.text());
   }
 
@@ -74,12 +79,18 @@ export const api = {
   me() {
     return request<{ user: unknown; permissions: Record<string, boolean> }>("/api/auth/me");
   },
-  overview(session?: string) {
-    const q = session ? `?session=${encodeURIComponent(session)}` : "";
+  overview(session?: string, agentId?: string) {
+    const params = new URLSearchParams();
+    if (session) params.set("session", session);
+    if (agentId) params.set("agent_id", agentId);
+    const q = params.toString() ? `?${params.toString()}` : "";
     return request<OverviewData>(`/api/overview${q}`);
   },
-  findings(session?: string) {
-    const q = session ? `?session=${encodeURIComponent(session)}` : "";
+  findings(session?: string, agentId?: string) {
+    const params = new URLSearchParams();
+    if (session) params.set("session", session);
+    if (agentId) params.set("agent_id", agentId);
+    const q = params.toString() ? `?${params.toString()}` : "";
     return request<{ groups: FindingGroup[] }>(`/api/findings${q}`);
   },
   deleteFinding(key: string) {
@@ -172,8 +183,10 @@ async function downloadBlob(path: string, filename: string) {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (response.status === 401) {
-    setToken(null);
-    onUnauthorized?.();
+    if (token && getToken() === token) {
+      setToken(null);
+      onUnauthorized?.();
+    }
     throw new AuthError(await response.text());
   }
   if (!response.ok) throw new Error(await response.text());

@@ -1,5 +1,6 @@
 import type { FindingMember } from "../types";
 import { api } from "../api/client";
+import { AgentBadge } from "./AgentBadge";
 import { ApiChainList, TagChips, findingTagsFromRecord } from "./FindingBits";
 import { flowLabel } from "../lib/finding-ui";
 
@@ -30,9 +31,10 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
           <SevBadge severity={member.severity} />
           <strong style={{ fontSize: 16 }}>{member.title}</strong>
+          <AgentBadge agentId={String(member.agent_id || finding.agent_id || "")} hostname={member.hostname} />
           <button type="button" className="btn-ghost" style={{ marginLeft: "auto" }} onClick={onClose}>
             ×
           </button>

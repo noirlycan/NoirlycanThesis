@@ -4,6 +4,7 @@ import { AccessView } from "./components/AccessView";
 import { AccountView } from "./components/AccountView";
 import { ActivityView } from "./components/ActivityView";
 import { AgentsView } from "./components/AgentsView";
+import { AgentBadge, agentLabel } from "./components/AgentBadge";
 import { ApiChainList, TagChips } from "./components/FindingBits";
 import { FindingModal } from "./components/FindingModal";
 import { NetworkView } from "./components/NetworkView";
@@ -15,7 +16,7 @@ import { applyTheme, readStoredTheme, type Theme } from "./lib/theme";
 import type { FindingGroup, FindingMember, OverviewData, Permissions, Ruleset, TabId, User } from "./types";
 
 const TAB_META: Record<TabId, { title: string; sub: string; perm?: string }> = {
-  overview: { title: "Overview", sub: "Session KPIs, severity mix, and active critical finding" },
+  overview: { title: "Overview", sub: "Fleet KPIs across all connected agents" },
   findings: { title: "Findings", sub: "Grouped by target process / injection chain" },
   activity: { title: "Activity", sub: "Live event stream and file drops" },
   network: { title: "Network", sub: "Post-finding beacon watch and connections" },
@@ -144,6 +145,7 @@ function OverviewView({
   data,
   searchQuery,
   onNavigate,
+  onOpenFinding,
   canKill,
   onKill,
   killed,
@@ -151,18 +153,27 @@ function OverviewView({
   data: OverviewData;
   searchQuery: string;
   onNavigate: (tab: TabId) => void;
+  onOpenFinding: (member: FindingMember) => void;
   canKill: boolean;
-  onKill: (pid: number, image?: string) => void;
+  onKill: (pid: number, image?: string, killAgentId?: string) => void;
   killed: Set<number>;
 }) {
-  const kpis = data.kpis || { findings: 0, critical: 0, injection_chains: 0, file_drops: 0, beacons: 0 };
+  const kpis = data.kpis || { findings: 0, critical: 0, injection_chains: 0, file_drops: 0, beacons: 0, agents: 0 };
   const critical = data.critical_finding as Record<string, unknown> | null | undefined;
   const showCritical = !normalizeSearch(searchQuery) || matchesSearch(searchQuery, critical);
   const pid = critical?.target_pid as number | undefined;
   const isKilled = pid ? killed.has(pid) : false;
+  const criticalAgentId = String(critical?.agent_id || "");
+  const criticalHostname = agentLabel(critical);
   const severityCounts = data.severity_counts || {};
   const totalFindings = kpis.findings || Object.values(severityCounts).reduce((sum, n) => sum + Number(n), 0);
   const primitiveCounts = data.primitive_kind_counts || {};
+  const agentStats = data.agent_stats || [];
+  const maxAgentFindings = Math.max(...agentStats.map((row) => row.findings), 1);
+  const recentMembers = (data.groups || [])
+    .flatMap((group) => group.members.map((member) => ({ group, member })))
+    .sort((a, b) => String(b.member.time || "").localeCompare(String(a.member.time || "")))
+    .slice(0, 8);
   const primitiveRows = [
     { key: "allocate", label: "Allocate", color: "var(--op-alloc)" },
     { key: "write", label: "Write", color: "var(--op-write)" },
@@ -177,7 +188,8 @@ function OverviewView({
     <>
       <div className="kpi-grid">
         {[
-          ["Findings", kpis.findings, "overview", false],
+          ["Agents", kpis.agents ?? agentStats.length, "agents", false],
+          ["Findings", kpis.findings, "findings", false],
           ["Critical", kpis.critical, "findings", true],
           ["Injection chains", kpis.injection_chains, "findings", false],
           ["File drops", kpis.file_drops, "activity", false],
@@ -203,8 +215,9 @@ function OverviewView({
           </div>
           {critical && showCritical ? (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
                 <SevBadge severity="CRITICAL" />
+                <AgentBadge agentId={criticalAgentId} hostname={criticalHostname} />
                 <span style={{ fontWeight: 700, fontSize: 17 }}>
                   {(critical.title as string) || "Probable process injection chain"}
                 </span>
@@ -222,7 +235,7 @@ function OverviewView({
                       type="button"
                       className="btn-brand"
                       style={{ background: "#e5484d", boxShadow: "none", padding: "6px 14px", fontSize: 12 }}
-                      onClick={() => onKill(pid, String(critical.target_image || ""))}
+                      onClick={() => onKill(pid, String(critical.target_image || ""), criticalAgentId || undefined)}
                     >
                       Kill process
                     </button>
@@ -288,21 +301,33 @@ function OverviewView({
             </div>
           </div>
           <div className="card">
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Injection primitives</div>
-            <div style={{ fontSize: 11.5, color: "var(--dim)", margin: "4px 0 18px" }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Injection primitives</div>
+            <div style={{ fontSize: 11.5, color: "var(--dim)", marginBottom: 18 }}>
               ≥{data.min_primitives || 2} of 3 observed → injection
             </div>
-            <div style={{ display: "flex", gap: 16, height: 104, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
               {primitiveRows.map((row) => (
-                <div key={row.key} style={{ flex: 1, textAlign: "center" }}>
+                <div
+                  key={row.key}
+                  style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}
+                >
                   <div
                     style={{
-                      height: primitiveBarHeight(row.count, maxPrimitive),
-                      borderRadius: "8px 8px 0 0",
-                      background: `linear-gradient(180deg, ${row.color}, transparent)`,
-                      marginBottom: 8,
+                      width: "100%",
+                      height: 104,
+                      display: "flex",
+                      alignItems: "flex-end",
                     }}
-                  />
+                  >
+                    <div
+                      style={{
+                        width: "100%",
+                        height: primitiveBarHeight(row.count, maxPrimitive),
+                        borderRadius: "9px 9px 4px 4px",
+                        background: `linear-gradient(180deg, ${row.color}, transparent)`,
+                      }}
+                    />
+                  </div>
                   <div style={{ fontSize: 11, color: "var(--muted)" }}>{row.label}</div>
                   <div className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
                     {row.count}
@@ -313,6 +338,80 @@ function OverviewView({
           </div>
         </div>
       </div>
+
+      {agentStats.length ? (
+        <div className="grid-2" style={{ marginTop: 20 }}>
+          <div className="card">
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Findings by agent</div>
+            <div style={{ fontSize: 11.5, color: "var(--dim)", marginBottom: 18 }}>
+              Fleet-wide counts · click Findings tab and pick an agent to drill down
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {agentStats.map((row) => (
+                <div key={row.agent_id}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <AgentBadge agentId={row.agent_id} hostname={row.hostname} />
+                    <span className="mono" style={{ fontSize: 11, color: "var(--dim)", marginLeft: "auto" }}>
+                      {row.findings} findings · {row.critical} critical
+                    </span>
+                  </div>
+                  <div style={{ height: 10, background: "var(--hole)", borderRadius: 999, overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${Math.max(8, Math.round((row.findings / maxAgentFindings) * 100))}%`,
+                        height: "100%",
+                        borderRadius: 999,
+                        background: row.critical > 0
+                          ? "linear-gradient(90deg, #e5484d, var(--accent))"
+                          : "linear-gradient(90deg, var(--accent), var(--accent2))",
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11, color: "var(--dim)" }}>
+                    <span>{row.injection_chains} chains</span>
+                    <span>{row.file_drops} drops</span>
+                    <span>{row.beacons} beacons</span>
+                    <span style={{ marginLeft: "auto", textTransform: "capitalize" }}>{row.status || "offline"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Recent findings · all agents</div>
+            <div style={{ fontSize: 11.5, color: "var(--dim)", marginBottom: 14 }}>
+              Click a row to inspect which agent raised it
+            </div>
+            {recentMembers.length ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {recentMembers.map(({ group, member }) => (
+                  <div
+                    key={member.key}
+                    className="finding-row"
+                    style={{ gridTemplateColumns: "auto auto 1fr auto auto", cursor: "pointer" }}
+                    onClick={() => onOpenFinding(member)}
+                  >
+                    <AgentBadge agentId={member.agent_id || group.agent_id} hostname={member.hostname || group.hostname} />
+                    <SevBadge severity={member.severity} />
+                    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {member.title}
+                    </span>
+                    <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
+                      {group.source} → {group.victim}
+                    </span>
+                    <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
+                      {String(member.time || "").slice(11, 19)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "var(--dim)" }}>No findings across connected agents.</div>
+            )}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -324,6 +423,7 @@ function FindingsView({
   canReport,
   canKill,
   killed,
+  agentScope,
   onOpen,
   onDelete,
   onKill,
@@ -334,14 +434,22 @@ function FindingsView({
   canReport: boolean;
   canKill: boolean;
   killed: Set<number>;
+  agentScope?: { id: string; hostname: string } | null;
   onOpen: (member: FindingMember) => void;
   onDelete: (key: string) => void;
-  onKill: (pid: number, image?: string) => void;
+  onKill: (pid: number, image?: string, killAgentId?: string) => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ fontSize: 13, color: "var(--dim)" }}>Gộp theo process đích · xếp theo thứ tự chain</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ fontSize: 13, color: "var(--dim)" }}>
+          Gộp theo process đích · xếp theo thứ tự chain
+          {agentScope ? (
+            <span className="mono" style={{ marginLeft: 10, color: "var(--muted)" }}>
+              · {agentScope.hostname}
+            </span>
+          ) : null}
+        </div>
         {canReport ? (
           <button type="button" className="btn-ghost" style={{ marginLeft: "auto" }} onClick={() => api.downloadAllReport()}>
             Export report (.md)
@@ -355,18 +463,16 @@ function FindingsView({
         <div key={group.key} className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div className="group-header">
             <SevBadge severity={group.top_severity} />
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>
                 <span style={{ color: "var(--muted)" }}>{group.source}</span> ──▶{" "}
                 <span style={{ color: "#ec7b1a" }}>{group.victim}</span>{" "}
                 <span style={{ color: "var(--dim)" }}>{group.vpid ?? ""}</span>
               </div>
               <div style={{ fontSize: 12, color: "var(--dim)", marginTop: 3 }}>{group.summary}</div>
-              <div style={{ marginTop: 8 }}>
-                <TagChips tags={group.tags || []} />
-              </div>
             </div>
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <TagChips tags={group.tags || []} />
               {groupKilled ? (
                 <span className="mono" style={{ fontSize: 11, color: "#e5484d" }}>
                   TERMINATED
@@ -377,12 +483,12 @@ function FindingsView({
                   type="button"
                   className="btn-brand"
                   style={{ background: "#e5484d", boxShadow: "none", padding: "6px 12px", fontSize: 12 }}
-                  onClick={() => onKill(groupPid, group.victim)}
+                  onClick={() => onKill(groupPid, group.victim, group.agent_id)}
                 >
                   Kill process
                 </button>
               ) : null}
-              <span className="badge">{group.count} detections</span>
+              <span className="badge">{group.count}</span>
             </div>
           </div>
           {group.members.map((member) => (
@@ -395,8 +501,10 @@ function FindingsView({
                 #{member.step}
               </span>
               <SevBadge severity={member.severity} />
-              <span>{member.title}</span>
-              <span className="mono" style={{ color: "var(--dim)" }}>{String(member.primitives ?? "—")}</span>
+              <span style={{ fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {member.title}
+              </span>
+              <span className="mono" style={{ color: "var(--muted)", fontSize: 12 }}>{String(member.primitives ?? "—")}</span>
               <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
                 {String(member.time || "").slice(11, 19)}
               </span>
@@ -435,6 +543,7 @@ export default function App() {
   const [perms, setPerms] = useState<Permissions>({});
   const [tab, setTab] = useState<TabId>("overview");
   const [overview, setOverview] = useState<OverviewData | null>(null);
+  const [agentOverview, setAgentOverview] = useState<OverviewData | null>(null);
   const [groups, setGroups] = useState<FindingGroup[]>([]);
   const [rules, setRules] = useState<Ruleset | null>(null);
   const [agentsData, setAgentsData] = useState<Awaited<ReturnType<typeof api.agents>> | null>(null);
@@ -442,22 +551,26 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [killed, setKilled] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [agentId, setAgentId] = useState("");
+  const [authReady, setAuthReady] = useState(() => !getToken());
+
+  const scopedOverview = agentOverview || overview;
 
   const filteredGroups = useMemo(
     () => filterFindingGroups(groups, searchQuery),
     [groups, searchQuery],
   );
   const filteredEvents = useMemo(
-    () => filterRecords((overview?.recent_events as Record<string, unknown>[] | undefined) || [], searchQuery),
-    [overview?.recent_events, searchQuery],
+    () => filterRecords((scopedOverview?.recent_events as Record<string, unknown>[] | undefined) || [], searchQuery),
+    [scopedOverview?.recent_events, searchQuery],
   );
   const filteredTriages = useMemo(
-    () => filterRecords((overview?.triages as Record<string, unknown>[] | undefined) || [], searchQuery),
-    [overview?.triages, searchQuery],
+    () => filterRecords((scopedOverview?.triages as Record<string, unknown>[] | undefined) || [], searchQuery),
+    [scopedOverview?.triages, searchQuery],
   );
   const filteredNetwork = useMemo(
-    () => filterRecords((overview?.network as Record<string, unknown>[] | undefined) || [], searchQuery),
-    [overview?.network, searchQuery],
+    () => filterRecords((scopedOverview?.network as Record<string, unknown>[] | undefined) || [], searchQuery),
+    [scopedOverview?.network, searchQuery],
   );
   const searchActive = normalizeSearch(searchQuery).length > 0;
 
@@ -475,8 +588,17 @@ export default function App() {
     if (!getToken() || refreshBusy.current) return;
     refreshBusy.current = true;
     try {
-      const [ov, fd] = await Promise.all([api.overview(), api.findings()]);
-      setOverview(ov);
+      const selectedAgent = agentId || undefined;
+      const [globalOv, agentOv, fd] = await Promise.all([
+        api.overview(),
+        selectedAgent ? api.overview(undefined, selectedAgent) : Promise.resolve(null),
+        api.findings(undefined, selectedAgent),
+      ]);
+      if (!agentId && globalOv.agents?.[0]?.id) {
+        setAgentId(String(globalOv.agents[0].id));
+      }
+      setOverview(globalOv);
+      setAgentOverview(agentOv);
       setGroups(fd.groups || []);
       if (can(permsRef.current, "access")) {
         const agents = await api.agents();
@@ -487,7 +609,7 @@ export default function App() {
     } finally {
       refreshBusy.current = false;
     }
-  }, []);
+  }, [agentId]);
 
   const live = useLiveSocket(refresh, Boolean(user));
 
@@ -497,8 +619,12 @@ export default function App() {
 
   useEffect(() => {
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      setAuthReady(true);
+      return;
+    }
     let cancelled = false;
+    const startedToken = token;
     api
       .me()
       .then((payload) => {
@@ -507,7 +633,12 @@ export default function App() {
         setPerms(payload.permissions || {});
       })
       .catch(() => {
-        if (!cancelled) setToken(null);
+        if (!cancelled && getToken() === startedToken) {
+          setToken(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAuthReady(true);
       });
     return () => {
       cancelled = true;
@@ -515,9 +646,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!authReady || !user || !getToken()) return;
     void refresh();
-  }, [user, refresh]);
+  }, [authReady, user, refresh, agentId]);
 
   useEffect(() => {
     if (!user || !getToken()) return;
@@ -541,6 +672,7 @@ export default function App() {
     setUser(null);
     setPerms({});
     setOverview(null);
+    setAgentOverview(null);
     setGroups([]);
     setRules(null);
     setAgentsData(null);
@@ -555,15 +687,23 @@ export default function App() {
     return () => registerUnauthorizedHandler(null);
   }, []);
 
-  async function handleKill(pid: number, image?: string) {
+  async function handleKill(pid: number, image?: string, killAgentId?: string) {
     try {
-      const agentId = agentsData?.agents?.[0]?.id as string | undefined;
-      const result = await api.kill(agentId || "local-agent", pid, image);
+      const selectedAgent = killAgentId || agentId || String(agentsData?.agents?.[0]?.id || "local-agent");
+      const result = await api.kill(selectedAgent, pid, image);
       setKilled((prev) => new Set(prev).add(pid));
       setToast(result.message);
     } catch (err) {
       setToast(String(err));
     }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="app-root" style={{ display: "grid", placeItems: "center", minHeight: "100vh", color: "var(--muted)" }}>
+        Restoring session…
+      </div>
+    );
   }
 
   if (!user) {
@@ -574,7 +714,7 @@ export default function App() {
             setToken(token);
             setUser(nextUser);
             setPerms(nextPerms);
-            void refresh();
+            setAuthReady(true);
           }}
         />
       </div>
@@ -670,6 +810,27 @@ export default function App() {
               <div className="page-sub">{meta.sub}</div>
             </div>
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+              {tab !== "overview" && (overview?.agents?.length || agentsData?.agents?.length) ? (
+                <label className="mono" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--muted)" }}>
+                  Agent
+                  <select
+                    value={agentId}
+                    onChange={(e) => setAgentId(e.target.value)}
+                    style={{ minWidth: 160 }}
+                  >
+                    {(overview?.agents || agentsData?.agents || []).map((agent) => (
+                      <option key={String(agent.id)} value={String(agent.id)}>
+                        {String(agent.hostname || agent.id)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {tab === "overview" && overview?.kpis?.agents ? (
+                <span className="mono" style={{ fontSize: 12, color: "var(--dim)" }}>
+                  {overview.kpis.agents} agents · fleet view
+                </span>
+              ) : null}
               <label
                 className="mono"
                 style={{
@@ -747,6 +908,7 @@ export default function App() {
                 data={overview}
                 searchQuery={searchQuery}
                 onNavigate={setTab}
+                onOpenFinding={setModal}
                 canKill={can(perms, "kill")}
                 onKill={handleKill}
                 killed={killed}
@@ -760,6 +922,17 @@ export default function App() {
                 canReport={can(perms, "report")}
                 canKill={can(perms, "kill")}
                 killed={killed}
+                agentScope={
+                  agentId
+                    ? {
+                        id: agentId,
+                        hostname: String(
+                          (overview?.agents || agentsData?.agents || []).find((a) => String(a.id) === agentId)
+                            ?.hostname || agentId,
+                        ),
+                      }
+                    : null
+                }
                 onOpen={setModal}
                 onDelete={async (key) => {
                   await api.deleteFinding(key);
@@ -770,15 +943,15 @@ export default function App() {
             ) : null}
             {tab === "activity" ? (
               <ActivityView
-                events={(searchActive ? filteredEvents : (overview?.recent_events as Record<string, unknown>[] | undefined) || [])}
-                triages={(searchActive ? filteredTriages : (overview?.triages as Record<string, unknown>[] | undefined) || [])}
+                events={(searchActive ? filteredEvents : (scopedOverview?.recent_events as Record<string, unknown>[] | undefined) || [])}
+                triages={(searchActive ? filteredTriages : (scopedOverview?.triages as Record<string, unknown>[] | undefined) || [])}
                 searchQuery={searchQuery}
               />
             ) : null}
             {tab === "network" ? (
               <NetworkView
-                network={(searchActive ? filteredNetwork : (overview?.network as Record<string, unknown>[] | undefined) || [])}
-                beacons={(overview?.beacons as Record<string, unknown>[] | undefined) || []}
+                network={(searchActive ? filteredNetwork : (scopedOverview?.network as Record<string, unknown>[] | undefined) || [])}
+                beacons={(scopedOverview?.beacons as Record<string, unknown>[] | undefined) || []}
                 searchQuery={searchQuery}
               />
             ) : null}
@@ -832,7 +1005,8 @@ export default function App() {
           }}
           onKill={async () => {
             const pid = Number(modal.finding?.target_pid || 0);
-            if (pid > 0) await handleKill(pid, String(modal.finding?.target_image || ""));
+            const killAgentId = String(modal.agent_id || modal.finding?.agent_id || "");
+            if (pid > 0) await handleKill(pid, String(modal.finding?.target_image || ""), killAgentId || undefined);
           }}
         />
       ) : null}

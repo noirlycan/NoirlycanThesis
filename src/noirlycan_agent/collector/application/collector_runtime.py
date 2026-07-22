@@ -7,6 +7,7 @@ import json
 import queue
 import sys
 from pathlib import Path
+from pathlib import Path
 from typing import Any, Callable
 
 from noirlycan_core.kernel.analysis.evasion import evasion_signal_from_payload
@@ -20,6 +21,7 @@ from noirlycan_core.kernel.entities.models import (
     TelemetryEvent,
 )
 from noirlycan_core.analysis.domain.correlation import Correlator
+from noirlycan_core.runtime.agent_policy import load_agent_policy
 from noirlycan_agent.collector.infrastructure.frida_manager import (
     FridaInjectionMonitor,
     FridaUnavailable,
@@ -139,9 +141,10 @@ def create_sysmon_or_none(watch_sysmon: bool) -> SysmonPoller | None:
     return sysmon
 
 
-def create_monitor_or_none() -> FridaInjectionMonitor | None:
+def create_monitor_or_none(logs_dir: Path | str | None = None) -> FridaInjectionMonitor | None:
     try:
-        return FridaInjectionMonitor()
+        policy = load_agent_policy(logs_dir)
+        return FridaInjectionMonitor(policy=policy)
     except FridaUnavailable as exc:
         print(f"[!] Frida unavailable: {exc}", file=sys.stderr)
         return None
@@ -176,7 +179,15 @@ def handle_network_event(
     if watched is None:
         return
     writer.write("network", watched)
-    if is_external_beacon_candidate(watched.destination_ip, watched.destination_hostname):
+    policy = correlator.reload_agent_policy()
+    beacon_enabled = policy.beacon if policy is not None else True
+    allowlist = policy.allowlist if policy is not None else None
+    if is_external_beacon_candidate(
+        watched.destination_ip,
+        watched.destination_hostname,
+        enabled=beacon_enabled,
+        allowlist=allowlist,
+    ):
         print(
             f"[NETWORK:BEACON?] PID {watched.pid} "
             f"({watched.image or 'unknown'}) -> {watched.endpoint} "

@@ -22,6 +22,7 @@ from noirlycan_core.analysis.domain.classifier_config import (
     load_classifier_config,
     resolve_config_path,
 )
+from noirlycan_core.runtime.agent_policy import AgentPolicy, load_agent_policy, policy_path
 from noirlycan_agent.collector.infrastructure.process_resolve import (
     image_for_pid as resolve_image_for_pid,
 )
@@ -43,6 +44,8 @@ class Correlator:
         self.window = timedelta(seconds=window_seconds)
         self.minimum_score = minimum_score
         self.logs_dir = logs_dir
+        self._agent_policy: AgentPolicy | None = None
+        self._agent_policy_mtime: float = -1.0
         self.files_by_path: dict[str, FileEvent] = {}
         self.processes_by_pid: dict[int, ProcessEvent] = {}
         self.primitives: deque[MemoryPrimitive] = deque()
@@ -54,6 +57,25 @@ class Correlator:
         self._rules_config: ClassifierRulesConfig | None = None
         self._rules_config_mtime: float = -1.0
         self._chain_buckets: dict[tuple[int, int | None], list[MemoryPrimitive]] = defaultdict(list)
+
+    def reload_agent_policy(self) -> AgentPolicy | None:
+        path = policy_path(self.logs_dir) if self.logs_dir else None
+        if path is None or not path.exists():
+            self._agent_policy = None
+            self._agent_policy_mtime = 0.0
+            return None
+        mtime = path.stat().st_mtime
+        if self._agent_policy is None or mtime != self._agent_policy_mtime:
+            self._agent_policy = load_agent_policy(self.logs_dir)
+            self._agent_policy_mtime = mtime
+            if self._agent_policy is not None:
+                self.window = timedelta(seconds=self._agent_policy.capture_seconds())
+        return self._agent_policy
+
+    def apply_policy(self, policy: AgentPolicy | None) -> None:
+        self._agent_policy = policy
+        if policy is not None:
+            self.window = timedelta(seconds=policy.capture_seconds())
 
     def reload_rules_config(self) -> ClassifierRulesConfig:
         """Reload classifier rules when `.classifier_rules.json` changes."""
@@ -111,6 +133,7 @@ class Correlator:
 
         actor_pid, target_pid = chain_key
         findings: list[Finding] = []
+        policy = self.reload_agent_policy()
         rules_config = self.reload_rules_config()
         minimum_score = self.effective_minimum_score(rules_config)
         kinds = {primitive.kind for primitive in primitives}
@@ -122,9 +145,9 @@ class Correlator:
             target_pid is None or target_pid == actor_pid
         ):
             return findings
-        if not _has_temporal_consistency(primitives):
+        if (policy is None or policy.temporal) and not _has_temporal_consistency(primitives):
             return findings
-        if not _has_memory_congruence(primitives):
+        if (policy is None or policy.congruence) and not _has_memory_congruence(primitives):
             return findings
 
         related_process = self.processes_by_pid.get(actor_pid)
@@ -148,13 +171,12 @@ class Correlator:
         if score <= previous_score:
             return findings
         self._reported_chain_scores[chain_key] = score
+        watch_seconds = policy.net_watch_seconds() if policy else NETWORK_WATCH_SECONDS
         if score >= NETWORK_WATCH_MIN_SCORE and target_pid is not None:
-            self._network_watch_until[target_pid] = latest.timestamp + timedelta(
-                seconds=NETWORK_WATCH_SECONDS
-            )
+            self._network_watch_until[target_pid] = latest.timestamp + timedelta(seconds=watch_seconds)
         finding = Finding(
             timestamp=latest.timestamp,
-            severity=_severity(score),
+            severity=_severity_for_policy(score, policy),
             title=title,
             description=_describe(
                 primitives,
@@ -535,6 +557,18 @@ def _dll_path_remote_thread_pattern(primitives: list[MemoryPrimitive]) -> bool:
             if write.address <= parameter < write.address + write_size:
                 return True
     return False
+
+
+def _severity_for_policy(score: int, policy: AgentPolicy | None) -> Severity:
+    if policy is not None:
+        if score >= policy.score_crit:
+            return Severity.CRITICAL
+        if score >= policy.score_high:
+            return Severity.HIGH
+        if score >= policy.score_med:
+            return Severity.MEDIUM
+        return Severity.LOW
+    return _severity(score)
 
 
 def _severity(score: int) -> Severity:

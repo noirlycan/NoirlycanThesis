@@ -53,16 +53,26 @@ def ingest_event(
     database = get_database()
     verify_agent_token(authorization, database)
     logs_dir = ensure_logs_dir(get_logs_dir())
-    session_name = body.session or "agent-live.jsonl"
-    session_path = logs_dir / session_name
-    if not session_path.exists():
-        session_path = new_session_log_path(logs_dir)
-        session_name = session_path.name
+    agent_id = (x_agent_id or "").strip()
+    if agent_id:
+        session_rel = database.ensure_agent_session(agent_id)
+        session_path = logs_dir / session_rel
+        session_name = session_rel
+    else:
+        session_name = body.session or "agent-live.jsonl"
+        session_path = logs_dir / session_name
+        if not session_path.exists():
+            session_path = new_session_log_path(logs_dir)
+            session_name = session_path.name
     payload = {"type": body.type, "value": body.value}
+    if agent_id:
+        payload["agent_id"] = agent_id
+        if isinstance(payload["value"], dict):
+            payload["value"]["agent_id"] = agent_id
     _append_event(session_path, payload)
     commands: list[dict[str, Any]] = []
-    if x_agent_id:
-        commands = database.pop_agent_commands(x_agent_id)
+    if agent_id:
+        commands = database.pop_agent_commands(agent_id)
     schedule_broadcast(
         {
             "type": "event",
@@ -70,7 +80,8 @@ def ingest_event(
             "event_type": body.type,
         }
     )
-    return {"ok": True, "session": session_name, "commands": commands}
+    rules_payload = database.rules_payload_for_agent()
+    return {"ok": True, "session": session_name, "commands": commands, **rules_payload}
 
 
 @router.post("/hello")
@@ -87,5 +98,7 @@ def agent_hello(
         mode=body.mode,
         watching=body.watching,
     )
+    database.ensure_agent_session(body.agent_id)
     schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
-    return {"ok": True, "agent": agent, "rules": database.load_ruleset().to_dict()}
+    payload = database.rules_payload_for_agent()
+    return {"ok": True, "agent": agent, **payload}

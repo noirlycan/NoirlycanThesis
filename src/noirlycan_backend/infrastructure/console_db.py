@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from noirlycan_backend.domain.agent_sessions import ensure_agent_session_file
 from noirlycan_backend.domain.permissions import (
     DEFAULT_ROLE_PERMISSIONS,
     normalize_role_permissions,
@@ -165,6 +166,12 @@ class ConsoleDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_agent_commands_pending
                     ON console_agent_commands(agent_id, status);
+
+                CREATE TABLE IF NOT EXISTS console_agent_sessions (
+                    agent_id TEXT PRIMARY KEY,
+                    session_rel TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 """
             )
 
@@ -416,6 +423,25 @@ class ConsoleDatabase:
             return Ruleset()
         return Ruleset.from_dict(payload)
 
+    def active_ruleset_version(self) -> int:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT version FROM console_rulesets
+                WHERE is_active = 1
+                ORDER BY version DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        return int(row["version"]) if row else 0
+
+    def rules_payload_for_agent(self) -> dict[str, Any]:
+        ruleset = self.load_ruleset()
+        return {
+            "rules": ruleset.to_dict(),
+            "rules_version": self.active_ruleset_version(),
+        }
+
     def save_ruleset(self, ruleset: Ruleset) -> Ruleset:
         with self._connect() as connection:
             version = connection.execute(
@@ -429,6 +455,9 @@ class ConsoleDatabase:
                 """,
                 (version, json.dumps(ruleset.to_dict()), _utc_now()),
             )
+        from noirlycan_backend.domain.ruleset_sync import sync_ruleset_to_classifier
+
+        sync_ruleset_to_classifier(ruleset, self.logs_dir, version=int(version))
         return ruleset
 
     def load_server_config(self) -> dict[str, Any]:
@@ -506,6 +535,66 @@ class ConsoleDatabase:
             )
         agents = self.list_agents()
         return next(item for item in agents if item["id"] == agent_id)
+
+    def get_agent_session_rel(self, agent_id: str) -> str | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT session_rel FROM console_agent_sessions WHERE agent_id = ?",
+                (agent_id.strip(),),
+            ).fetchone()
+        if row is None:
+            return None
+        return str(row["session_rel"])
+
+    def set_agent_session_rel(self, agent_id: str, session_rel: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO console_agent_sessions (agent_id, session_rel, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(agent_id) DO UPDATE SET
+                    session_rel = excluded.session_rel,
+                    updated_at = excluded.updated_at
+                """,
+                (agent_id.strip(), session_rel, _utc_now()),
+            )
+
+    def ensure_agent_session(self, agent_id: str) -> str:
+        existing = self.get_agent_session_rel(agent_id)
+        if existing:
+            path = self.logs_dir / existing
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if not path.exists():
+                path.touch()
+            return existing
+        rel, path = ensure_agent_session_file(self.logs_dir, agent_id)
+        self.set_agent_session_rel(agent_id, rel)
+        return rel
+
+    def resolve_session_for_agent(self, agent_id: str | None) -> str | None:
+        if agent_id:
+            rel = self.get_agent_session_rel(agent_id)
+            if rel:
+                return rel
+            return self.ensure_agent_session(agent_id)
+        agents = self.list_agents()
+        for agent in agents:
+            rel = self.get_agent_session_rel(str(agent["id"]))
+            if rel:
+                return rel
+        return None
+
+    def list_agent_sessions(self) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT s.agent_id, s.session_rel, s.updated_at, a.hostname, a.status
+                FROM console_agent_sessions s
+                LEFT JOIN console_agents a ON a.id = s.agent_id
+                ORDER BY s.updated_at DESC
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def set_agent_auto_kill(self, agent_id: str, enabled: bool) -> bool:
         with self._connect() as connection:

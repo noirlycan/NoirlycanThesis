@@ -296,7 +296,7 @@ select {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -383,11 +383,17 @@ select {
 
 .finding-row {
   display: grid;
-  grid-template-columns: 44px 96px 1fr 90px 84px 32px;
+  grid-template-columns: 44px 96px minmax(0, 1fr) 90px 84px 32px;
   gap: 12px;
   align-items: center;
   padding: 14px 22px;
   cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.finding-row:last-child {
+  border-bottom: none;
 }
 
 .finding-row:hover {

@@ -8,12 +8,16 @@ from datetime import datetime, timezone
 from importlib.resources import files
 from typing import Any, Callable
 
+from noirlycan_agent.collector.infrastructure.frida_hook_catalog import build_runtime_config
 from noirlycan_core.kernel.entities.models import MemoryPrimitive, PrimitiveKind, ProcessEvent
+from noirlycan_core.runtime.agent_policy import AgentPolicy
 
 try:
     import frida
 except ImportError:  # pragma: no cover - optional until installed on Windows lab
     frida = None
+
+_HOOK_PARTS = ("runtime.js", "handlers.js")
 
 
 class FridaUnavailable(RuntimeError):
@@ -26,33 +30,80 @@ class FridaRuntimeEvent:
     payload: dict[str, Any]
 
 
+def _load_hook_part(name: str) -> str:
+    path = files("noirlycan_agent").joinpath(f"frida_hooks/{name}")
+    return path.read_text(encoding="utf-8")
+
+
 def load_default_hook_script() -> str:
-    hook_path = files("noirlycan_agent").joinpath(
-        "frida_hooks/windows_injection_hooks.js"
-    )
-    return hook_path.read_text(encoding="utf-8")
+    """Load the hook runtime without server config (full lab mode)."""
+    return build_hook_script(None)
+
+
+def build_hook_script(policy: AgentPolicy | None = None) -> str:
+    """Inject server runtime config, then load runtime + handler modules."""
+    config = build_runtime_config(policy)
+    preamble = f"globalThis.__NOIRLYCAN_CONFIG__ = {json.dumps(config, sort_keys=True)};\n"
+    body = "\n".join(_load_hook_part(part) for part in _HOOK_PARTS)
+    return preamble + body
 
 
 class FridaInjectionMonitor:
     """Small Frida orchestration layer for Windows API telemetry."""
 
-    def __init__(self, script_source: str | None = None) -> None:
+    def __init__(
+        self,
+        script_source: str | None = None,
+        *,
+        policy: AgentPolicy | None = None,
+    ) -> None:
         if frida is None:
             raise FridaUnavailable("Install the 'frida' Python package first")
-        self.script_source = script_source or load_default_hook_script()
+        self._policy_version = policy.version if policy else 0
+        self.script_source = script_source or build_hook_script(policy)
         self._sessions: dict[int, Any] = {}
         self._queue: queue.Queue[FridaRuntimeEvent] = queue.Queue()
         self._lock = threading.Lock()
+
+    @property
+    def policy_version(self) -> int:
+        return self._policy_version
 
     def attach(self, pid: int) -> None:
         with self._lock:
             if pid in self._sessions:
                 return
-            session = frida.attach(pid)
-            script = session.create_script(self.script_source)
-            script.on("message", self._on_message)
-            script.load()
-            self._sessions[pid] = (session, script)
+            self._attach_pid(pid)
+
+    def reload_policy(self, policy: AgentPolicy | None) -> bool:
+        """Recompile hook script from dashboard policy and reattach active sessions."""
+        version = policy.version if policy else 0
+        new_source = build_hook_script(policy)
+        if version == self._policy_version and new_source == self.script_source:
+            return False
+        with self._lock:
+            pids = list(self._sessions.keys())
+            for session, _ in self._sessions.values():
+                try:
+                    session.detach()
+                except Exception:
+                    pass
+            self._sessions.clear()
+            self.script_source = new_source
+            self._policy_version = version
+            for pid in pids:
+                try:
+                    self._attach_pid(pid)
+                except Exception:
+                    pass
+        return True
+
+    def _attach_pid(self, pid: int) -> None:
+        session = frida.attach(pid)
+        script = session.create_script(self.script_source)
+        script.on("message", self._on_message)
+        script.load()
+        self._sessions[pid] = (session, script)
 
     def detach_all(self) -> None:
         with self._lock:

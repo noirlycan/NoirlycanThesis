@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
 from noirlycan_core.storage.infrastructure.log_store import (
+    aggregate_events,
     aggregate_logs,
+    read_jsonl,
     resolve_logs_dir,
     session_detail,
 )
@@ -21,23 +23,82 @@ def _finding_key(finding: dict[str, Any]) -> str:
     return str(finding.get("timestamp") or finding.get("id") or id(finding))
 
 
+def _matches_agent(finding: dict[str, Any], agent_id: str) -> bool:
+    tagged = str(finding.get("agent_id") or "")
+    if tagged:
+        return tagged == agent_id
+    return False
+
+
+def _tag_agent(finding: dict[str, Any], agent_id: str) -> dict[str, Any]:
+    tagged = dict(finding)
+    tagged["agent_id"] = agent_id
+    return tagged
+
+
+def _resolve_session_path(logs_dir: Path, session_rel: str) -> Path | None:
+    directory = resolve_logs_dir(logs_dir)
+    target = directory / session_rel
+    if target.exists() and target.is_file():
+        return target.resolve()
+    fallback = Path(session_rel)
+    if fallback.exists() and fallback.is_file():
+        return fallback.resolve()
+    return None
+
+
+def _load_session_stats(logs_dir: Path, session_rel: str, agent_id: str) -> dict[str, Any]:
+    path = _resolve_session_path(logs_dir, session_rel)
+    if path is None:
+        return {"findings": [], "stats": {}, "session_rel": session_rel, "agent_id": agent_id}
+    events = read_jsonl(path)
+    stats = aggregate_events(events)
+    findings = [_tag_agent(item, agent_id) for item in stats.get("recent_findings") or []]
+    return {
+        "findings": findings,
+        "stats": stats,
+        "session_rel": session_rel,
+        "agent_id": agent_id,
+        "session_name": path.name,
+    }
+
+
+def _merge_counters(*items: dict[str, Any] | Counter[str]) -> dict[str, int]:
+    merged: Counter[str] = Counter()
+    for item in items:
+        if not item:
+            continue
+        merged.update({str(k): int(v) for k, v in dict(item).items()})
+    return dict(merged)
+
+
+def _agent_hostname(agents: list[dict[str, Any]], agent_id: str) -> str:
+    for agent in agents:
+        if str(agent.get("id")) == agent_id:
+            return str(agent.get("hostname") or agent_id)
+    return agent_id
+
+
 def group_findings(
     findings: list[dict[str, Any]],
     *,
     removed: set[str] | None = None,
+    agent_hostnames: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     removed = removed or set()
+    hostnames = agent_hostnames or {}
     visible = [f for f in findings if _finding_key(f) not in removed]
     buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
     for finding in visible:
+        agent = str(finding.get("agent_id") or "unknown")
         target_pid = finding.get("target_pid")
         actor_image = _image_name(finding.get("actor_image"))
         if target_pid is None:
-            group_key = f"{actor_image}|disk"
+            group_key = f"{agent}|{actor_image}|disk"
         else:
             target_image = _image_name(finding.get("target_image"))
-            group_key = f"{actor_image}|{target_image}|{target_pid}"
+            group_key = f"{agent}|{actor_image}|{target_image}|{target_pid}"
         buckets[group_key].append(finding)
 
     groups: list[dict[str, Any]] = []
@@ -48,19 +109,22 @@ def group_findings(
         )
         top = max(members_sorted, key=lambda item: _severity_rank(item.get("severity")))
         parts = key.split("|")
-        actor = parts[0]
-        if parts[1] == "disk":
+        agent_id = parts[0]
+        actor = parts[1]
+        if parts[2] == "disk":
             victim = "disk drop"
             vpid = None
             summary = "Payload staged on disk"
         else:
-            victim = parts[1]
-            vpid = int(parts[2]) if parts[2].isdigit() else parts[2]
+            victim = parts[2]
+            vpid = int(parts[3]) if parts[3].isdigit() else parts[3]
             summary = members_sorted[-1].get("title") or "Injection chain into target process"
 
         groups.append(
             {
                 "key": key,
+                "agent_id": agent_id,
+                "hostname": hostnames.get(agent_id, agent_id),
                 "top_severity": str(top.get("severity") or "INFO").upper(),
                 "source": actor,
                 "victim": victim,
@@ -76,6 +140,8 @@ def group_findings(
                         "title": item.get("title") or item.get("technique") or "Finding",
                         "primitives": item.get("primitive_kinds") or item.get("primitives_count"),
                         "time": item.get("timestamp"),
+                        "agent_id": str(item.get("agent_id") or agent_id),
+                        "hostname": hostnames.get(str(item.get("agent_id") or agent_id), agent_id),
                         "finding": item,
                     }
                     for index, item in enumerate(members_sorted)
@@ -114,22 +180,41 @@ def load_console_findings(
     logs_dir: Path | str | None = None,
     *,
     session: str | None = None,
+    agent_id: str | None = None,
     removed: set[str] | None = None,
+    agents: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     directory = resolve_logs_dir(logs_dir)
-    aggregate = aggregate_logs(directory, selected=session)
-    active = aggregate.get("active_log")
-    stats = aggregate.get("stats") or {}
-    findings = list(stats.get("recent_findings") or stats.get("findings") or [])
-    if not findings and active:
-        detail = session_detail(active, directory)
-        if detail:
-            findings = list(detail.get("findings") or [])
+    stats: dict[str, Any]
+    findings: list[dict[str, Any]]
+    active: str | None = None
 
-    groups = group_findings(findings, removed=removed)
+    if agent_id and session:
+        bundle = _load_session_stats(directory, session, agent_id)
+        findings = list(bundle.get("findings") or [])
+        stats = bundle.get("stats") or {}
+        active = bundle.get("session_name")
+    else:
+        aggregate = aggregate_logs(directory, selected=session)
+        active = aggregate.get("active_log")
+        stats = aggregate.get("stats") or {}
+        findings = list(stats.get("recent_findings") or stats.get("findings") or [])
+        if not findings and active:
+            detail = session_detail(active, directory)
+            if detail:
+                findings = list(detail.get("findings") or [])
+        if agent_id:
+            findings = [_tag_agent(f, agent_id) for f in findings if _matches_agent(f, agent_id)]
+
+    hostnames: dict[str, str] = {}
+    if agent_id:
+        hostnames[agent_id] = _agent_hostname(agents or [], agent_id)
+    groups = group_findings(findings, removed=removed, agent_hostnames=hostnames)
     severity_counts = stats.get("severity") or stats.get("severity_counts") or {}
     return {
         "session": active,
+        "session_rel": session,
+        "agent_id": agent_id,
         "logs_dir": str(directory),
         "findings": findings,
         "groups": groups,
@@ -138,13 +223,123 @@ def load_console_findings(
     }
 
 
+def load_all_agents_findings(
+    logs_dir: Path | str | None,
+    *,
+    agent_sessions: list[dict[str, Any]],
+    agents: list[dict[str, Any]],
+    removed: set[str] | None = None,
+) -> dict[str, Any]:
+    directory = resolve_logs_dir(logs_dir)
+    hostnames = {str(agent["id"]): _agent_hostname(agents, str(agent["id"])) for agent in agents}
+    all_findings: list[dict[str, Any]] = []
+    merged_stats: list[dict[str, Any]] = []
+    agent_stats: list[dict[str, Any]] = []
+
+    for row in agent_sessions:
+        agent_id = str(row.get("agent_id") or "")
+        session_rel = str(row.get("session_rel") or "")
+        if not agent_id or not session_rel:
+            continue
+        bundle = _load_session_stats(directory, session_rel, agent_id)
+        findings = bundle.get("findings") or []
+        stats = bundle.get("stats") or {}
+        merged_stats.append(stats)
+        visible = [f for f in findings if _finding_key(f) not in (removed or set())]
+        all_findings.extend(visible)
+
+        severity = stats.get("severity") or {}
+        networks = stats.get("recent_network") or []
+        beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
+        triages = stats.get("recent_triages") or []
+        chains = stats.get("injection_chains") or []
+        agent_stats.append(
+            {
+                "agent_id": agent_id,
+                "hostname": hostnames.get(agent_id, agent_id),
+                "session_rel": session_rel,
+                "status": next(
+                    (str(a.get("status") or "offline") for a in agents if str(a.get("id")) == agent_id),
+                    "offline",
+                ),
+                "findings": int((stats.get("totals") or {}).get("findings", len(visible))),
+                "critical": int(severity.get("critical", 0)),
+                "high": int(severity.get("high", 0)),
+                "medium": int(severity.get("medium", 0)),
+                "low": int(severity.get("low", 0)),
+                "injection_chains": len(chains) or len(
+                    [f for f in visible if f.get("target_pid") is not None]
+                ),
+                "file_drops": len(triages),
+                "beacons": len(beacons),
+            }
+        )
+
+    groups = group_findings(all_findings, removed=removed, agent_hostnames=hostnames)
+    severity_counts = _merge_counters(*(stats.get("severity") or {} for stats in merged_stats))
+    primitive_counts = _merge_counters(*(stats.get("primitive_kinds") or {} for stats in merged_stats))
+
+    all_triages: list[dict[str, Any]] = []
+    all_network: list[dict[str, Any]] = []
+    all_beacons: list[dict[str, Any]] = []
+    all_events: list[dict[str, Any]] = []
+    all_chains: list[dict[str, Any]] = []
+    totals = Counter()
+    for stats in merged_stats:
+        all_triages.extend(stats.get("recent_triages") or [])
+        all_network.extend(stats.get("recent_network") or [])
+        all_beacons.extend(
+            n for n in (stats.get("recent_network") or []) if n.get("beacon_candidate") or n.get("is_external")
+        )
+        all_events.extend(list(stats.get("recent_primitives") or []) + list(stats.get("recent_processes") or []))
+        all_chains.extend(stats.get("injection_chains") or [])
+        for key, value in (stats.get("totals") or {}).items():
+            totals[key] += int(value)
+
+    agent_stats.sort(key=lambda item: (-item["findings"], item["hostname"]))
+    return {
+        "session": None,
+        "session_rel": None,
+        "agent_id": None,
+        "scope": "all_agents",
+        "logs_dir": str(directory),
+        "findings": all_findings,
+        "groups": groups,
+        "severity_counts": severity_counts,
+        "primitive_kind_counts": primitive_counts,
+        "stats": {
+            "totals": dict(totals),
+            "severity": severity_counts,
+            "primitive_kinds": primitive_counts,
+            "injection_chains": all_chains,
+            "recent_triages": all_triages[:30],
+            "recent_network": all_network[:50],
+            "recent_primitives": all_events[:30],
+            "recent_processes": [],
+        },
+        "agent_stats": agent_stats,
+    }
+
+
 def overview_payload(
     logs_dir: Path | str | None = None,
     *,
     session: str | None = None,
+    agent_id: str | None = None,
     removed: set[str] | None = None,
+    agent_sessions: list[dict[str, Any]] | None = None,
+    agents: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    bundle = load_console_findings(logs_dir, session=session, removed=removed)
+    if agent_id is None and agent_sessions is not None:
+        bundle = load_all_agents_findings(
+            logs_dir,
+            agent_sessions=agent_sessions,
+            agents=agents or [],
+            removed=removed,
+        )
+    else:
+        bundle = load_console_findings(logs_dir, session=session, agent_id=agent_id, removed=removed)
+
     stats = bundle.get("stats") or {}
     findings = bundle.get("findings") or []
     severity_counts = bundle.get("severity_counts") or {}
@@ -155,32 +350,47 @@ def overview_payload(
         if str(f.get("severity", "")).lower() == "critical"
         and _finding_key(f) not in (removed or set())
     ]
+    critical.sort(key=lambda item: str(item.get("timestamp") or ""), reverse=True)
+    critical_finding = critical[0] if critical else None
+    if critical_finding and agent_id is None and bundle.get("agent_stats"):
+        hostnames = {row["agent_id"]: row["hostname"] for row in bundle.get("agent_stats") or []}
+        aid = str(critical_finding.get("agent_id") or "")
+        if aid in hostnames:
+            critical_finding = {**critical_finding, "hostname": hostnames[aid]}
     chains = stats.get("injection_chains") or []
     triages = stats.get("recent_triages") or stats.get("triages") or []
     networks = stats.get("recent_network") or stats.get("network") or []
     beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
 
-    primitive_counts = stats.get("primitive_kinds") or stats.get("primitive_kind_counts") or {}
+    primitive_counts = bundle.get("primitive_kind_counts") or stats.get("primitive_kinds") or stats.get(
+        "primitive_kind_counts"
+    ) or {}
     recent_events = (
         list(stats.get("recent_primitives") or [])
         + list(stats.get("recent_processes") or [])
     )[:30]
+    totals = stats.get("totals") or {}
     return {
         "session": bundle.get("session"),
+        "session_rel": bundle.get("session_rel"),
+        "agent_id": agent_id,
+        "scope": bundle.get("scope") or ("agent" if agent_id else "session"),
         "logs_dir": bundle.get("logs_dir"),
         "kpis": {
-            "findings": len(findings) - len(removed or set()),
+            "findings": int(totals.get("findings", len(findings))) - len(removed or set()),
             "critical": len(critical),
             "injection_chains": len(chains) or len(
                 [g for g in bundle.get("groups") or [] if g.get("vpid") is not None]
             ),
             "file_drops": len(triages),
             "beacons": len(beacons),
+            "agents": len(bundle.get("agent_stats") or []),
         },
         "severity_counts": severity_counts,
         "primitive_kind_counts": primitive_counts,
-        "critical_finding": critical[0] if critical else None,
+        "critical_finding": critical_finding,
         "groups": bundle.get("groups") or [],
+        "agent_stats": bundle.get("agent_stats") or [],
         "recent_events": recent_events,
         "triages": triages,
         "network": networks,

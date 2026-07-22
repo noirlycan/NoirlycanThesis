@@ -24,11 +24,15 @@ export interface FindingMember {
   title: string;
   primitives?: unknown;
   time?: string;
+  agent_id?: string;
+  hostname?: string;
   finding?: Record<string, unknown>;
 }
 
 export interface FindingGroup {
   key: string;
+  agent_id?: string;
+  hostname?: string;
   top_severity: string;
   source: string;
   victim: string;
@@ -39,25 +43,46 @@ export interface FindingGroup {
   members: FindingMember[];
 }
 
+export interface AgentStat {
+  agent_id: string;
+  hostname: string;
+  session_rel?: string;
+  status?: string;
+  findings: number;
+  critical: number;
+  high?: number;
+  medium?: number;
+  low?: number;
+  injection_chains: number;
+  file_drops: number;
+  beacons: number;
+}
+
 export interface OverviewData {
   session?: string;
+  scope?: string;
   kpis?: {
     findings: number;
     critical: number;
     injection_chains: number;
     file_drops: number;
     beacons: number;
+    agents?: number;
   };
   severity_counts?: Record<string, number>;
   primitive_kind_counts?: Record<string, number>;
   critical_finding?: Record<string, unknown> | null;
   groups?: FindingGroup[];
+  agent_stats?: AgentStat[];
   recent_events?: Record<string, unknown>[];
   triages?: Record<string, unknown>[];
   network?: Record<string, unknown>[];
   beacons?: Record<string, unknown>[];
   collector_online?: boolean;
   min_primitives?: number;
+  agents?: { id: string; hostname: string; status: string }[];
+  active_agent_id?: string | null;
+  session_rel?: string | null;
 }
 
 export interface Ruleset {
