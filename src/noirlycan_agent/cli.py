@@ -38,6 +38,7 @@ from noirlycan_agent.collector.application.remote_sink import (
     RemoteJsonlWriter,
     drain_agent_commands,
 )
+from noirlycan_core.runtime.agent_config import apply_agent_config, load_agent_config
 from noirlycan_core.runtime.config import (
     load_runtime_config,
     mark_collector_stopped,
@@ -69,6 +70,8 @@ _TRIAGE_EXECUTOR: ThreadPoolExecutor | None = None
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if getattr(args, "config", None) is not None:
+        apply_agent_config(args, load_agent_config(args.config))
     if args.command == "triage":
         return command_triage(args)
     if args.command == "run":
@@ -112,6 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="JSONL output path (default: logs/session-<timestamp>.jsonl)",
     )
     run.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging")
+    run.add_argument("--config", type=Path, help="Agent TOML config exported from dashboard")
     run.add_argument("--server", default="", help="Console endpoint host:port for remote ingest")
     run.add_argument("--token", default="", help="Enrollment token from dashboard (saved in logs/.agent_identity.json)")
     run.add_argument("--agent-id", default="", help="Agent id registered on dashboard (saved in logs/.agent_identity.json)")
@@ -126,6 +130,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="JSONL output path (default: logs/session-<timestamp>.jsonl)",
     )
     spawn.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging")
+    spawn.add_argument("--config", type=Path, help="Agent TOML config exported from dashboard")
     spawn.add_argument("--server", default="", help="Console endpoint host:port for remote ingest")
     spawn.add_argument("--token", default="", help="Enrollment token from dashboard (saved in logs/.agent_identity.json)")
     spawn.add_argument("--agent-id", default="", help="Agent id registered on dashboard (saved in logs/.agent_identity.json)")

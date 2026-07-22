@@ -9,11 +9,7 @@ description = "Windows file-to-memory telemetry prototype using Sysmon and Frida
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "email-validator>=2.0",
-    "fastapi>=0.115",
     "pefile",
-    "pyjwt>=2.8",
-    "uvicorn[standard]>=0.32",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +17,12 @@ agent = [
     "frida",
     "pywin32; platform_system == 'Windows'",
 ]
-backend = []
+backend = [
+    "email-validator>=2.0",
+    "fastapi>=0.115",
+    "pyjwt>=2.8",
+    "uvicorn[standard]>=0.32",
+]
 dashboard = [
     "channels>=4.0",
     "daphne>=4.0",
@@ -37,9 +38,21 @@ console = [
 dev = [
     "pytest",
 ]
+lab = [
+    "frida",
+    "pywin32; platform_system == 'Windows'",
+    "email-validator>=2.0",
+    "fastapi>=0.115",
+    "pyjwt>=2.8",
+    "uvicorn[standard]>=0.32",
+]
 full = [
     "frida",
     "pywin32; platform_system == 'Windows'",
+    "email-validator>=2.0",
+    "fastapi>=0.115",
+    "pyjwt>=2.8",
+    "uvicorn[standard]>=0.32",
     "channels>=4.0",
     "daphne>=4.0",
     "django>=5.0",

@@ -59,12 +59,26 @@ VITE_API_BASE_URL=https://api.lab.local npm run build
 
 ## 3. Agent (Windows VM — không container)
 
+Chỉ cài **agent**, không cài backend/dashboard:
+
 ```powershell
 pip install -e ".[agent]"
-noirlycan-agent run --watch-sysmon --server api.lab.local:8765 --token <TOKEN>
 ```
 
-Token lấy từ dashboard **Agents** hoặc `logs/.runtime.json`.
+Hoặc `.\scripts\install-agent.ps1` — xem [deploy/agent/README.md](agent/README.md).
+
+Dashboard **Agents** → Register → **Copy config** → trên VM:
+
+```powershell
+noirlycan-agent run --config C:\Noirlycan\noirlycan-agent.toml --watch-sysmon
+```
+
+Máy chủ lab cài backend riêng:
+
+```bash
+pip install -e ".[backend]"
+noirlycan-backend api --host 0.0.0.0 --port 8765
+```
 
 Legacy Django (upload tab cũ):
 

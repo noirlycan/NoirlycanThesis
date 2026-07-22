@@ -12,6 +12,7 @@ from noirlycan_backend.api.deps import get_database, get_logs_dir
 from noirlycan_backend.api.routes.ingest import verify_agent_token
 from noirlycan_backend.domain.findings_groups import load_console_findings
 from noirlycan_backend.domain.reports import finding_to_markdown, session_report_markdown
+from noirlycan_backend.domain.agent_deploy import agent_config_toml
 from noirlycan_backend.domain.ruleset import ruleset_to_toml
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -63,6 +64,7 @@ def list_agents(user: dict[str, Any] = Depends(require_permission("access"))) ->
     agents = database.list_agents()
     for agent in agents:
         agent["run_command"] = _agent_run_command(server, agent)
+        agent["config_toml"] = agent_config_toml(server, agent)
     legacy_token = server["token"]
     run_cmd = (
         f"noirlycan-telemetry run --server {endpoint} --token {legacy_token} "
@@ -103,6 +105,7 @@ def register_agent(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     server = database.load_server_config()
     agent["run_command"] = _agent_run_command(server, agent)
+    agent["config_toml"] = agent_config_toml(server, agent)
     return {"ok": True, "agent": agent}
 
 

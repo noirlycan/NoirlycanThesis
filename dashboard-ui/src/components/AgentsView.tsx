@@ -122,6 +122,16 @@ export function AgentsView({ data, onReload, onToast }: Props) {
       </div>
 
       <div className="card">
+        <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>VM install (agent only)</div>
+        <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6 }}>
+          Windows VM chỉ cần Python +{" "}
+          <span className="mono">pip install -e &quot;.[agent]&quot;</span> — không cài backend, dashboard, npm.
+          Copy <strong>config</strong> từ bảng dưới → lưu <span className="mono">noirlycan-agent.toml</span> → chạy{" "}
+          <span className="mono">noirlycan-agent run --config noirlycan-agent.toml --watch-sysmon</span>.
+        </div>
+      </div>
+
+      <div className="card">
         <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Register workstation</div>
         <div style={{ fontSize: 12.5, color: "var(--dim)", marginBottom: 14 }}>
           Create one enrollment row per VM. Copy that row&apos;s run command on the target machine.
@@ -273,6 +283,16 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                     onClick={() => copy(runCommand, `run ${id}`)}
                   >
                     Copy run {copied === `run ${id}` ? "✓" : ""}
+                  </button>
+                ) : null}
+                {agent.config_toml ? (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ padding: "4px 8px", fontSize: 10 }}
+                    onClick={() => copy(String(agent.config_toml), `config ${id}`)}
+                  >
+                    Copy config {copied === `config ${id}` ? "✓" : ""}
                   </button>
                 ) : null}
                 {isEditing ? (
