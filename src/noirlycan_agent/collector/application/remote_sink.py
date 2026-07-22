@@ -19,6 +19,19 @@ from noirlycan_agent.collector.application.policy_sync import apply_server_polic
 SEVERITY_RANK = {"INFO": 1, "LOW": 2, "MEDIUM": 3, "HIGH": 4, "CRITICAL": 5}
 
 
+def _local_ip() -> str:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+    except OSError:
+        pass
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except OSError:
+        return ""
+
+
 @dataclass
 class AgentRuntimePolicy:
     auto_kill: bool = False
@@ -69,6 +82,7 @@ class ConsoleRemoteClient:
             "os_name": platform.system() or "Windows",
             "mode": self.mode,
             "watching": watching,
+            "ip_address": _local_ip(),
         }
         response = self._post("/api/ingest/hello", payload)
         self._apply_console_response(response)

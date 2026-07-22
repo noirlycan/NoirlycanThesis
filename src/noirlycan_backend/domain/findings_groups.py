@@ -79,6 +79,13 @@ def _agent_hostname(agents: list[dict[str, Any]], agent_id: str) -> str:
     return agent_id
 
 
+def _agent_ip(agents: list[dict[str, Any]], agent_id: str) -> str:
+    for agent in agents:
+        if str(agent.get("id")) == agent_id:
+            return str(agent.get("ip_address") or "")
+    return ""
+
+
 def group_findings(
     findings: list[dict[str, Any]],
     *,
@@ -257,6 +264,7 @@ def load_all_agents_findings(
             {
                 "agent_id": agent_id,
                 "hostname": hostnames.get(agent_id, agent_id),
+                "ip_address": _agent_ip(agents, agent_id),
                 "session_rel": session_rel,
                 "status": next(
                     (str(a.get("status") or "offline") for a in agents if str(a.get("id")) == agent_id),

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
@@ -29,6 +29,16 @@ class AgentHello(BaseModel):
     os_name: str = "Windows"
     mode: str = "run"
     watching: str = ""
+    ip_address: str = ""
+
+
+def _resolve_agent_ip(request: Request, reported: str = "") -> str:
+    ip = reported.strip()
+    if ip:
+        return ip
+    if request.client and request.client.host:
+        return request.client.host
+    return ""
 
 
 def verify_agent_token(authorization: str | None, database) -> None:
@@ -87,6 +97,7 @@ def ingest_event(
 @router.post("/hello")
 def agent_hello(
     body: AgentHello,
+    request: Request,
     authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     database = get_database()
@@ -97,6 +108,7 @@ def agent_hello(
         os_name=body.os_name,
         mode=body.mode,
         watching=body.watching,
+        ip_address=_resolve_agent_ip(request, body.ip_address),
     )
     database.ensure_agent_session(body.agent_id)
     schedule_broadcast({"type": "agent", "agent_id": body.agent_id})

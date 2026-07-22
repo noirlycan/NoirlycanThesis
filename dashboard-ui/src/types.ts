@@ -46,6 +46,7 @@ export interface FindingGroup {
 export interface AgentStat {
   agent_id: string;
   hostname: string;
+  ip_address?: string;
   session_rel?: string;
   status?: string;
   findings: number;
@@ -80,7 +81,7 @@ export interface OverviewData {
   beacons?: Record<string, unknown>[];
   collector_online?: boolean;
   min_primitives?: number;
-  agents?: { id: string; hostname: string; status: string }[];
+  agents?: { id: string; hostname: string; ip_address?: string; status: string }[];
   active_agent_id?: string | null;
   session_rel?: string | null;
 }

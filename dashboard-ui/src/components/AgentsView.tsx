@@ -193,12 +193,13 @@ export function AgentsView({ data, onReload, onToast }: Props) {
         <div
           className="table-row"
           style={{
-            gridTemplateColumns: "1.4fr 1fr 0.8fr 1.1fr 80px 80px 70px 120px",
+            gridTemplateColumns: "1.5fr 1fr 0.8fr 1fr 80px 80px 70px 120px",
             fontSize: 11,
             color: "var(--dim)",
           }}
         >
           <span>AGENT</span>
+          <span>IP</span>
           <span>OS</span>
           <span>MODE</span>
           <span>WATCHING</span>
@@ -215,7 +216,7 @@ export function AgentsView({ data, onReload, onToast }: Props) {
               key={id}
               className="table-row"
               style={{
-                gridTemplateColumns: "1.4fr 1fr 0.8fr 1.1fr 80px 80px 70px 120px",
+                gridTemplateColumns: "1.5fr 1fr 0.8fr 1fr 80px 80px 70px 120px",
                 alignItems: "center",
               }}
             >
@@ -233,8 +234,13 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                     autoFocus
                   />
                 ) : (
-                  <span title={id}>{agentName(agent)}</span>
+                  <span title={id} style={{ fontWeight: 600 }}>
+                    {agentName(agent)}
+                  </span>
                 )}
+              </span>
+              <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
+                {String(agent.ip_address || "-")}
               </span>
               <span>{String(agent.os_name || "-")}</span>
               <span className="mono">{String(agent.mode || "-")}</span>

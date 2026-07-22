@@ -350,7 +350,14 @@ function OverviewView({
               {agentStats.map((row) => (
                 <div key={row.agent_id}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    <AgentBadge agentId={row.agent_id} hostname={row.hostname} />
+                    <div>
+                      <AgentBadge agentId={row.agent_id} hostname={row.hostname} />
+                      {row.ip_address ? (
+                        <div className="mono" style={{ fontSize: 10, color: "var(--dim)", marginTop: 4 }}>
+                          {String(row.ip_address)}
+                        </div>
+                      ) : null}
+                    </div>
                     <span className="mono" style={{ fontSize: 11, color: "var(--dim)", marginLeft: "auto" }}>
                       {row.findings} findings · {row.critical} critical
                     </span>

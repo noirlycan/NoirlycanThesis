@@ -182,6 +182,10 @@ class ConsoleDatabase:
             connection.execute(
                 "ALTER TABLE console_agents ADD COLUMN display_name TEXT NOT NULL DEFAULT ''"
             )
+        if "ip_address" not in columns:
+            connection.execute(
+                "ALTER TABLE console_agents ADD COLUMN ip_address TEXT NOT NULL DEFAULT ''"
+            )
 
     def seed_defaults(self) -> None:
         demo_users = [
@@ -532,23 +536,29 @@ class ConsoleDatabase:
         os_name: str,
         mode: str,
         watching: str = "",
+        ip_address: str = "",
     ) -> dict[str, Any]:
         now = _utc_now()
+        ip = ip_address.strip()
         with self._connect() as connection:
             connection.execute(
                 """
                 INSERT INTO console_agents (
-                    id, hostname, os_name, mode, watching, last_seen, status, enrolled_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'online', ?)
+                    id, hostname, os_name, mode, watching, last_seen, status, enrolled_at, ip_address
+                ) VALUES (?, ?, ?, ?, ?, ?, 'online', ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     hostname = excluded.hostname,
                     os_name = excluded.os_name,
                     mode = excluded.mode,
                     watching = excluded.watching,
                     last_seen = excluded.last_seen,
-                    status = 'online'
+                    status = 'online',
+                    ip_address = CASE
+                        WHEN excluded.ip_address != '' THEN excluded.ip_address
+                        ELSE console_agents.ip_address
+                    END
                 """,
-                (agent_id, hostname, os_name, mode, watching, now, now),
+                (agent_id, hostname, os_name, mode, watching, now, now, ip),
             )
         agents = self.list_agents()
         return next(item for item in agents if item["id"] == agent_id)
