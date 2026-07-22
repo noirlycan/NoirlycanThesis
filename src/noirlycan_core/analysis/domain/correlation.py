@@ -152,6 +152,9 @@ class Correlator:
         self.network_connections[event.pid].append(event)
         return event
 
+    def network_watch_pids(self, now: datetime | None = None) -> set[int]:
+        return self._active_network_watch_pids(now or now_utc())
+
     def _evaluate_chain(self, chain_key: tuple[int, int | None], latest: MemoryPrimitive) -> list[Finding]:
         primitives = self._chain_buckets.get(chain_key, [])
         if not primitives:

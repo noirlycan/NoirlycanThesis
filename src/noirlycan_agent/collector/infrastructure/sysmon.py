@@ -42,7 +42,7 @@ def _load_win32evtlog():
 
 def _evt_query_error(exc: BaseException) -> SysmonUnavailable | None:
     winerror = getattr(exc, "winerror", None)
-    if winerror == 15007:
+    if winerror in {15007, 4201}:
         return SysmonUnavailable(
             f"Sysmon event log channel not found ({SYSMON_CHANNEL}). {SYSMON_INSTALL_HINT}"
         )
@@ -174,7 +174,11 @@ class SysmonPoller:
             yield from self.poll_once()
             time.sleep(interval_seconds)
 
-    def poll_once(self) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent | NetworkConnectionEvent]:
+    def poll_once(
+        self,
+        *,
+        max_events: int = 200,
+    ) -> Iterator[TelemetryEvent | FileEvent | ProcessEvent | NetworkConnectionEvent]:
         win32evtlog = _load_win32evtlog()
         if self._last_record_id is None:
             self._bootstrap_cursor(win32evtlog)
@@ -191,9 +195,9 @@ class SysmonPoller:
             raise
 
         rendered: list[tuple[int, str]] = []
-        while True:
+        while len(rendered) < max_events:
             try:
-                batch = win32evtlog.EvtNext(handle, 256)
+                batch = win32evtlog.EvtNext(handle, min(256, max_events - len(rendered)))
             except Exception:
                 break
             if not batch:
@@ -204,6 +208,8 @@ class SysmonPoller:
                 if record_id <= (self._last_record_id or 0):
                     continue
                 rendered.append((record_id, xml))
+                if len(rendered) >= max_events:
+                    break
 
         if not rendered:
             return

@@ -113,9 +113,17 @@ def print_finding(finding: Finding) -> None:
     if finding.related_file:
         print(f"  Related file: {finding.related_file.path}")
     if finding.score >= 70 and finding.target_pid is not None:
+        policy = None
+        try:
+            from noirlycan_core.runtime.agent_policy import load_agent_policy
+
+            policy = load_agent_policy(None)
+        except Exception:
+            pass
+        watch_min = int((policy.net_watch_minutes if policy else 5) or 5)
         print(
             f"  Network watch enabled for PID {finding.target_pid} "
-            f"(5 min, outbound Sysmon EID 3)"
+            f"({watch_min} min, outbound Sysmon EID 3)"
         )
 
 
@@ -227,12 +235,14 @@ def process_sysmon_batch(
     *,
     file_handler: FileEventHandler | None = None,
     process_handler: ProcessEventHandler | None = None,
-) -> None:
+    max_events: int = 200,
+) -> int:
     try:
-        events = list(sysmon.poll_once())
+        events = list(sysmon.poll_once(max_events=max_events))
     except SysmonUnavailable as exc:
         print(f"[!] Sysmon unavailable: {exc}", file=sys.stderr)
-        return
+        return 0
+    watched_pids = correlator.network_watch_pids()
     for event in events:
         if isinstance(event, FileEvent):
             if file_handler is not None:
@@ -248,11 +258,14 @@ def process_sysmon_batch(
             if auto_attach and monitor is not None and should_auto_attach(event):
                 safe_attach(monitor, event.pid)
         elif isinstance(event, NetworkConnectionEvent):
-            writer.write("sysmon", event)
+            if event.pid not in watched_pids:
+                continue
             handle_network_event(event, correlator, writer)
         elif isinstance(event, TelemetryEvent):
-            writer.write("sysmon", event)
             correlator.note_sysmon_process_ref(event)
+            if event.kind != "sysmon_eid_7":
+                writer.write("sysmon", event)
+    return len(events)
 
 
 def drain_frida(
