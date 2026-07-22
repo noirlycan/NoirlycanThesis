@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { agentLabel } from "./AgentBadge";
 
 type AgentRow = Record<string, unknown>;
 
@@ -15,17 +16,53 @@ type Props = {
   onToast: (message: string) => void;
 };
 
+function agentName(agent: AgentRow) {
+  return agentLabel(agent, String(agent.id || ""));
+}
+
 export function AgentsView({ data, onReload, onToast }: Props) {
   const [host, setHost] = useState(data.server.host);
   const [port, setPort] = useState(String(data.server.port));
   const [autoKillSev, setAutoKillSev] = useState(data.auto_kill_min_severity || "CRITICAL");
   const [copied, setCopied] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
 
   async function copy(text: string, label: string) {
     await navigator.clipboard.writeText(text);
     setCopied(label);
     onToast(`Copied ${label}`);
     window.setTimeout(() => setCopied(""), 1500);
+  }
+
+  function startRename(agent: AgentRow) {
+    const id = String(agent.id || "");
+    setEditingId(id);
+    setDraftName(agentName(agent));
+  }
+
+  async function saveRename(agentId: string) {
+    const next = draftName.trim();
+    if (!next) {
+      onToast("Agent name cannot be empty");
+      return;
+    }
+    await api.renameAgent(agentId, next);
+    setEditingId(null);
+    setDraftName("");
+    onToast("Agent renamed");
+    onReload();
+  }
+
+  async function removeAgent(agent: AgentRow) {
+    const id = String(agent.id || "");
+    const label = agentName(agent);
+    if (!window.confirm(`Remove agent "${label}" from the console? Session logs are kept on disk.`)) {
+      return;
+    }
+    await api.deleteAgent(id);
+    onToast("Agent removed");
+    onReload();
   }
 
   return (
@@ -153,24 +190,52 @@ export function AgentsView({ data, onReload, onToast }: Props) {
             ))}
           </select>
         </div>
-        <div className="table-row" style={{ gridTemplateColumns: "1.3fr 1.3fr 1fr 1.3fr 90px 90px 90px", fontSize: 11, color: "var(--dim)" }}>
+        <div
+          className="table-row"
+          style={{
+            gridTemplateColumns: "1.4fr 1fr 0.8fr 1.1fr 80px 80px 70px 120px",
+            fontSize: 11,
+            color: "var(--dim)",
+          }}
+        >
           <span>AGENT</span>
           <span>OS</span>
           <span>MODE</span>
           <span>WATCHING</span>
           <span>LAST</span>
           <span>STATUS</span>
-          <span>AUTO-KILL</span>
+          <span>KILL</span>
+          <span>ACTIONS</span>
         </div>
         {data.agents.map((agent) => {
           const id = String(agent.id || "");
+          const isEditing = editingId === id;
           return (
             <div
               key={id}
               className="table-row"
-              style={{ gridTemplateColumns: "1.3fr 1.3fr 1fr 1.3fr 90px 90px 90px", alignItems: "center" }}
+              style={{
+                gridTemplateColumns: "1.4fr 1fr 0.8fr 1.1fr 80px 80px 70px 120px",
+                alignItems: "center",
+              }}
             >
-              <span>{String(agent.hostname || id)}</span>
+              <span>
+                {isEditing ? (
+                  <input
+                    className="field-input"
+                    style={{ width: "100%", fontSize: 12 }}
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void saveRename(id);
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <span title={id}>{agentName(agent)}</span>
+                )}
+              </span>
               <span>{String(agent.os_name || "-")}</span>
               <span className="mono">{String(agent.mode || "-")}</span>
               <span className="mono">{String(agent.watching || "-")}</span>
@@ -185,6 +250,37 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                   onChange={(e) => api.setAgentAutoKill(id, e.target.checked).then(onReload)}
                 />
               </label>
+              <span style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                {isEditing ? (
+                  <>
+                    <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => saveRename(id)}>
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      style={{ padding: "4px 8px", fontSize: 11 }}
+                      onClick={() => setEditingId(null)}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => startRename(agent)}>
+                      Rename
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      style={{ padding: "4px 8px", fontSize: 11, color: "#e5484d" }}
+                      onClick={() => removeAgent(agent)}
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </span>
             </div>
           );
         })}

@@ -9,6 +9,7 @@ logs/*.jsonl
 logs/*.db
 logs/*.db-*
 logs/.classifier_rules.json
+logs/.agent_policy.json
 logs/.collector_launch.json
 logs/.runtime.json
 src/noirlycan_telemetry.egg-info/

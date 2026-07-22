@@ -820,7 +820,7 @@ export default function App() {
                   >
                     {(overview?.agents || agentsData?.agents || []).map((agent) => (
                       <option key={String(agent.id)} value={String(agent.id)}>
-                        {String(agent.hostname || agent.id)}
+                        {agentLabel(agent, String(agent.id))}
                       </option>
                     ))}
                   </select>

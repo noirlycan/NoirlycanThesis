@@ -193,7 +193,7 @@ def command_run(args: argparse.Namespace) -> int:
                 watch_paths=_WATCH_PATHS,
             )
             if file_watcher is not None:
-                _process_file_watch_batch(file_watcher, correlator, writer, args, logs_dir)
+                _process_file_watch_batch(file_watcher, correlator, writer, args, logs_dir, remote)
             _process_analysis_queue(monitor, correlator, writer, args, logs_dir)
             if sysmon is not None:
                 _process_sysmon_batch(
@@ -347,13 +347,20 @@ def _file_drop_watch_enabled(args: argparse.Namespace, logs_dir: Path | None) ->
     return config.file_drop_watch_enabled
 
 
-def _auto_api_analysis_enabled(args: argparse.Namespace, logs_dir: Path | None) -> bool:
+def _auto_api_analysis_enabled(
+    args: argparse.Namespace,
+    logs_dir: Path | None,
+    remote: ConsoleRemoteClient | None = None,
+) -> bool:
     if getattr(args, "no_watch_files", False):
         return False
     if logs_dir is None:
         return False
     config = load_runtime_config(logs_dir)
-    return config.auto_api_analysis_enabled
+    if config.auto_api_analysis_enabled:
+        return True
+    # Fleet agents connected to the console auto-spawn dropped EXEs under Frida hooks.
+    return remote is not None
 
 
 def _auto_static_triage_enabled(args: argparse.Namespace, logs_dir: Path | None) -> bool:
@@ -426,9 +433,10 @@ def _process_file_watch_batch(
     writer: "JsonlWriter",
     args: argparse.Namespace,
     logs_dir: Path | None,
+    remote: ConsoleRemoteClient | None = None,
 ) -> None:
     for event in watcher.drain():
-        _handle_file_event(event, correlator, writer, args=args, logs_dir=logs_dir)
+        _handle_file_event(event, correlator, writer, args=args, logs_dir=logs_dir, remote=remote)
 
 
 def _process_analysis_queue(
@@ -650,8 +658,10 @@ def _process_sysmon_batch(
     args: argparse.Namespace | None = None,
     logs_dir: Path | None = None,
 ) -> None:
+    remote = _remote_client(writer)
+
     def file_handler(event: FileEvent, corr: Correlator, out: JsonlWriter) -> None:
-        _handle_file_event(event, corr, out, args=args, logs_dir=logs_dir)
+        _handle_file_event(event, corr, out, args=args, logs_dir=logs_dir, remote=remote)
 
     def process_handler(event: ProcessEvent, corr: Correlator, out: JsonlWriter) -> None:
         _maybe_triage_process_image(event, corr, out)
@@ -835,6 +845,7 @@ def _handle_file_event(
     *,
     args: argparse.Namespace | None = None,
     logs_dir: Path | None = None,
+    remote: ConsoleRemoteClient | None = None,
 ) -> None:
     if not event.path:
         return
@@ -846,7 +857,7 @@ def _handle_file_event(
     writer.write("file", event)
     correlator.add_file(event)
 
-    auto_api = args is not None and _auto_api_analysis_enabled(args, logs_dir)
+    auto_api = args is not None and _auto_api_analysis_enabled(args, logs_dir, remote)
     auto_static = args is not None and _auto_static_triage_enabled(args, logs_dir)
     if auto_api and logs_dir is not None:
         if _schedule_api_analysis(event.path):
@@ -866,7 +877,7 @@ def _handle_file_event(
         _schedule_file_triage(event, correlator, writer, source="auto", write_event=False)
     else:
         print(
-            f"[FILE:DROP] Detected {event.path} - click Analyze APIs in dashboard",
+            f"[FILE:DROP] Detected {event.path} - enable auto API analysis or connect agent with --server",
             file=sys.stderr,
             flush=True,
         )

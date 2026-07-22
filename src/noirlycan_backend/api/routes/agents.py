@@ -35,6 +35,10 @@ class AutoKillPolicyBody(BaseModel):
     min_severity: str = "CRITICAL"
 
 
+class AgentRenameBody(BaseModel):
+    display_name: str = Field(min_length=1, max_length=120)
+
+
 @router.get("")
 def list_agents(user: dict[str, Any] = Depends(require_permission("access"))) -> dict[str, Any]:
     database = get_database()
@@ -99,6 +103,29 @@ def set_auto_kill(
     if not database.set_agent_auto_kill(agent_id, body.enabled):
         raise HTTPException(status_code=404, detail="Agent not found")
     return {"ok": True, "agent_id": agent_id, "auto_kill": body.enabled}
+
+
+@router.patch("/{agent_id}")
+def rename_agent(
+    agent_id: str,
+    body: AgentRenameBody,
+    user: dict[str, Any] = Depends(require_permission("access")),
+) -> dict[str, Any]:
+    database = get_database()
+    if not database.rename_agent(agent_id, body.display_name, actor=user.get("email")):
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return {"ok": True, "agent_id": agent_id, "display_name": body.display_name.strip()}
+
+
+@router.delete("/{agent_id}")
+def delete_agent(
+    agent_id: str,
+    user: dict[str, Any] = Depends(require_permission("access")),
+) -> dict[str, Any]:
+    database = get_database()
+    if not database.delete_agent(agent_id, actor=user.get("email")):
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return {"ok": True, "agent_id": agent_id}
 
 
 @router.get("/{agent_id}/commands")

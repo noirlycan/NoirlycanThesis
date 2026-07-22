@@ -174,6 +174,14 @@ class ConsoleDatabase:
                 );
                 """
             )
+            self._migrate_schema(connection)
+
+    def _migrate_schema(self, connection: sqlite3.Connection) -> None:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(console_agents)")}
+        if "display_name" not in columns:
+            connection.execute(
+                "ALTER TABLE console_agents ADD COLUMN display_name TEXT NOT NULL DEFAULT ''"
+            )
 
     def seed_defaults(self) -> None:
         demo_users = [
@@ -500,12 +508,21 @@ class ConsoleDatabase:
         self.save_server_config(host=config["host"], port=config["port"], token=token)
         return token
 
+    @staticmethod
+    def agent_label(agent: dict[str, Any]) -> str:
+        return str(agent.get("display_name") or agent.get("hostname") or agent.get("id") or "")
+
     def list_agents(self) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM console_agents ORDER BY last_seen DESC"
             ).fetchall()
-        return [dict(row) | {"auto_kill": bool(row["auto_kill"])} for row in rows]
+        payload: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row) | {"auto_kill": bool(row["auto_kill"])}
+            item["label"] = self.agent_label(item)
+            payload.append(item)
+        return payload
 
     def upsert_agent(
         self,
@@ -603,6 +620,50 @@ class ConsoleDatabase:
                 (1 if enabled else 0, agent_id),
             )
             return cursor.rowcount > 0
+
+    def rename_agent(self, agent_id: str, display_name: str, *, actor: str | None = None) -> bool:
+        label = display_name.strip()
+        if not label:
+            return False
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "UPDATE console_agents SET display_name = ? WHERE id = ?",
+                (label, agent_id.strip()),
+            )
+            if cursor.rowcount == 0:
+                return False
+            self._audit(
+                connection,
+                actor,
+                "agent.rename",
+                {"agent_id": agent_id, "display_name": label},
+            )
+            return True
+
+    def delete_agent(self, agent_id: str, *, actor: str | None = None) -> bool:
+        agent_id = agent_id.strip()
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT id FROM console_agents WHERE id = ?",
+                (agent_id,),
+            ).fetchone()
+            if row is None:
+                return False
+            connection.execute(
+                "DELETE FROM console_agent_commands WHERE agent_id = ?",
+                (agent_id,),
+            )
+            connection.execute(
+                "DELETE FROM console_killed_processes WHERE agent_id = ?",
+                (agent_id,),
+            )
+            connection.execute(
+                "DELETE FROM console_agent_sessions WHERE agent_id = ?",
+                (agent_id,),
+            )
+            connection.execute("DELETE FROM console_agents WHERE id = ?", (agent_id,))
+            self._audit(connection, actor, "agent.delete", {"agent_id": agent_id})
+            return True
 
     def verify_agent_token(self, token: str) -> bool:
         config = self.load_server_config()

@@ -163,6 +163,15 @@ export const api = {
       body: JSON.stringify({ enabled }),
     });
   },
+  renameAgent(agentId: string, displayName: string) {
+    return request<{ ok: boolean; display_name: string }>(`/api/agents/${encodeURIComponent(agentId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ display_name: displayName }),
+    });
+  },
+  deleteAgent(agentId: string) {
+    return request<{ ok: boolean }>(`/api/agents/${encodeURIComponent(agentId)}`, { method: "DELETE" });
+  },
   addMember(body: { name: string; email: string; role: string; password: string }) {
     return request("/api/users/team", { method: "POST", body: JSON.stringify(body) });
   },

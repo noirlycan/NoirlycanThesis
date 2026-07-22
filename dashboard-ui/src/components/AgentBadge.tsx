@@ -24,5 +24,5 @@ export function AgentBadge({ agentId, hostname }: Props) {
 }
 
 export function agentLabel(record: Record<string, unknown> | null | undefined, fallback?: string) {
-  return String(record?.hostname || record?.agent_id || fallback || "");
+  return String(record?.label || record?.display_name || record?.hostname || record?.agent_id || fallback || "");
 }

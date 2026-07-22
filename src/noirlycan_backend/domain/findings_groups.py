@@ -75,7 +75,7 @@ def _merge_counters(*items: dict[str, Any] | Counter[str]) -> dict[str, int]:
 def _agent_hostname(agents: list[dict[str, Any]], agent_id: str) -> str:
     for agent in agents:
         if str(agent.get("id")) == agent_id:
-            return str(agent.get("hostname") or agent_id)
+            return str(agent.get("display_name") or agent.get("hostname") or agent_id)
     return agent_id
 
 
