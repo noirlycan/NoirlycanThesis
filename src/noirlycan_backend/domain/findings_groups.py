@@ -19,6 +19,16 @@ def _image_name(value: str | None) -> str:
     return Path(str(value)).name
 
 
+def _victim_label(finding: dict[str, Any]) -> str:
+    image = finding.get("target_image")
+    if image:
+        return _image_name(str(image))
+    target_pid = finding.get("target_pid")
+    if target_pid is not None:
+        return f"unknown (pid {target_pid})"
+    return "unknown"
+
+
 def _finding_key(finding: dict[str, Any]) -> str:
     return str(finding.get("timestamp") or finding.get("id") or id(finding))
 
@@ -133,7 +143,7 @@ def group_findings(
         if target_pid is None:
             group_key = f"{agent}|{actor_image}|disk"
         else:
-            target_image = _image_name(finding.get("target_image"))
+            target_image = _victim_label(finding)
             group_key = f"{agent}|{actor_image}|{target_image}|{target_pid}"
         buckets[group_key].append(finding)
 

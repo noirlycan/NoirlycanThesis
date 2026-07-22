@@ -113,17 +113,9 @@ def print_finding(finding: Finding) -> None:
     if finding.related_file:
         print(f"  Related file: {finding.related_file.path}")
     if finding.score >= 70 and finding.target_pid is not None:
-        policy = None
-        try:
-            from noirlycan_core.runtime.agent_policy import load_agent_policy
-
-            policy = load_agent_policy(None)
-        except Exception:
-            pass
-        watch_min = int((policy.net_watch_minutes if policy else 5) or 5)
         print(
             f"  Network watch enabled for PID {finding.target_pid} "
-            f"({watch_min} min, outbound Sysmon EID 3)"
+            f"(5 min, outbound Sysmon EID 3)"
         )
 
 
@@ -280,6 +272,14 @@ def drain_frida(
         except queue.Empty:
             return
         writer.write("frida_raw", runtime_event.payload)
+        if runtime_event.event_type == "process_create":
+            parent_pid = runtime_event.payload.get("parent_pid")
+            try:
+                actor_pid = int(parent_pid)
+            except (TypeError, ValueError):
+                actor_pid = None
+            if actor_pid is not None and actor_pid > 0:
+                correlator.note_process_create_hint(actor_pid, runtime_event.payload)
         evasion_event = runtime_event_to_evasion(runtime_event)
         if evasion_event is not None:
             writer.write("evasion", evasion_event)

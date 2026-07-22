@@ -176,6 +176,59 @@ def test_resolves_target_image_from_child_process() -> None:
     assert "msedge.exe" in findings[0].description
 
 
+def test_resolves_target_image_from_spawn_hint_without_pid() -> None:
+    now = datetime.now(timezone.utc)
+    correlator = Correlator(minimum_score=40)
+    correlator.add_process(
+        ProcessEvent(
+            timestamp=now,
+            pid=1337,
+            image=r"C:\Lab\loader.exe",
+        )
+    )
+    correlator.note_process_create_hint(
+        1337,
+        {
+            "timestamp": (now + timedelta(milliseconds=5)).isoformat(),
+            "pid": None,
+            "image": None,
+            "command_line": r'"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --no-startup-window',
+            "flags": ["CREATE_SUSPENDED"],
+        },
+    )
+    correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now + timedelta(milliseconds=20),
+            kind=PrimitiveKind.WRITE,
+            actor_pid=1337,
+            actor_image=None,
+            target_pid=4242,
+            target_image=None,
+            address=0x200000,
+            size=0x1000,
+            api="NtMapViewOfSection",
+            details={"protection": "EXECUTE_READWRITE", "cross_process": True},
+        )
+    )
+    findings = correlator.add_primitive(
+        MemoryPrimitive(
+            timestamp=now + timedelta(milliseconds=30),
+            kind=PrimitiveKind.EXECUTE,
+            actor_pid=1337,
+            actor_image=None,
+            target_pid=4242,
+            target_image=None,
+            address=None,
+            size=None,
+            api="ResumeThread",
+        )
+    )
+
+    assert len(findings) == 1
+    assert findings[0].target_image is not None
+    assert findings[0].target_image.endswith("msedge.exe")
+
+
 def test_rejects_write_after_execute_temporal_order() -> None:
     """Paper §3.4 requires allocate → write → execute order.
 

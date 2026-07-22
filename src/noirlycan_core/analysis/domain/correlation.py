@@ -58,6 +58,7 @@ class Correlator:
         self._rules_config: ClassifierRulesConfig | None = None
         self._rules_config_mtime: float = -1.0
         self._chain_buckets: dict[tuple[int, int | None], list[MemoryPrimitive]] = defaultdict(list)
+        self._spawn_hints: deque[tuple[datetime, int, str, tuple[str, ...]]] = deque()
 
     def reload_agent_policy(self) -> AgentPolicy | None:
         path = policy_path(self.logs_dir) if self.logs_dir else None
@@ -113,6 +114,34 @@ class Correlator:
         if event.image:
             self._pid_image_cache[event.pid] = event.image
         self._expire(event.timestamp)
+
+    def note_process_create_hint(self, actor_pid: int, payload: dict[str, object]) -> None:
+        """Remember Frida process_create metadata for later target PID binding."""
+        pid = _safe_int(payload.get("pid"))
+        image = _normalize_process_image(
+            payload.get("image"),
+            payload.get("command_line"),
+        )
+        flags_raw = payload.get("flags") or []
+        flags = tuple(str(flag) for flag in flags_raw) if isinstance(flags_raw, list) else ()
+        timestamp = _parse_hint_timestamp(payload.get("timestamp"))
+        if pid is not None and pid > 0 and image:
+            self.add_process(
+                ProcessEvent(
+                    timestamp=timestamp,
+                    pid=pid,
+                    image=image,
+                    command_line=str(payload.get("command_line") or "") or None,
+                    parent_pid=actor_pid,
+                    parent_image=self._image_for_pid(actor_pid),
+                    flags=list(flags),
+                )
+            )
+            return
+        if not image:
+            return
+        self._spawn_hints.append((timestamp, actor_pid, image, flags))
+        self._expire(timestamp)
 
     def note_sysmon_process_ref(self, event: TelemetryEvent) -> None:
         """Index source/target PIDs from Sysmon E8/E10 for later image resolution."""
@@ -236,11 +265,32 @@ class Correlator:
         return set(self._network_watch_until)
 
     def _enrich_primitive(self, event: MemoryPrimitive) -> MemoryPrimitive:
+        if event.target_pid is not None and not event.target_image:
+            self._bind_spawn_hint(event.actor_pid, event.target_pid, event.timestamp)
         actor_image = event.actor_image or self._image_for_pid(event.actor_pid)
         target_image = event.target_image or self._image_for_pid(event.target_pid)
         if actor_image == event.actor_image and target_image == event.target_image:
             return event
         return replace(event, actor_image=actor_image, target_image=target_image)
+
+    def _bind_spawn_hint(self, actor_pid: int, target_pid: int, timestamp: datetime) -> None:
+        if target_pid in self._pid_image_cache:
+            return
+        for index in range(len(self._spawn_hints) - 1, -1, -1):
+            hint_ts, hint_actor, image, _flags = self._spawn_hints[index]
+            if hint_actor != actor_pid or hint_ts > timestamp:
+                continue
+            self._pid_image_cache[target_pid] = image
+            if target_pid not in self.processes_by_pid:
+                self.processes_by_pid[target_pid] = ProcessEvent(
+                    timestamp=hint_ts,
+                    pid=target_pid,
+                    image=image,
+                    parent_pid=actor_pid,
+                    parent_image=self._image_for_pid(actor_pid),
+                )
+            del self._spawn_hints[index]
+            return
 
     def _image_for_pid(self, pid: int | None) -> str | None:
         if pid is None:
@@ -400,6 +450,8 @@ class Correlator:
             ]
             if not self.network_connections[pid]:
                 del self.network_connections[pid]
+        while self._spawn_hints and self._spawn_hints[0][0] < cutoff:
+            self._spawn_hints.popleft()
 
 
 _RESUME_THREAD_APIS = frozenset(
@@ -631,6 +683,33 @@ def _describe(
 
 def _norm_path(path: str) -> str:
     return str(PureWindowsPath(path)).lower()
+
+
+def _parse_hint_timestamp(value: object | None) -> datetime:
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+        except ValueError:
+            pass
+    return now_utc()
+
+
+def _normalize_process_image(image: object | None, command_line: object | None) -> str | None:
+    if image is not None:
+        path = str(image).strip()
+        if path:
+            return path
+    if command_line is None:
+        return None
+    line = str(command_line).strip()
+    if not line:
+        return None
+    if line.startswith('"'):
+        end = line.find('"', 1)
+        if end > 1:
+            return line[1:end]
+    space = line.find(" ")
+    return line if space == -1 else line[:space]
 
 
 def _safe_int(value: object | None) -> int | None:

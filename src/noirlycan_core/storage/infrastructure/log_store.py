@@ -428,10 +428,16 @@ def _build_process_image_index(events: list[dict[str, Any]]) -> dict[int, str]:
     images: dict[int, str] = {}
     for event in events:
         event_type = event.get("type")
-        if event_type not in {"sysmon", "frida_process", "api_run"}:
-            continue
         value = event.get("value", {})
         if not isinstance(value, dict):
+            continue
+        if event_type == "frida_raw" and value.get("type") == "process_create":
+            pid = value.get("pid")
+            image = value.get("image") or _exe_from_command_line(value.get("command_line"))
+            if pid is not None and image:
+                images[int(pid)] = str(image)
+            continue
+        if event_type not in {"sysmon", "frida_process", "api_run"}:
             continue
         pid = value.get("pid")
         image = value.get("image")
@@ -446,6 +452,20 @@ def _build_process_image_index(events: list[dict[str, Any]]) -> dict[int, str]:
                 if key_pid is not None and key_image:
                     images[int(key_pid)] = str(key_image)
     return images
+
+
+def _exe_from_command_line(command_line: object | None) -> str | None:
+    if command_line is None:
+        return None
+    line = str(command_line).strip()
+    if not line:
+        return None
+    if line.startswith('"'):
+        end = line.find('"', 1)
+        if end > 1:
+            return line[1:end]
+    space = line.find(" ")
+    return line if space == -1 else line[:space]
 
 
 def _resolve_image_from_index(

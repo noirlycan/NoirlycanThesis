@@ -298,6 +298,24 @@ function processIdFromThreadHandle(handle) {
   }
 }
 
+function extractExecutablePath(commandLine) {
+  if (!commandLine) {
+    return null;
+  }
+  const trimmed = String(commandLine).trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.charAt(0) === '"') {
+    const end = trimmed.indexOf('"', 1);
+    if (end > 1) {
+      return trimmed.substring(1, end);
+    }
+  }
+  const space = trimmed.indexOf(" ");
+  return space === -1 ? trimmed : trimmed.substring(0, space);
+}
+
 function emit(primitive, api, fields) {
   if (fields.target_pid && !fields.target_image) {
     fields.target_image = processImageFromPid(fields.target_pid);

@@ -236,6 +236,49 @@ def test_findings_enriched_with_target_image_from_process_events(tmp_path: Path)
     assert stats["recent_findings"][0]["target_image"].endswith("msedge.exe")
 
 
+def test_findings_enriched_from_frida_raw_process_create(tmp_path: Path) -> None:
+    log_path = tmp_path / "injection.jsonl"
+    log_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "type": "frida_raw",
+                        "value": {
+                            "type": "process_create",
+                            "timestamp": "2026-06-07T18:00:00+00:00",
+                            "parent_pid": 1337,
+                            "pid": 4242,
+                            "image": None,
+                            "command_line": r'"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"',
+                            "flags": ["CREATE_SUSPENDED"],
+                        },
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "finding",
+                        "value": {
+                            "timestamp": "2026-06-07T18:00:01+00:00",
+                            "severity": "high",
+                            "score": 75,
+                            "title": "Probable process injection chain",
+                            "description": "loader against pid 4242",
+                            "actor_pid": 1337,
+                            "target_pid": 4242,
+                            "primitives": [],
+                            "evidence": {"cross_process": True},
+                        },
+                    }
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    stats = aggregate_events(read_jsonl(log_path))
+    assert stats["recent_findings"][0]["target_image"].endswith("msedge.exe")
+
+
 def test_aggregate_logs_falls_back_when_selected_log_missing(tmp_path: Path) -> None:
     """Regression: stale URL hash (#log=deleted.jsonl) used to return the
     requested name as active_log even though the file did not exist, which

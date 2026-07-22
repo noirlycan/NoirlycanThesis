@@ -302,7 +302,7 @@ function installStaticHooks() {
         return;
       }
       const pid = processInformationPid(this.processInformation);
-      const image = this.image || this.commandLine;
+      const image = this.image || extractExecutablePath(this.commandLine) || this.commandLine;
       emitProcessCreate("CreateProcessW", {
         pid: pid,
         image: image,
@@ -327,7 +327,7 @@ function installStaticHooks() {
         return;
       }
       const pid = processInformationPid(this.processInformation);
-      const image = this.image || this.commandLine;
+      const image = this.image || extractExecutablePath(this.commandLine) || this.commandLine;
       emitProcessCreate("CreateProcessA", {
         pid: pid,
         image: image,
