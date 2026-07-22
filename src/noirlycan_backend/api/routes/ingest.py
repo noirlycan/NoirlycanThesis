@@ -138,9 +138,10 @@ def agent_hello(
         ip_address=_resolve_agent_ip(request, body.ip_address),
     )
     database.ensure_agent_session(body.agent_id)
+    commands = database.pop_agent_commands(body.agent_id)
     schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
     payload = database.rules_payload_for_agent()
-    return {"ok": True, "agent": agent, **payload}
+    return {"ok": True, "agent": agent, "commands": commands, **payload}
 
 
 @router.post("/heartbeat")
@@ -160,8 +161,9 @@ def agent_heartbeat(
             detail="Register this agent on the dashboard and use its enrollment token",
         )
     database.touch_agent_ip(body.agent_id, _resolve_agent_ip(request, body.ip_address))
+    commands = database.pop_agent_commands(body.agent_id)
     schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
-    return {"ok": True}
+    return {"ok": True, "commands": commands}
 
 
 @router.post("/goodbye")

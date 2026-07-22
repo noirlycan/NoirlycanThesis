@@ -93,7 +93,7 @@ class ConsoleRemoteClient:
         self.agent_auto_kill = False
         self._pending_kills: list[dict[str, Any]] = []
         self._last_heartbeat_at = 0.0
-        self._heartbeat_interval_seconds = 15.0
+        self._heartbeat_interval_seconds = 5.0
 
     def hello(self, *, watching: str = "") -> dict[str, Any]:
         payload = {
@@ -106,8 +106,16 @@ class ConsoleRemoteClient:
         }
         response = self._post("/api/ingest/hello", payload)
         self._apply_console_response(response)
+        self._absorb_commands(response)
         self._last_heartbeat_at = time.monotonic()
         return response
+
+    def _absorb_commands(self, response: dict[str, Any] | None) -> None:
+        if not isinstance(response, dict):
+            return
+        commands = response.get("commands")
+        if isinstance(commands, list):
+            self._pending_kills.extend(item for item in commands if isinstance(item, dict))
 
     def heartbeat(self, *, watching: str = "", force: bool = False) -> None:
         now = time.monotonic()
@@ -122,10 +130,27 @@ class ConsoleRemoteClient:
             "ip_address": _local_ip_for_server(self.base_url),
         }
         try:
-            self._post("/api/ingest/heartbeat", payload)
+            response = self._post("/api/ingest/heartbeat", payload)
+            self._absorb_commands(response)
             self._last_heartbeat_at = now
         except Exception as exc:
             print(f"[!] Console heartbeat failed: {exc}", flush=True)
+
+    def fetch_commands(self) -> None:
+        try:
+            response = self._get(f"/api/agents/{self.agent_id}/commands")
+            self._absorb_commands(response)
+        except Exception as exc:
+            print(f"[!] Console command poll failed: {exc}", flush=True)
+
+    def pending_commands(self) -> list[dict[str, Any]]:
+        pending = list(self._pending_kills)
+        self._pending_kills.clear()
+        return pending
+
+    def poll_commands(self) -> list[dict[str, Any]]:
+        self.fetch_commands()
+        return self.pending_commands()
 
     def goodbye(self) -> None:
         payload = {
@@ -151,24 +176,10 @@ class ConsoleRemoteClient:
                 session = response.get("session")
                 if isinstance(session, str) and session:
                     self.session_name = session
-                commands = response.get("commands")
-                if isinstance(commands, list):
-                    self._pending_kills.extend(item for item in commands if isinstance(item, dict))
+                self._absorb_commands(response)
                 self._apply_console_response(response)
         except Exception as exc:
             print(f"[!] Console ingest failed: {exc}", flush=True)
-
-    def poll_commands(self) -> list[dict[str, Any]]:
-        try:
-            response = self._get(f"/api/agents/{self.agent_id}/commands")
-            commands = response.get("commands") if isinstance(response, dict) else []
-            if isinstance(commands, list):
-                self._pending_kills.extend(item for item in commands if isinstance(item, dict))
-        except Exception:
-            pass
-        pending = list(self._pending_kills)
-        self._pending_kills.clear()
-        return pending
 
     def should_auto_kill(self, severity: str, *, agent_auto_kill: bool = False) -> bool:
         if not agent_auto_kill and not self.runtime.auto_kill:
@@ -312,7 +323,10 @@ def drain_agent_commands(remote: ConsoleRemoteClient | None) -> None:
         if str(command.get("command") or command.get("type")) != "kill":
             continue
         pid = int(command.get("pid") or 0)
+        image = str(command.get("image") or "").strip()
+        label = f"{image} " if image else ""
+        print(f"[+] Kill command received from console for {label}PID {pid}", flush=True)
         if kill_process(pid):
             print(f"[+] Kill command executed for PID {pid}", flush=True)
         else:
-            print(f"[!] Kill command failed for PID {pid}", flush=True)
+            print(f"[!] Kill command failed for PID {pid} (process may have already exited)", flush=True)
