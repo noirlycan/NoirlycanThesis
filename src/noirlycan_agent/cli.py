@@ -39,6 +39,7 @@ from noirlycan_agent.collector.application.remote_sink import (
     drain_agent_commands,
 )
 from noirlycan_core.runtime.agent_config import apply_agent_config, load_agent_config
+from noirlycan_core.runtime.agent_identity import resolve_agent_credentials
 from noirlycan_core.runtime.config import (
     load_runtime_config,
     mark_collector_stopped,
