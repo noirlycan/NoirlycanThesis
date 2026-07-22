@@ -5,12 +5,12 @@ import platform
 import socket
 import urllib.error
 import urllib.request
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from noirlycan_core.kernel.entities.models import Finding
+from noirlycan_core.runtime.agent_identity import resolve_agent_id
 from noirlycan_core.runtime.agent_policy import AgentPolicy, load_agent_policy
 from noirlycan_agent.collector.application.collector_runtime import JsonlWriter, jsonable
 from noirlycan_agent.collector.application.policy_sync import apply_server_policy
@@ -81,11 +81,11 @@ class ConsoleRemoteClient:
             host = f"http://{host}"
         self.base_url = host.rstrip("/")
         self.token = token.strip()
-        self.agent_id = agent_id or f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}"
         self.session_name = session_name
         self.mode = mode
         self.timeout = timeout
         self.logs_dir = Path(logs_dir).expanduser().resolve() if logs_dir else None
+        self.agent_id = resolve_agent_id(self.logs_dir, agent_id)
         self.policy = load_agent_policy(self.logs_dir) if self.logs_dir else None
         self.policy_version = self.policy.version if self.policy else 0
         self.runtime = AgentRuntimePolicy.from_policy(self.policy) if self.policy else AgentRuntimePolicy()

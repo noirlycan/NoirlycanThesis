@@ -114,7 +114,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging")
     run.add_argument("--server", default="", help="Console endpoint host:port for remote ingest")
     run.add_argument("--token", default="", help="Console enrollment token")
-    run.add_argument("--agent-id", default="", help="Stable agent identifier for the console")
+    run.add_argument("--agent-id", default="", help="Stable agent identifier (saved in logs/.agent_identity.json)")
 
     spawn = subparsers.add_parser("spawn", help="Spawn a sample under Frida, then correlate events")
     spawn.add_argument("argv", nargs=argparse.REMAINDER, help="Command line to spawn under Frida")
@@ -128,7 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
     spawn.add_argument("--no-jsonl", action="store_true", help="Disable JSONL logging")
     spawn.add_argument("--server", default="", help="Console endpoint host:port for remote ingest")
     spawn.add_argument("--token", default="", help="Console enrollment token")
-    spawn.add_argument("--agent-id", default="", help="Stable agent identifier for the console")
+    spawn.add_argument("--agent-id", default="", help="Stable agent identifier (saved in logs/.agent_identity.json)")
 
     return parser
 
