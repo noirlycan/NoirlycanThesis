@@ -563,6 +563,21 @@ class ConsoleDatabase:
         agents = self.list_agents()
         return next(item for item in agents if item["id"] == agent_id)
 
+    def touch_agent_ip(self, agent_id: str, ip_address: str) -> None:
+        ip = ip_address.strip()
+        if not ip or not agent_id.strip():
+            return
+        now = _utc_now()
+        with self._connect() as connection:
+            connection.execute(
+                """
+                UPDATE console_agents
+                SET ip_address = ?, last_seen = ?, status = 'online'
+                WHERE id = ?
+                """,
+                (ip, now, agent_id.strip()),
+            )
+
     def get_agent_session_rel(self, agent_id: str) -> str | None:
         with self._connect() as connection:
             row = connection.execute(

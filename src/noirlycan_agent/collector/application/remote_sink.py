@@ -19,6 +19,9 @@ from noirlycan_agent.collector.application.policy_sync import apply_server_polic
 SEVERITY_RANK = {"INFO": 1, "LOW": 2, "MEDIUM": 3, "HIGH": 4, "CRITICAL": 5}
 
 
+from urllib.parse import urlparse
+
+
 def _local_ip() -> str:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -30,6 +33,20 @@ def _local_ip() -> str:
         return socket.gethostbyname(socket.gethostname())
     except OSError:
         return ""
+
+
+def _local_ip_for_server(server_url: str) -> str:
+    parsed = urlparse(server_url if "://" in server_url else f"http://{server_url}")
+    host = parsed.hostname
+    if not host:
+        return _local_ip()
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect((host, port))
+            return sock.getsockname()[0]
+    except OSError:
+        return _local_ip()
 
 
 @dataclass
@@ -82,7 +99,7 @@ class ConsoleRemoteClient:
             "os_name": platform.system() or "Windows",
             "mode": self.mode,
             "watching": watching,
-            "ip_address": _local_ip(),
+            "ip_address": _local_ip_for_server(self.base_url),
         }
         response = self._post("/api/ingest/hello", payload)
         self._apply_console_response(response)

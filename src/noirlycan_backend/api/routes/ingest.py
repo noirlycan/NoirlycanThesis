@@ -37,7 +37,10 @@ def _resolve_agent_ip(request: Request, reported: str = "") -> str:
     if ip:
         return ip
     if request.client and request.client.host:
-        return request.client.host
+        host = str(request.client.host)
+        if host.startswith("::ffff:"):
+            return host[7:]
+        return host
     return ""
 
 
@@ -57,6 +60,7 @@ def _append_event(session_path, payload: dict[str, Any]) -> None:
 @router.post("")
 def ingest_event(
     body: IngestEvent,
+    request: Request,
     authorization: str | None = Header(default=None),
     x_agent_id: str | None = Header(default=None, alias="X-Agent-Id"),
 ) -> dict[str, Any]:
@@ -64,6 +68,8 @@ def ingest_event(
     verify_agent_token(authorization, database)
     logs_dir = ensure_logs_dir(get_logs_dir())
     agent_id = (x_agent_id or "").strip()
+    if agent_id:
+        database.touch_agent_ip(agent_id, _resolve_agent_ip(request))
     if agent_id:
         session_rel = database.ensure_agent_session(agent_id)
         session_path = logs_dir / session_rel
