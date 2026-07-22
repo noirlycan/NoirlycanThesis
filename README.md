@@ -1,195 +1,185 @@
 # Noirlycan Thesis Telemetry Prototype
 
-Prototype for a Windows 10/11 thesis lab that correlates:
+Defensive lab prototype for Windows 10/11 that correlates **file drops → process lineage → process-injection primitives**, inspired by the ASIA CCS 2025 paper *Can You Run My Code?* Extended with file provenance, remote agents, and a web console for thesis experiments.
 
-```text
-new file on disk -> process lineage -> process injection primitives
-```
-
-The implementation combines:
-
-- **Sysmon** for file creation, process creation, image load, process access,
-  and remote-thread context.
-- **Frida** for user-mode API telemetry around process injection primitives.
-- A Python **correlation engine** inspired by the ASIA CCS 2025 paper
-  "Can You Run My Code? A Close Look at Process Injection in Windows Malware",
-  extended with file provenance and process lineage.
-
-This is a defensive analysis prototype for isolated lab use. It does not ship
-payloads, loaders, or exploit code.
+**Not for production.** No payloads, loaders, or exploit code are shipped.
 
 ## What it detects
 
-The correlator looks for at least two of the three process-injection primitives:
+The correlator scores chains with at least two of three injection primitives:
 
-1. allocate or prepare executable memory in a target process,
-2. write/map payload into that target process,
-3. initiate execution in that target process.
+1. **Allocate** executable memory in a target process  
+2. **Write / map** payload into that process  
+3. **Execute** (thread context, resume, remote thread, …)
 
-It then enriches the runtime primitive chain with Sysmon context:
-
-- which file was newly created,
-- which process executed that file,
-- the parent/child process lineage,
-- whether the injected target is cross-process,
-- whether the flow used section mapping or suspended process execution.
-
-This is useful for comparing:
+Enrichment adds Sysmon context (file create, process create, image load, process access, network) and Frida API telemetry. Typical lab flows:
 
 ```text
-memory-only loader:
-  embedded/encrypted payload -> section mapping -> ResumeThread
-
-file-dropping loader:
-  FileCreate -> ProcessCreate -> injection primitives
+memory-only loader:  decrypt → section mapping → SetThreadContext → ResumeThread
+file-dropping loader: FileCreate → ProcessCreate → cross-process write → execute
 ```
 
-## Repository layout
+After **CRITICAL** findings, the agent watches the injected target PID for outbound connections (Sysmon EID 3) for 5 minutes.
+
+## Architecture
+
+Three deployable units (see [`deploy/README.md`](deploy/README.md)):
 
 ```text
-configs/
-  sysmon-noirlycan.xml              Minimal Sysmon config for the lab
-src/
-  noirlycan_core/                   # kernel, storage, analysis, runtime
-  noirlycan_agent/                  # collector + agent CLI (Windows VM)
-  noirlycan_backend/                # FastAPI API server (ingest, auth, rules)
-  noirlycan_dashboard/              # React static server + legacy Django
-  noirlycan_console/                # deprecated CLI shim
-  noirlycan_telemetry/              # backward-compatible CLI shim
-dashboard-ui/                       # React frontend (deploy riêng)
-deploy/                             # nginx, hướng dẫn 3 service
-tests/
-docs/
-docker-compose.yml
-Dockerfile.backend / Dockerfile.dashboard
+┌─────────────────┐     HTTP ingest      ┌──────────────────┐
+│  Windows VM     │ ───────────────────► │  noirlycan-backend│
+│  noirlycan-agent│     :8765            │  FastAPI + SQLite │
+│  Frida + Sysmon │                      └────────┬─────────┘
+└─────────────────┘                               │
+                                                  │ /api
+┌─────────────────┐                               │
+│  Analyst browser│ ◄──── dashboard-ui ───────────┘
+│  React (Vite)   │      :5173 dev / :8080 prod
+└─────────────────┘
 ```
 
-See [`deploy/README.md`](deploy/README.md) for **agent / backend / dashboard** on separate hosts.
-See [`docs/clean-architecture-plan.md`](docs/clean-architecture-plan.md) for service boundaries.
+| Package | Role |
+|---------|------|
+| `noirlycan_core` | Correlation, classification, JSONL storage |
+| `noirlycan_agent` | Windows collector (Frida hooks, Sysmon, file watch) |
+| `noirlycan_backend` | REST ingest, auth, rules, agents, findings API |
+| `dashboard-ui/` | React console (Findings, Agents, Rules, File drops) |
+| `noirlycan_dashboard` | Static file server for built UI (+ legacy Django) |
 
-## Windows 10/11 lab setup
+Deprecated shims (still work): `noirlycan-telemetry`, `noirlycan-console` → prefer `noirlycan-agent` / `noirlycan-backend`.
 
-Use a disposable VM snapshot. If you test real malware, keep the VM isolated
-from production networks and do not use personal credentials or shared folders
-containing sensitive files.
+## Quick start — lab console (Mac / Linux server)
 
-### 1. Install Python dependencies
+### 1. Install
 
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -e .[dev]
+```bash
+git clone https://github.com/noirlycan/NoirlycanThesis.git
+cd NoirlycanThesis
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[lab]"
+# or: uv sync && uv pip install -e ".[lab]"
 ```
 
-### 2. Install Sysmon
+### 2. Backend API
 
-Sysmon binaries live in `.\Sysmon\`. From the repo root, install the included config:
-
-```powershell
-cd D:\thesis\NoirlycanThesis
-.\Sysmon\Sysmon64.exe -accepteula -i .\configs\sysmon-noirlycan.xml
-```
-
-If Sysmon is already installed but broken or you need to refresh the config:
-
-```powershell
-.\Sysmon\Sysmon64.exe -u force
-.\Sysmon\Sysmon64.exe -accepteula -i .\configs\sysmon-noirlycan.xml
-```
-
-To update config only on a healthy install:
-
-```powershell
-.\Sysmon\Sysmon64.exe -c .\configs\sysmon-noirlycan.xml
-```
-
-Relevant Sysmon events:
-
-- Event ID 1: process creation and parent/child lineage
-- Event ID 7: `ntdll.dll` / `kernel32.dll` image loads
-- Event ID 8: remote thread creation
-- Event ID 10: process access
-- Event ID 11: executable/script file creation
-- Event ID 15: alternate data stream hash
-
-Sysmon does **not** see all NT-level operations used by section-mapping loaders,
-so Frida provides the API-level telemetry.
-
-### 3. Run a sample under Frida from process start
-
-This is the preferred mode for a loader because injection may happen quickly:
-
-```powershell
-noirlycan-telemetry spawn --watch-sysmon -- C:\Lab\loader.exe
-```
-
-By default, telemetry is written to `logs/session-<timestamp>.jsonl`. Override the
-path with `--jsonl` or disable file logging with `--no-jsonl`.
-
-The `spawn` command starts the process suspended via Frida, loads the hook
-script, then resumes it. This gives the prototype the best chance to observe
-early calls such as:
-
-- `NtCreateSection`
-- `NtMapViewOfSection`
-- `SetThreadContext`
-- `ResumeThread`
-
-### 4. Attach to an already running process
-
-```powershell
-noirlycan-telemetry run --watch-sysmon --attach-pid 1337
-```
-
-### 5. Watch Sysmon and auto-attach to new interesting processes
-
-```powershell
-noirlycan-telemetry run --watch-sysmon --auto-attach-new-processes
-```
-
-Auto-attach is useful for file-dropping experiments, but it can miss very early
-injection activity if the process injects before Frida attaches. Use `spawn`
-for controlled tests where possible.
-
-### 6. Lab console (backend + dashboard tách riêng)
-
-**Backend API** (máy chủ lab, port 8765):
-
-```powershell
+```bash
 noirlycan-backend api --host 0.0.0.0 --port 8765
 ```
 
-**Dashboard UI** (máy khác hoặc cùng host, port 8080):
+Data defaults to `logs/` (JSONL sessions + `noirlycan.db`). Override with `NOIRLYCAN_LOGS_DIR`.
 
-```powershell
-cd dashboard-ui
-npm install
-npm run build
-cd ..
+### 3. Dashboard (dev)
+
+```bash
+cd dashboard-ui && npm install && npm run dev
+```
+
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173) — Vite proxies `/api` → `http://127.0.0.1:8765`.
+
+**Demo login:** `admin@lab` / `admin` (change in production).
+
+Production build + static serve:
+
+```bash
+cd dashboard-ui && npm run build && cd ..
 noirlycan-dashboard serve --host 0.0.0.0 --port 8080
 ```
 
-Mở [http://127.0.0.1:8080](http://127.0.0.1:8080) (UI) — nginx/Docker proxy `/api` tới backend.
-Dev: `npm run dev` trong `dashboard-ui/` (Vite proxy `/api` → `:8765`).
-
-Demo login: `admin@lab` / `admin`.
-
-**Agent trên Windows VM** gửi telemetry về backend:
-
-```powershell
-noirlycan-agent run --watch-sysmon --server HOST:8765 --token TOKEN
-```
-
-Docker (backend + dashboard):
+Or Docker:
 
 ```bash
 docker compose up backend-api dashboard-ui
 ```
 
-Tương thích cũ: `noirlycan-telemetry console` (deprecated, gộp UI vào backend).
+## Quick start — Windows agent (VM)
 
-The console follows `design_handoff_noirlycan_console/` — sidebar navigation, RBAC, rules editor, agent deploy commands, kill/auto-kill, dark/light themes.
+Use a **disposable VM snapshot**. Isolate from production networks.
+
+### 1. Install agent only
+
+```powershell
+git clone https://github.com/noirlycan/NoirlycanThesis.git C:\Noirlycan\agent
+cd C:\Noirlycan\agent
+.\scripts\install-agent.ps1
+# or: py -3.11 -m venv .venv; .\.venv\Scripts\activate; pip install -e ".[agent]"
+```
+
+### 2. Register on dashboard
+
+1. Open **Agents** → **Register workstation** (agent id + enrollment token).  
+2. **Copy config** → save as `C:\Noirlycan\noirlycan-agent.toml`.  
+3. On the VM:
+
+```powershell
+.\.venv\Scripts\activate
+noirlycan-agent run --config C:\Noirlycan\noirlycan-agent.toml --watch-sysmon --auto-attach-new-processes
+```
+
+Or pass server/token directly:
+
+```powershell
+noirlycan-agent run --server 192.168.1.10:8765 --agent-id vm01 --token YOUR_TOKEN --watch-sysmon --auto-attach-new-processes
+```
+
+Credentials persist in `logs\.agent_identity.json` next to the working directory.
+
+### 3. Install Sysmon (strongly recommended)
+
+Sysmon supplies process names, lineage, and network events. Without it, target process names may show as `unknown (pid N)`.
+
+Download [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon), place `Sysmon64.exe` in `Sysmon\`, then **Admin PowerShell**:
+
+```powershell
+.\scripts\install-sysmon.ps1
+```
+
+Add the VM user to **Event Log Readers**, then sign out/in. Update config after git pull:
+
+```powershell
+.\Sysmon\Sysmon64.exe -c .\configs\sysmon-noirlycan.xml
+```
+
+Relevant event IDs: **1** process create, **3** network, **7** image load, **8** remote thread, **10** process access, **11** file create.
+
+### 4. File-drop experiment
+
+`run` watches common folders by default (Downloads, Desktop, `D:\`, repo root). Drop a **new** executable name:
+
+```powershell
+Copy-Item "C:\Lab\loader.exe" "C:\Users\Public\Downloads\drop_$(Get-Random).exe"
+```
+
+Console: **File drops** tab → **Analyze APIs** (optional) → findings appear under **Findings**.
+
+## Standalone mode (no console)
+
+Local JSONL only — useful for quick tests without backend:
+
+```powershell
+# Spawn sample under Frida from the first instruction (best for loaders)
+noirlycan-agent spawn --watch-sysmon -- C:\Lab\loader.exe
+
+# Long-running loop + file watch
+noirlycan-agent run --watch-sysmon --auto-attach-new-processes
+
+# Attach to PID
+noirlycan-agent run --watch-sysmon --attach-pid 1337
+
+# Static triage
+noirlycan-agent triage C:\Lab\loader.exe
+```
+
+Default log: `logs/session-<timestamp>.jsonl` (override with `--jsonl`).
+
+## Console features
+
+- **Findings** — grouped by actor → target process / injection chain; kill process from dashboard  
+- **Agents** — register VMs, copy run command, auto-kill policy per agent  
+- **Rules** — scoring weights, hook policy, capture window, network watch duration  
+- **File drops** — pending drops + triage metadata  
+- **Access** — RBAC (admin / analyst / viewer)
+
+UI spec: [`design_handoff_noirlycan_console/`](design_handoff_noirlycan_console/).
 
 Legacy Django dashboard (upload tab, Jet admin):
 
@@ -198,112 +188,64 @@ pip install -e ".[dashboard]"
 noirlycan-dashboard legacy
 ```
 
-The legacy dashboard includes drag-and-drop upload, SQLite persistence, filters, charts, and WebSocket live sync.
-
-After a finding reaches **HIGH** or **CRITICAL**, the correlator watches the
-injected target PID for 5 minutes. Outbound connections are captured from
-Sysmon Event ID 3 and surfaced as `[NETWORK:BEACON?]` when the destination is
-outside private/local ranges.
-
-Reload Sysmon config after pulling updates:
-
-```powershell
-C:\Windows\System32\sysmon.exe -c .\configs\sysmon-noirlycan.xml
-```
-
-### 7. Watch for dropped files and auto-triage
-
-`run` polls watched folders **by default** (repo root, `D:\`, `D:\thesis`,
-Downloads, Desktop). Sysmon is optional but adds creator process metadata.
-
-```powershell
-python -m noirlycan_telemetry run
-# or with Sysmon (Admin PowerShell recommended):
-python -m noirlycan_telemetry run --watch-sysmon
-```
-
-Test with a **new filename** (files already on disk at startup are baselined):
-
-```powershell
-Copy-Item "D:\thesis\aes_decrypt_loader.exe" "D:\drop_test_$(Get-Random).exe"
-```
-
-You should see `[FILE:DROP] Detected ...` immediately, then a
-`===== FILE DROP DETECTED =====` banner when static triage finishes. Open the
-dashboard **File drops** tab for the active session.
-
-Disable folder polling with `--no-watch-files` (locks the dashboard toggle off).
-Add paths with `--watch-path C:\Lab`.
-
-While `run` is active, open the dashboard **File drops** tab:
-
-- **Watch folders** — detect new executables without restarting the collector
-- **Auto API analysis on drop** — spawn every new EXE under Frida injection hooks (off by default)
-- **Analyze APIs** button — spawn a pending drop under Frida hooks (`NtMapViewOfSection`, `ResumeThread`, …)
-- Primitives and findings appear in the **Primitives** / **Findings** tabs of the same session
-
-### 8. Static triage a file
-
-```powershell
-noirlycan-telemetry triage C:\Lab\loader.exe
-```
-
-The triage step computes SHA-256, PE header presence, entropy, Authenticode
-status, and suspicious imports when available.
-
-## Loader flow coverage
-
-For a section-mapping loader like:
+## Repository layout
 
 ```text
-resource payload -> AES decrypt in heap
-CreateProcess(msedge.exe, CREATE_SUSPENDED)
-NtCreateSection(PAGE_EXECUTE_READWRITE, SEC_COMMIT)
-NtMapViewOfSection(local)
-RtlCopyMemory(payload into local view)
-NtMapViewOfSection(remote msedge.exe)
-SetThreadContext
-ResumeThread
+configs/sysmon-noirlycan.xml    Sysmon lab config
+dashboard-ui/                   React + Vite frontend
+deploy/                         nginx, 3-service deploy notes
+docs/                           architecture, threat model, thesis notes
+scripts/
+  install-agent.ps1             Agent-only Windows install
+  install-sysmon.ps1            Sysmon + repo config
+src/
+  noirlycan_core/               correlation, storage, classification
+  noirlycan_agent/              collector + Frida hooks
+  noirlycan_backend/            FastAPI console backend
+  noirlycan_dashboard/          UI static server + legacy Django
+tests/
+thesis/                         thesis chapters (Vietnamese / HTW)
+docker-compose.yml
 ```
 
-Expected telemetry:
+## Environment variables
 
-```text
-Sysmon:
-  ProcessCreate loader.exe
-  ProcessCreate msedge.exe with suspicious parent/command line
-  ProcessAccess loader.exe -> msedge.exe
+| Variable | Description |
+|----------|-------------|
+| `NOIRLYCAN_LOGS_DIR` | Logs + SQLite directory (default: `./logs`) |
+| `NOIRLYCAN_CORS_ORIGINS` | Comma-separated dashboard origins for CORS |
+| `NOIRLYCAN_CONSOLE_JWT_SECRET` | JWT signing secret (set in production) |
+| `NOIRLYCAN_DASHBOARD_UI` | Path to built `dashboard-ui/dist` (optional) |
 
-Frida:
-  allocate primitive: NtCreateSection
-  write primitive: NtMapViewOfSection(remote)
-  execute primitive: SetThreadContext / ResumeThread
+## CLI reference
 
-Correlator:
-  Probable process injection chain
-  section_mapping=true
-  cross_process=true
-```
-
-For a file-dropping loader, the output should additionally include a related
-file from Sysmon Event ID 11 and static triage metadata.
-
-## Current limitations
-
-- Frida is a lab instrumentation backend and can be detected or bypassed by
-  evasive malware.
-- Direct syscalls, unhooking, or kernel-mode techniques can bypass user-mode
-  hooks.
-- The hook script currently logs `SetThreadContext`/`ResumeThread` as execution
-  primitives without decoding every architecture-specific register field.
-- Sysmon filtering is intentionally broad enough for experiments and may be too
-  noisy for production hosts.
-- The prototype is for measurement and thesis experiments, not a production EDR.
+| Command | Purpose |
+|---------|---------|
+| `noirlycan-backend api` | Start FastAPI console backend |
+| `noirlycan-backend seed-demo` | Seed demo agent sessions |
+| `noirlycan-dashboard serve` | Serve built React UI |
+| `noirlycan-agent run` | Collector loop (local and/or remote ingest) |
+| `noirlycan-agent spawn` | Frida-spawn a sample |
+| `noirlycan-agent triage` | Static PE/hash triage |
+| `noirlycan-telemetry …` | Deprecated alias → `noirlycan-agent` |
 
 ## Development
 
-Run tests:
-
 ```bash
+pip install -e ".[dev]"
 python -m pytest
 ```
+
+Key docs:
+
+- [`docs/clean-architecture-plan.md`](docs/clean-architecture-plan.md) — service boundaries  
+- [`docs/architecture-diagrams.md`](docs/architecture-diagrams.md) — diagrams  
+- [`deploy/agent/README.md`](deploy/agent/README.md) — minimal VM install  
+
+## Limitations
+
+- Frida and Sysmon are lab instrumentation; evasive malware can bypass user-mode hooks.  
+- Direct syscalls / kernel techniques are out of scope.  
+- Sysmon config is broad for experiments and can be noisy.  
+- Target process names depend on Sysmon ProcessCreate and/or Frida spawn metadata; install Sysmon on the VM for best results.  
+- Prototype for measurement and thesis work — not an EDR product.
