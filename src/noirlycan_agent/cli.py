@@ -880,6 +880,15 @@ def _handle_file_event(
     auto_api = args is not None and _auto_api_analysis_enabled(args, logs_dir, remote)
     auto_static = args is not None and _auto_static_triage_enabled(args, logs_dir)
     if auto_api and logs_dir is not None:
+        _run_triage_for_path(
+            event.path,
+            creator_image=event.creator_image,
+            creator_pid=event.creator_pid,
+            timestamp=event.timestamp,
+            correlator=correlator,
+            writer=writer,
+            title="FILE DROP DETECTED",
+        )
         if _schedule_api_analysis(event.path):
             enqueue_analysis(event.path, logs_dir, mode="api")
             print(
@@ -893,7 +902,6 @@ def _handle_file_event(
                 file=sys.stderr,
                 flush=True,
             )
-        _schedule_file_triage(event, correlator, writer, source="auto", write_event=False)
     elif auto_static:
         _schedule_file_triage(event, correlator, writer, source="auto", write_event=False)
     else:

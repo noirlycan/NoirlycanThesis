@@ -63,6 +63,35 @@ def _load_session_stats(logs_dir: Path, session_rel: str, agent_id: str) -> dict
     }
 
 
+def _file_drops_for_display(stats: dict[str, Any]) -> list[dict[str, Any]]:
+    """Merge completed triages with pending file-drop detections for dashboard lists."""
+    rows: list[dict[str, Any]] = [dict(item) for item in (stats.get("recent_triages") or [])]
+    seen = {str(item.get("path") or "").lower() for item in rows if item.get("path")}
+    for pending in stats.get("pending_file_drops") or []:
+        if not isinstance(pending, dict):
+            continue
+        path = str(pending.get("path") or "")
+        key = path.lower()
+        if not path or key in seen:
+            continue
+        rows.append(
+            {
+                "timestamp": pending.get("timestamp"),
+                "path": path,
+                "sha256": pending.get("sha256"),
+                "entropy": pending.get("entropy"),
+                "signed": pending.get("signed"),
+                "creator_image": pending.get("creator_image"),
+                "creator_pid": pending.get("creator_pid"),
+                "status": pending.get("status") or "pending",
+                "api_status": pending.get("api_status"),
+            }
+        )
+        seen.add(key)
+    rows.sort(key=lambda item: str(item.get("timestamp") or ""), reverse=True)
+    return rows[:30]
+
+
 def _merge_counters(*items: dict[str, Any] | Counter[str]) -> dict[str, int]:
     merged: Counter[str] = Counter()
     for item in items:
@@ -261,7 +290,7 @@ def load_all_agents_findings(
         severity = stats.get("severity") or {}
         networks = stats.get("recent_network") or []
         beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
-        triages = stats.get("recent_triages") or []
+        triages = _file_drops_for_display(stats)
         chains = stats.get("injection_chains") or []
         agent_stats.append(
             {
@@ -297,7 +326,7 @@ def load_all_agents_findings(
     all_chains: list[dict[str, Any]] = []
     totals = Counter()
     for stats in merged_stats:
-        all_triages.extend(stats.get("recent_triages") or [])
+        all_triages.extend(_file_drops_for_display(stats))
         all_network.extend(stats.get("recent_network") or [])
         all_beacons.extend(
             n for n in (stats.get("recent_network") or []) if n.get("beacon_candidate") or n.get("is_external")
@@ -369,7 +398,7 @@ def overview_payload(
         if aid in hostnames:
             critical_finding = {**critical_finding, "hostname": hostnames[aid]}
     chains = stats.get("injection_chains") or []
-    triages = stats.get("recent_triages") or stats.get("triages") or []
+    triages = _file_drops_for_display(stats)
     networks = stats.get("recent_network") or stats.get("network") or []
     beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
 

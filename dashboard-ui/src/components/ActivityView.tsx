@@ -95,7 +95,9 @@ export function ActivityView({
                 {drop.sha256 ? `sha256 ${String(drop.sha256).slice(0, 24)}…` : null}
                 {drop.entropy != null ? ` · entropy ${drop.entropy}` : null}
                 {drop.authenticode ? ` · ${drop.authenticode}` : drop.signed === false ? " · unsigned" : null}
-                {drop.creator || drop.actor_image ? ` · creator ${String(drop.creator || drop.actor_image)}` : null}
+                {drop.creator || drop.creator_image ? ` · creator ${String(drop.creator || drop.creator_image)}` : null}
+                {drop.api_status ? ` · api ${String(drop.api_status)}` : null}
+                {!drop.sha256 && drop.status === "pending" ? " · triage pending" : null}
               </div>
             </div>
           );
