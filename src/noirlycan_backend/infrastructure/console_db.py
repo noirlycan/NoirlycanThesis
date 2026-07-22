@@ -696,16 +696,27 @@ class ConsoleDatabase:
         return None
 
     def list_agent_sessions(self) -> list[dict[str, Any]]:
+        self.cleanup_orphan_agent_sessions()
         with self._connect() as connection:
             rows = connection.execute(
                 """
                 SELECT s.agent_id, s.session_rel, s.updated_at, a.hostname, a.status
                 FROM console_agent_sessions s
-                LEFT JOIN console_agents a ON a.id = s.agent_id
+                INNER JOIN console_agents a ON a.id = s.agent_id
                 ORDER BY s.updated_at DESC
                 """
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def cleanup_orphan_agent_sessions(self) -> int:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                DELETE FROM console_agent_sessions
+                WHERE agent_id NOT IN (SELECT id FROM console_agents)
+                """
+            )
+            return cursor.rowcount
 
     def set_agent_auto_kill(self, agent_id: str, enabled: bool) -> bool:
         with self._connect() as connection:
@@ -757,6 +768,7 @@ class ConsoleDatabase:
             )
             connection.execute("DELETE FROM console_agents WHERE id = ?", (agent_id,))
             self._audit(connection, actor, "agent.delete", {"agent_id": agent_id})
+            self.cleanup_orphan_agent_sessions()
             return True
 
     def verify_agent_token(self, token: str, *, agent_id: str | None = None) -> bool:

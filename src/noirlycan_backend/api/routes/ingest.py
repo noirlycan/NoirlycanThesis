@@ -79,6 +79,8 @@ def ingest_event(
     logs_dir = ensure_logs_dir(get_logs_dir())
     agent_id = (x_agent_id or "").strip()
     verify_agent_token(authorization, database, agent_id=agent_id or None)
+    if agent_id and not database.agent_exists(agent_id):
+        raise HTTPException(status_code=403, detail="Agent not registered on console")
     if agent_id:
         database.touch_agent_ip(agent_id, _resolve_agent_ip(request))
     if agent_id:

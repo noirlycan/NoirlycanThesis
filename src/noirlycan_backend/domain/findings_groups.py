@@ -239,12 +239,15 @@ def load_all_agents_findings(
 ) -> dict[str, Any]:
     directory = resolve_logs_dir(logs_dir)
     hostnames = {str(agent["id"]): _agent_hostname(agents, str(agent["id"])) for agent in agents}
+    registered = set(hostnames)
     all_findings: list[dict[str, Any]] = []
     merged_stats: list[dict[str, Any]] = []
     agent_stats: list[dict[str, Any]] = []
 
     for row in agent_sessions:
         agent_id = str(row.get("agent_id") or "")
+        if agent_id not in registered:
+            continue
         session_rel = str(row.get("session_rel") or "")
         if not agent_id or not session_rel:
             continue
@@ -378,6 +381,7 @@ def overview_payload(
         + list(stats.get("recent_processes") or [])
     )[:30]
     totals = stats.get("totals") or {}
+    registered_agents = len(agents or []) if agent_id is None and agent_sessions is not None else None
     return {
         "session": bundle.get("session"),
         "session_rel": bundle.get("session_rel"),
@@ -392,7 +396,7 @@ def overview_payload(
             ),
             "file_drops": len(triages),
             "beacons": len(beacons),
-            "agents": len(bundle.get("agent_stats") or []),
+            "agents": registered_agents if registered_agents is not None else len(bundle.get("agent_stats") or []),
         },
         "severity_counts": severity_counts,
         "primitive_kind_counts": primitive_counts,
