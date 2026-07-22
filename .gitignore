@@ -20,3 +20,4 @@ dashboard-ui/.env.production
 dashboard-ui/tsconfig.tsbuildinfo
 thesis/*.docx
 thesis/~$*
+*.sqlite3
