@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from noirlycan_telemetry.services.analysis.domain.correlation import Correlator
-from noirlycan_telemetry.kernel.analysis.primitives import (
+from noirlycan_core.analysis.domain.correlation import Correlator
+from noirlycan_core.kernel.analysis.primitives import (
     analyze_execution,
     is_context_read_api,
     is_execution_transfer_api,
 )
-from noirlycan_telemetry.kernel.entities.models import MemoryPrimitive, PrimitiveKind
-from noirlycan_telemetry.kernel.classification.technique_classifier import InjectionTechnique, classify_finding
+from noirlycan_core.kernel.entities.models import MemoryPrimitive, PrimitiveKind
+from noirlycan_core.kernel.classification.technique_classifier import InjectionTechnique, classify_finding
 
 
 def test_get_thread_context_is_context_read_not_execute() -> None:

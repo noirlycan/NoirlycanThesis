@@ -7,10 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from noirlycan_telemetry.kernel.classification.api_manifest import REPO_REQUIRED_APIS
+from noirlycan_core.kernel.classification.api_manifest import REPO_REQUIRED_APIS
 
 ROOT = Path(__file__).resolve().parents[1]
-JS = ROOT / "src" / "noirlycan_telemetry" / "frida_hooks" / "windows_injection_hooks.js"
+JS = ROOT / "src" / "noirlycan_agent" / "frida_hooks" / "windows_injection_hooks.js"
 
 
 def _hooked_apis(js: str) -> set[str]:

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from noirlycan_telemetry.services.analysis.domain.correlation import Correlator, NETWORK_WATCH_MIN_SCORE
-from noirlycan_telemetry.kernel.entities.models import MemoryPrimitive, NetworkConnectionEvent, PrimitiveKind
-from noirlycan_telemetry.kernel.analysis.network_policy import is_external_beacon_candidate
+from noirlycan_core.analysis.domain.correlation import Correlator, NETWORK_WATCH_MIN_SCORE
+from noirlycan_core.kernel.entities.models import MemoryPrimitive, NetworkConnectionEvent, PrimitiveKind
+from noirlycan_core.kernel.analysis.network_policy import is_external_beacon_candidate
 
 
 def _primitive(kind: PrimitiveKind, api: str, offset_ms: int, address: int | None = 0x200000) -> MemoryPrimitive:

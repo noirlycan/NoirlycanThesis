@@ -49,30 +49,23 @@ file-dropping loader:
 ```text
 configs/
   sysmon-noirlycan.xml              Minimal Sysmon config for the lab
-src/noirlycan_telemetry/
-  cli.py                            Composition root (monolith mode)
-  kernel/                           Domain layer (shared)
-    entities/models.py              Finding, MemoryPrimitive, …
-    analysis/primitives.py          operational_kind_count, analyze_execution
-    classification/
-      api_manifest.py               PAPER_API_CLASSES (ASIA CCS 2025)
-      technique_classifier.py       Rule-based technique detection
-  services/
-    collector/                      Sysmon, Frida, file watch, triage
-    analysis/domain/                correlation.py, reclassify, session_analytics
-    storage/infrastructure/         log_store, analysis_db
-    dashboard/                      Django REST + WebSocket UI
-  frida_hooks/windows_injection_hooks.js
-  contracts/events.py               Inter-service wire format
+src/
+  noirlycan_core/                   # kernel, storage, analysis, runtime
+  noirlycan_agent/                  # collector + agent CLI (Windows VM)
+  noirlycan_backend/                # FastAPI API server (ingest, auth, rules)
+  noirlycan_dashboard/              # React static server + legacy Django
+  noirlycan_console/                # deprecated CLI shim
+  noirlycan_telemetry/              # backward-compatible CLI shim
+dashboard-ui/                       # React frontend (deploy riêng)
+deploy/                             # nginx, hướng dẫn 3 service
 tests/
-  test_correlation.py               Synthetic correlation tests
 docs/
-  clean-architecture-plan.md        Clean Architecture + microservices
-  architecture-diagrams.md          Thesis diagrams
-docker-compose.yml                  Optional microservices deployment
+docker-compose.yml
+Dockerfile.backend / Dockerfile.dashboard
 ```
 
-See [`docs/clean-architecture-plan.md`](docs/clean-architecture-plan.md) for service boundaries and deployment modes.
+See [`deploy/README.md`](deploy/README.md) for **agent / backend / dashboard** on separate hosts.
+See [`docs/clean-architecture-plan.md`](docs/clean-architecture-plan.md) for service boundaries.
 
 ## Windows 10/11 lab setup
 
@@ -159,22 +152,53 @@ Auto-attach is useful for file-dropping experiments, but it can miss very early
 injection activity if the process injects before Frida attaches. Use `spawn`
 for controlled tests where possible.
 
-### 6. Open the web dashboard (Django)
+### 6. Lab console (backend + dashboard tách riêng)
 
-After collecting one or more sessions in `logs/`, launch the statistics UI:
+**Backend API** (máy chủ lab, port 8765):
 
 ```powershell
-noirlycan-telemetry dashboard
+noirlycan-backend api --host 0.0.0.0 --port 8765
 ```
 
-Then open [http://127.0.0.1:8765](http://127.0.0.1:8765). The dashboard is a **Django** app with drag-and-drop upload (tab **Upload**), SQLite persistence for parsed logs (`logs/noirlycan.db`), and the same REST API paths as before (`/api/overview`, `/api/upload`, …). It includes:
+**Dashboard UI** (máy khác hoặc cùng host, port 8080):
 
-- tabs for **Overview**, **Findings**, **Network**, **Primitives**, **Event stream**, and **Sessions**,
-- filters by severity, target PID, event type, and free-text search,
-- click a finding to open a detail modal (evidence, API chain, primitives, related network),
-- click a session row or network row to drill into that PID,
-- auto-refresh toggle and JSONL export for the active session,
-- charts for severity, primitives, timeline, top APIs, and top actors.
+```powershell
+cd dashboard-ui
+npm install
+npm run build
+cd ..
+noirlycan-dashboard serve --host 0.0.0.0 --port 8080
+```
+
+Mở [http://127.0.0.1:8080](http://127.0.0.1:8080) (UI) — nginx/Docker proxy `/api` tới backend.
+Dev: `npm run dev` trong `dashboard-ui/` (Vite proxy `/api` → `:8765`).
+
+Demo login: `admin@lab` / `admin`.
+
+**Agent trên Windows VM** gửi telemetry về backend:
+
+```powershell
+noirlycan-agent run --watch-sysmon --server HOST:8765 --token TOKEN
+```
+
+Docker (backend + dashboard):
+
+```bash
+docker compose up backend-api dashboard-ui
+```
+
+Tương thích cũ: `noirlycan-telemetry console` (deprecated, gộp UI vào backend).
+
+The console follows `design_handoff_noirlycan_console/` — sidebar navigation, RBAC, rules editor, agent deploy commands, kill/auto-kill, dark/light themes.
+
+Legacy Django dashboard (upload tab, Jet admin):
+
+```powershell
+pip install -e ".[dashboard]"
+noirlycan-dashboard legacy
+```
+
+The legacy dashboard includes drag-and-drop upload, SQLite persistence, filters, charts, and WebSocket live sync.
 
 After a finding reaches **HIGH** or **CRITICAL**, the correlator watches the
 injected target PID for 5 minutes. Outbound connections are captured from

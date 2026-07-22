@@ -3,14 +3,14 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from noirlycan_telemetry.kernel.classification.api_manifest import PAPER_INJECTION_APIS, REPO_REQUIRED_APIS
+from noirlycan_core.kernel.classification.api_manifest import PAPER_INJECTION_APIS, REPO_REQUIRED_APIS
 
 
 def _hook_script() -> str:
     path = (
         Path(__file__).resolve().parents[1]
         / "src"
-        / "noirlycan_telemetry"
+        / "noirlycan_agent"
         / "frida_hooks"
         / "windows_injection_hooks.js"
     )

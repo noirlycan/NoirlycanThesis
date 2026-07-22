@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#0e0b1e">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#0e0b1e"/>
+    <rect x="470" y="300" width="260" height="200" rx="44" fill="#6b46ff"/>
+    <text x="600" y="470" font-family="Space Grotesk, sans-serif" font-size="150" font-weight="700" fill="#ffffff" text-anchor="middle">N</text>
+    <text x="600" y="580" font-family="monospace" font-size="30" letter-spacing="8" fill="#6b6390" text-anchor="middle">NOIRLYCAN</text>
+  </svg>
+</template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; -webkit-font-smoothing: antialiased; }
+  input, select, button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: rgba(128,128,160,.35); border-radius: 8px; }
+  @keyframes nlPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  @keyframes nlSweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(240%)} }
+  @keyframes nlUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</helmet>
+
+<div style="{{ rootStyle }}">
+
+  <!-- ============ LOGIN ============ -->
+  <sc-if value="{{ loggedOut }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;font-family:'Manrope',sans-serif;">
+    <div style="width:404px;background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:34px;box-shadow:var(--cardShadow);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--brand);box-shadow:var(--brandShadow);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;color:#fff;font-size:20px;">N</div>
+        <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:18px;color:var(--text);">Noirlycan</div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim);letter-spacing:.1em;">TELEMETRY CONSOLE</div></div>
+      </div>
+      <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:4px;">Sign in</div>
+      <div style="font-size:12.5px;color:var(--dim);margin-bottom:20px;">Đăng nhập để truy cập bảng điều khiển.</div>
+      <label style="font-size:12px;color:var(--muted);">Email</label>
+      <input value="{{ loginEmail }}" onInput="{{ setLoginEmail }}" placeholder="admin@lab" style="width:100%;margin:6px 0 16px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13.5px;color:var(--text);outline:none;">
+      <label style="font-size:12px;color:var(--muted);">Password</label>
+      <input value="{{ loginPw }}" onInput="{{ setLoginPw }}" type="password" placeholder="••••••" style="width:100%;margin:6px 0 10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13.5px;color:var(--text);outline:none;">
+      <sc-if value="{{ loginErrShow }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:#e5484d;margin-bottom:8px;">{{ loginErr }}</div></sc-if>
+      <div onClick="{{ doLogin }}" style="margin-top:6px;background:var(--brand);color:#fff;border-radius:11px;padding:12px;text-align:center;font-size:14px;font-weight:600;cursor:pointer;box-shadow:var(--brandShadow);">Sign in</div>
+      <div style="display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:var(--dim);font-size:11px;letter-spacing:.08em;"><div style="flex:1;height:1px;background:var(--border);"></div>QUICK DEMO<div style="flex:1;height:1px;background:var(--border);"></div></div>
+      <div style="display:flex;gap:8px;">
+        <div onClick="{{ quickAdmin }}" style="flex:1;text-align:center;border:1px solid var(--border);border-radius:10px;padding:9px;font-size:12px;color:var(--text);cursor:pointer;">Admin</div>
+        <div onClick="{{ quickAnalyst }}" style="flex:1;text-align:center;border:1px solid var(--border);border-radius:10px;padding:9px;font-size:12px;color:var(--text);cursor:pointer;">Analyst</div>
+        <div onClick="{{ quickViewer }}" style="flex:1;text-align:center;border:1px solid var(--border);border-radius:10px;padding:9px;font-size:12px;color:var(--text);cursor:pointer;">Viewer</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex:1;min-height:840px;width:100%;">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside style="width:246px;flex:none;padding:24px 18px;display:flex;flex-direction:column;border-right:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:12px;padding:4px 6px 26px;">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--brand);box-shadow:var(--brandShadow);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;color:#fff;font-size:18px;">N</div>
+      <div>
+        <div style="font-family:'Space Grotesk';font-weight:700;font-size:16px;color:var(--text);">Noirlycan</div>
+        <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim);letter-spacing:.1em;">TELEMETRY</div>
+      </div>
+    </div>
+    <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim);letter-spacing:.16em;padding:0 8px 8px;">MENU</div>
+    <nav style="display:flex;flex-direction:column;gap:5px;">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+        <div style="{{ item.style }}" onClick="{{ item.onClick }}">
+          <span style="{{ item.dotStyle }}"></span>{{ item.label }}
+          <sc-if value="{{ item.badgeShow }}" hint-placeholder-val="{{ true }}"><span style="{{ item.badgeStyle }}">{{ item.badge }}</span></sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <div style="margin-top:auto;padding:16px;border-radius:14px;background:var(--panel);border:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);"><span style="width:8px;height:8px;border-radius:50%;background:#46c26a;box-shadow:0 0 8px #46c26a;animation:nlPulse 1.8s infinite;"></span>Live capture</div>
+      <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);margin-top:6px;">Frida + Sysmon · 3 hooks</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 6px 2px;">
+      <span style="width:30px;height:30px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex:none;">{{ userInitial }}</span>
+      <div style="min-width:0;"><div style="font-size:12.5px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ userName }}</div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim);">{{ userRole }}</div></div>
+      <span onClick="{{ logout }}" style="margin-left:auto;cursor:pointer;color:var(--muted);font-size:11px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;">Log out</span>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <!-- Topbar -->
+    <div style="display:flex;align-items:center;gap:16px;padding:20px 28px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-family:'Space Grotesk';font-weight:600;font-size:20px;color:var(--text);">{{ tabTitle }}</div>
+        <div style="font-size:12.5px;color:var(--dim);">{{ tabSub }}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:9px 14px;width:240px;color:var(--dim);font-size:13px;font-family:'JetBrains Mono';">
+          <span style="width:6px;height:6px;border-radius:50%;border:1.5px solid var(--dim);"></span>search pid, api, hash…</div>
+        <div style="display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:9px 14px;font-size:12.5px;color:var(--muted);"><span style="width:8px;height:8px;border-radius:50%;background:#46c26a;box-shadow:0 0 8px #46c26a;animation:nlPulse 1.8s infinite;"></span>Auto 5s</div>
+        <div onClick="{{ toggleTheme }}" style="width:38px;height:38px;border-radius:11px;background:var(--panel2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:#e8c020;cursor:pointer;font-size:15px;">{{ themeIcon }}</div>
+        <sc-if value="{{ canExport }}" hint-placeholder-val="{{ true }}"><div style="background:var(--brand);border-radius:11px;padding:9px 16px;font-size:13px;font-weight:600;color:#fff;box-shadow:var(--brandShadow);cursor:pointer;">Export JSONL</div></sc-if>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow:auto;">
+
+      <!-- ========== OVERVIEW ========== -->
+      <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:26px 28px;display:flex;flex-direction:column;gap:20px;">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;">
+          <div onClick="{{ goFindings }}" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--cardShadow);cursor:pointer;"><div style="font-size:12px;color:var(--muted);">Findings</div><div style="font-family:'Space Grotesk';font-size:32px;font-weight:700;margin-top:8px;color:var(--text);">12</div><div style="font-size:11.5px;color:var(--dim);margin-top:2px;">+3 last minute</div></div>
+          <div onClick="{{ goFindings }}" style="background:var(--critBg);border:1px solid var(--critBorder);border-radius:16px;padding:18px;cursor:pointer;"><div style="font-size:12px;color:#e5484d;">Critical</div><div style="font-family:'Space Grotesk';font-size:32px;font-weight:700;margin-top:8px;color:#e5484d;">1</div><div style="font-size:11.5px;color:var(--muted);margin-top:2px;">msedge.exe · 6120</div></div>
+          <div onClick="{{ goFindings }}" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--cardShadow);cursor:pointer;"><div style="font-size:12px;color:var(--muted);">Injection chains</div><div style="font-family:'Space Grotesk';font-size:32px;font-weight:700;margin-top:8px;color:var(--text);">2</div><div style="font-size:11.5px;color:var(--dim);margin-top:2px;">1 cross-process</div></div>
+          <div onClick="{{ goActivity }}" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--cardShadow);cursor:pointer;"><div style="font-size:12px;color:var(--muted);">File drops</div><div style="font-family:'Space Grotesk';font-size:32px;font-weight:700;margin-top:8px;color:var(--text);">4</div><div style="font-size:11.5px;color:var(--dim);margin-top:2px;">1 unsigned PE</div></div>
+          <div onClick="{{ goNetwork }}" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--cardShadow);cursor:pointer;"><div style="font-size:12px;color:var(--muted);">Beacons</div><div style="font-family:'Space Grotesk';font-size:32px;font-weight:700;margin-top:8px;color:#ec7b1a;">1</div><div style="font-size:11.5px;color:var(--dim);margin-top:2px;">185.12.44.9</div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:20px;">
+          <div style="background:var(--panel);border:1px solid var(--critBorder);border-radius:18px;padding:24px;position:relative;overflow:hidden;box-shadow:var(--cardShadow);">
+            <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;"><div style="position:absolute;top:0;left:0;width:40%;height:2px;background:linear-gradient(90deg,transparent,#e5484d,transparent);animation:nlSweep 3.2s infinite;"></div></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+              <span style="font-family:'JetBrains Mono';font-size:11px;font-weight:600;background:#e5484d;color:#fff;padding:4px 11px;border-radius:8px;letter-spacing:.05em;">CRITICAL</span>
+              <span style="font-weight:700;font-size:17px;color:var(--text);">Probable process injection chain</span>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+                <span style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">18:41:07</span>
+                <sc-if value="{{ ovKilled }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono';font-size:11px;color:#e5484d;border:1px solid #e5484d55;border-radius:8px;padding:5px 10px;">TERMINATED</span></sc-if>
+                <sc-if value="{{ ovKillable }}" hint-placeholder-val="{{ false }}"><div onClick="{{ killOverview }}" style="background:#e5484d;color:#fff;border-radius:9px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">Kill process</div></sc-if>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;font-family:'JetBrains Mono';font-size:13px;background:var(--hole);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px;">
+              <span style="color:var(--muted);">loader.exe</span><span style="color:var(--dim);">4821</span><span style="color:#ec7b1a;">──▶</span><span style="color:#ec7b1a;font-weight:600;">msedge.exe</span><span style="color:var(--dim);">6120</span><span style="margin-left:auto;color:#e5484d;font-size:11px;">SUSPENDED</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+              <span style="font-family:'JetBrains Mono';font-size:11px;color:#46c26a;background:rgba(70,194,106,.12);border:1px solid rgba(70,194,106,.3);padding:4px 10px;border-radius:8px;">section_mapping=true</span>
+              <span style="font-family:'JetBrains Mono';font-size:11px;color:#ec7b1a;background:rgba(236,123,26,.12);border:1px solid rgba(236,123,26,.3);padding:4px 10px;border-radius:8px;">cross_process=true</span>
+              <span style="font-family:'JetBrains Mono';font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:4px 10px;border-radius:8px;">3 / 3 primitives</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">API CHAIN</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-family:'JetBrains Mono';font-size:12.5px;">
+              <div style="display:flex;gap:12px;"><span style="width:52px;color:#46c26a;">alloc</span><span style="color:var(--text);">NtCreateSection</span><span style="color:var(--dim);">RWX</span></div>
+              <div style="display:flex;gap:12px;"><span style="width:52px;color:#e8c020;">write</span><span style="color:var(--text);">NtMapViewOfSection</span><span style="color:var(--dim);">local view</span></div>
+              <div style="display:flex;gap:12px;"><span style="width:52px;color:#e8c020;">write</span><span style="color:#ec7b1a;">NtMapViewOfSection</span><span style="color:var(--dim);">remote → msedge.exe</span></div>
+              <div style="display:flex;gap:12px;"><span style="width:52px;color:#ec7b1a;">exec</span><span style="color:var(--text);">SetThreadContext</span><span style="color:var(--dim);">entry = 0x2000</span></div>
+              <div style="display:flex;gap:12px;"><span style="width:52px;color:#e5484d;">exec</span><span style="color:#e5484d;">ResumeThread</span><span style="color:var(--dim);">payload runs</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:var(--cardShadow);">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:18px;">Severity mix</div>
+              <div style="display:flex;align-items:center;gap:22px;">
+                <div style="position:relative;width:120px;height:120px;flex:none;">
+                  <div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(#e5484d 0 30deg,#ec7b1a 30deg 96deg,#e8c020 96deg 190deg,#46c26a 190deg 300deg,#5b9df0 300deg 360deg);"></div>
+                  <div style="position:absolute;inset:18px;border-radius:50%;background:var(--solid);display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="font-family:'Space Grotesk';font-weight:700;font-size:25px;color:var(--text);">12</div><div style="font-size:10px;color:var(--dim);">findings</div></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;flex:1;color:var(--text);">
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:3px;background:#e5484d;"></span>Critical<span style="margin-left:auto;font-family:'JetBrains Mono';color:var(--muted);">1</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:3px;background:#ec7b1a;"></span>High<span style="margin-left:auto;font-family:'JetBrains Mono';color:var(--muted);">2</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:3px;background:#e8c020;"></span>Medium<span style="margin-left:auto;font-family:'JetBrains Mono';color:var(--muted);">3</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:3px;background:#46c26a;"></span>Low<span style="margin-left:auto;font-family:'JetBrains Mono';color:var(--muted);">4</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:3px;background:#5b9df0;"></span>Info<span style="margin-left:auto;font-family:'JetBrains Mono';color:var(--muted);">2</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:var(--cardShadow);">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Injection primitives</div>
+              <div style="font-size:11.5px;color:var(--dim);margin-bottom:18px;">≥{{ minPrimitives }} of 3 observed → injection</div>
+              <div style="display:flex;gap:16px;align-items:flex-end;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:100%;height:104px;display:flex;align-items:flex-end;"><div style="width:100%;height:52px;background:linear-gradient(180deg,#5cd982,#2a8a4c);border-radius:9px 9px 4px 4px;"></div></div><div style="font-size:11px;color:var(--muted);">Allocate</div><div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">2</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:100%;height:104px;display:flex;align-items:flex-end;"><div style="width:100%;height:104px;background:linear-gradient(180deg,#f2cf33,#9c7d0f);border-radius:9px 9px 4px 4px;"></div></div><div style="font-size:11px;color:var(--muted);">Write</div><div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">4</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:100%;height:104px;display:flex;align-items:flex-end;"><div style="width:100%;height:52px;background:linear-gradient(180deg,#f78f2e,#9c5012);border-radius:9px 9px 4px 4px;"></div></div><div style="font-size:11px;color:var(--muted);">Execute</div><div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">2</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========== FINDINGS ========== -->
+      <sc-if value="{{ isFindings }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:26px 28px;display:flex;flex-direction:column;gap:18px;">
+        <div style="display:flex;align-items:center;">
+          <div style="font-size:13px;color:var(--dim);">Gộp theo process đích · xếp theo thứ tự chain</div>
+          <sc-if value="{{ canReport }}" hint-placeholder-val="{{ false }}"><div onClick="{{ exportAll }}" style="margin-left:auto;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 15px;font-size:13px;font-weight:600;cursor:pointer;">Export report (.md)</div></sc-if>
+        </div>
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--cardShadow);">
+            <div style="display:flex;align-items:center;gap:14px;padding:18px 22px;border-bottom:1px solid var(--border);background:var(--hole);">
+              <span style="{{ g.topSevStyle }}">{{ g.topSev }}</span>
+              <div style="min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono';font-size:13.5px;font-weight:600;"><span style="color:var(--muted);">{{ g.src }}</span><span style="color:#ec7b1a;">──▶</span><span style="color:#ec7b1a;">{{ g.victim }}</span><span style="color:var(--dim);">{{ g.vpid }}</span></div>
+                <div style="font-size:12px;color:var(--dim);margin-top:3px;">{{ g.summary }}</div>
+              </div>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+                <sc-if value="{{ g.gKilled }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono';font-size:11px;color:#e5484d;border:1px solid #e5484d55;border-radius:7px;padding:3px 9px;">TERMINATED</span></sc-if>
+                <sc-if value="{{ g.gKillable }}" hint-placeholder-val="{{ false }}"><div onClick="{{ g.onKill }}" style="background:#e5484d;color:#fff;border-radius:8px;padding:5px 12px;font-size:11.5px;font-weight:600;cursor:pointer;">Kill process</div></sc-if>
+                <sc-for list="{{ g.tags }}" as="t" hint-placeholder-count="2"><span style="{{ t.style }}">{{ t.v }}</span></sc-for>
+                <span style="font-family:'JetBrains Mono';font-size:12px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:4px 10px;border-radius:8px;">{{ g.count }}</span>
+              </div>
+            </div>
+            <sc-for list="{{ g.members }}" as="f" hint-placeholder-count="3">
+              <div onClick="{{ f.onOpen }}" style="display:grid;grid-template-columns:44px 96px 1fr 90px 84px 32px;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border);align-items:center;cursor:pointer;font-size:13px;">
+                <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">{{ f.step }}</div>
+                <div><span style="{{ f.sevStyle }}">{{ f.sev }}</span></div>
+                <div style="color:var(--text);font-weight:600;">{{ f.title }}</div>
+                <div style="font-family:'JetBrains Mono';font-size:12px;color:var(--muted);">{{ f.prims }}</div>
+                <div style="font-family:'JetBrains Mono';font-size:12px;color:var(--dim);">{{ f.time }}</div>
+                <div style="text-align:center;"><sc-if value="{{ f.canDelete }}" hint-placeholder-val="{{ false }}"><span onClick="{{ f.onDelete }}" title="Mark false positive" style="cursor:pointer;color:var(--dim);font-size:15px;">×</span></sc-if></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- ========== ACTIVITY ========== -->
+      <sc-if value="{{ isActivity }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:26px 28px;display:grid;grid-template-columns:1.3fr 1fr;gap:20px;">
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:var(--cardShadow);">
+          <div style="display:flex;align-items:center;margin-bottom:16px;"><span style="font-size:12px;color:var(--muted);">Event stream</span><span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:#46c26a;"><span style="width:6px;height:6px;border-radius:50%;background:#46c26a;box-shadow:0 0 8px #46c26a;animation:nlPulse 1.6s infinite;"></span>live</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px;font-family:'JetBrains Mono';font-size:12px;">
+            <sc-for list="{{ events }}" as="e" hint-placeholder-count="8">
+              <div style="{{ e.rowStyle }}"><span style="color:var(--dim);">{{ e.t }}</span><span style="{{ e.kindStyle }}">{{ e.kind }}</span><span style="color:var(--text);flex:1;">{{ e.msg }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:var(--cardShadow);">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">File drops</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ drops }}" as="d" hint-placeholder-count="4">
+              <div style="border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--hole);">
+                <div style="display:flex;align-items:center;gap:10px;"><span style="{{ d.badgeStyle }}">{{ d.badge }}</span><span style="font-family:'JetBrains Mono';font-size:12.5px;color:var(--text);">{{ d.name }}</span></div>
+                <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);margin-top:8px;">{{ d.meta }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========== NETWORK ========== -->
+      <sc-if value="{{ isNetwork }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:26px 28px;display:flex;flex-direction:column;gap:20px;">
+        <div style="background:var(--panel);border:1px solid #ec7b1a55;border-radius:18px;padding:22px;box-shadow:var(--cardShadow);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><span style="font-family:'JetBrains Mono';font-size:11px;font-weight:600;background:#ec7b1a;color:#1a1204;padding:3px 10px;border-radius:7px;">BEACON?</span><span style="font-weight:700;color:var(--text);">Outbound to non-private range</span><span style="margin-left:auto;font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">post-finding watch · 5 min</span></div>
+          <div style="font-family:'JetBrains Mono';font-size:13px;color:var(--muted);background:var(--hole);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;gap:10px;align-items:center;"><span style="color:#ec7b1a;">msedge.exe</span><span style="color:var(--dim);">6120</span><span style="color:var(--dim);">──▶</span><span style="color:var(--text);">185.12.44.9:443</span><span style="margin-left:auto;color:var(--dim);">TLS · 3 conns</span></div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--cardShadow);">
+          <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 90px;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.06em;color:var(--dim);font-family:'JetBrains Mono';"><div>PROCESS</div><div>DESTINATION</div><div>CLASS</div><div>CONNS</div></div>
+          <sc-for list="{{ conns }}" as="c" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 90px;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono';font-size:12.5px;align-items:center;"><span style="color:var(--text);">{{ c.proc }}</span><span style="color:var(--muted);">{{ c.dst }}</span><span style="{{ c.classStyle }}">{{ c.cls }}</span><span style="color:var(--dim);">{{ c.n }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========== RULES (ADMIN) ========== -->
+      <sc-if value="{{ isRules }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:26px 28px;display:flex;flex-direction:column;gap:20px;max-width:1080px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--accentText);background:var(--navActive);border:1px solid var(--navBorder);padding:4px 11px;border-radius:8px;">ADMIN ONLY</div>
+          <div style="font-size:13px;color:var(--muted);">Cấu hình luật phát hiện tại runtime — không cần build lại.</div>
+        </div>
+
+        <!-- Primitives -->
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);">Detection primitives</div>
+          <div style="font-size:12.5px;color:var(--dim);margin:6px 0 20px;">Lớp API tương đương cho mỗi thao tác. Thêm/bớt để bắt biến thể mới.</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+            <div style="border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--hole);">
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#46c26a;font-weight:600;margin-bottom:12px;"><span style="width:8px;height:8px;border-radius:3px;background:#46c26a;"></span>ALLOCATE</div>
+              <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">
+                <sc-for list="{{ allocApis }}" as="a" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);background:var(--panel2);border:1px solid var(--border);padding:4px 6px 4px 10px;border-radius:7px;">{{ a.name }}<span onClick="{{ a.onRemove }}" style="cursor:pointer;color:var(--dim);font-size:13px;line-height:1;">×</span></span></sc-for>
+              </div>
+              <div style="display:flex;gap:6px;"><input value="{{ newAlloc }}" onInput="{{ setNewAlloc }}" placeholder="Add API…" style="flex:1;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);outline:none;"><div onClick="{{ addAlloc }}" style="background:var(--brand);color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;">+</div></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--hole);">
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#e8c020;font-weight:600;margin-bottom:12px;"><span style="width:8px;height:8px;border-radius:3px;background:#e8c020;"></span>WRITE</div>
+              <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">
+                <sc-for list="{{ writeApis }}" as="a" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);background:var(--panel2);border:1px solid var(--border);padding:4px 6px 4px 10px;border-radius:7px;">{{ a.name }}<span onClick="{{ a.onRemove }}" style="cursor:pointer;color:var(--dim);font-size:13px;line-height:1;">×</span></span></sc-for>
+              </div>
+              <div style="display:flex;gap:6px;"><input value="{{ newWrite }}" onInput="{{ setNewWrite }}" placeholder="Add API…" style="flex:1;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);outline:none;"><div onClick="{{ addWrite }}" style="background:var(--brand);color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;">+</div></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--hole);">
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#ec7b1a;font-weight:600;margin-bottom:12px;"><span style="width:8px;height:8px;border-radius:3px;background:#ec7b1a;"></span>EXECUTE</div>
+              <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">
+                <sc-for list="{{ execApis }}" as="a" hint-placeholder-count="5"><span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);background:var(--panel2);border:1px solid var(--border);padding:4px 6px 4px 10px;border-radius:7px;">{{ a.name }}<span onClick="{{ a.onRemove }}" style="cursor:pointer;color:var(--dim);font-size:13px;line-height:1;">×</span></span></sc-for>
+              </div>
+              <div style="display:flex;gap:6px;"><input value="{{ newExec }}" onInput="{{ setNewExec }}" placeholder="Add API…" style="flex:1;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);outline:none;"><div onClick="{{ addExec }}" style="background:var(--brand);color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;">+</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Named detection chains -->
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+            <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);">Named detection chains</div>
+            <div onClick="{{ addChain }}" style="margin-left:auto;border:1px solid var(--border);color:var(--accentText);border-radius:9px;padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">+ Add chain</div>
+          </div>
+          <div style="font-size:12.5px;color:var(--dim);margin-bottom:18px;">Đặt tên cho từng chuỗi primitive và gán kỹ thuật — tên này hiện trên finding.</div>
+          <div style="display:grid;grid-template-columns:1fr 210px 32px;gap:10px 12px;font-family:'JetBrains Mono';font-size:10px;letter-spacing:.06em;color:var(--dim);padding:0 2px 8px;"><div>CHAIN NAME · MATCH</div><div>TECHNIQUE</div><div></div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ namedChains }}" as="c" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:1fr 210px 32px;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--hole);">
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <input value="{{ c.name }}" onInput="{{ c.onName }}" placeholder="Chain name" style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Manrope';font-size:13px;font-weight:600;color:var(--text);outline:none;">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                    <sc-for list="{{ c.steps }}" as="s" hint-placeholder-count="3"><span style="{{ s.style }}">{{ s.op }} · {{ s.api }}<span onClick="{{ s.onRemove }}" style="cursor:pointer;margin-left:5px;opacity:.75;">×</span></span></sc-for>
+                    <select value="" onChange="{{ c.onAddStep }}" style="background:var(--panel);border:1px dashed var(--border);border-radius:7px;padding:5px 8px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted);outline:none;cursor:pointer;">
+                      <option value="">+ step…</option>
+                      <sc-for list="{{ c.stepOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+                    </select>
+                  </div>
+                </div>
+                <select value="{{ c.tech }}" onChange="{{ c.onTech }}" style="{{ c.techStyle }}">
+                  <option>Process Hollowing (no-unmap)</option><option>Process Hollowing</option><option>PE Injection</option><option>Shellcode Injection</option><option>DLL Injection from Disk</option><option>APC Injection</option><option>Thread Execution Hijacking</option><option>Early Bird</option><option>Hook Injection</option><option>Custom</option>
+                </select>
+                <span onClick="{{ c.onRemove }}" style="cursor:pointer;color:var(--dim);font-size:16px;text-align:center;">×</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Correlation logic -->
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:20px;">Correlation logic</div>
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
+            <div style="flex:1;"><div style="font-size:13.5px;color:var(--text);font-weight:600;">Minimum primitives to flag</div><div style="font-size:12px;color:var(--dim);margin-top:2px;">Số thao tác cùng vùng nhớ đủ để coi là injection.</div></div>
+            <div style="display:flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px;">
+              <div onClick="{{ setMin2 }}" style="{{ min2Style }}">2 of 3</div>
+              <div onClick="{{ setMin3 }}" style="{{ min3Style }}">3 of 3</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--border);">
+            <div style="flex:1;"><div style="font-size:13.5px;color:var(--text);font-weight:600;">Memory-range congruence</div><div style="font-size:12px;color:var(--dim);margin-top:2px;">Chỉ nối các thao tác trên cùng khoảng địa chỉ [α, α+β].</div></div>
+            <div onClick="{{ toggleCong }}" style="{{ congTrack }}"><div style="{{ congKnob }}"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;padding:14px 0 0;border-top:1px solid var(--border);">
+            <div style="flex:1;"><div style="font-size:13.5px;color:var(--text);font-weight:600;">Temporal ordering</div><div style="font-size:12px;color:var(--dim);margin-top:2px;">alloc → write → execute (cho phép hoán vị hợp lệ).</div></div>
+            <div onClick="{{ toggleTemp }}" style="{{ tempTrack }}"><div style="{{ tempKnob }}"></div></div>
+          </div>
+        </div>
+
+        <!-- Severity mapping -->
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:4px;">Severity mapping</div>
+          <div style="font-size:12.5px;color:var(--dim);margin-bottom:18px;">Điều kiện → mức độ. Áp dụng theo thứ tự từ trên xuống.</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ sevRules }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--hole);">
+                <span style="font-family:'JetBrains Mono';font-size:12.5px;color:var(--text);flex:1;">{{ r.cond }}</span>
+                <select value="{{ r.sev }}" onChange="{{ r.onChange }}" style="{{ r.selStyle }}">
+                  <option value="CRITICAL">CRITICAL</option><option value="HIGH">HIGH</option><option value="MEDIUM">MEDIUM</option><option value="LOW">LOW</option><option value="INFO">INFO</option>
+                </select>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Scoring -->
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:4px;">Scoring</div>
+          <div style="font-size:12.5px;color:var(--dim);margin-bottom:18px;">Điểm rủi ro cộng dồn theo tín hiệu; ngưỡng điểm quyết định mức độ cuối cùng.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:20px;">
+            <sc-for list="{{ scoreWeights }}" as="w" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+                <span style="font-size:13px;color:var(--text);flex:1;">{{ w.label }}</span>
+                <span style="font-family:'JetBrains Mono';font-size:12px;color:var(--dim);">+</span>
+                <input type="number" value="{{ w.pts }}" onInput="{{ w.onPts }}" style="width:64px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:'JetBrains Mono';font-size:12.5px;font-weight:600;color:var(--accentText);outline:none;text-align:center;">
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;padding-top:16px;border-top:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--muted);">Thresholds →</span>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono';font-size:11.5px;color:#e5484d;font-weight:600;">CRITICAL ≥</span><input type="number" value="{{ scoreCrit }}" onInput="{{ setCrit }}" style="width:60px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:'JetBrains Mono';font-size:12px;color:var(--text);outline:none;text-align:center;"></div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono';font-size:11.5px;color:#ec7b1a;font-weight:600;">HIGH ≥</span><input type="number" value="{{ scoreHigh }}" onInput="{{ setHigh }}" style="width:60px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:'JetBrains Mono';font-size:12px;color:var(--text);outline:none;text-align:center;"></div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'JetBrains Mono';font-size:11.5px;color:#e8c020;font-weight:600;">MEDIUM ≥</span><input type="number" value="{{ scoreMed }}" onInput="{{ setMed }}" style="width:60px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:'JetBrains Mono';font-size:12px;color:var(--text);outline:none;text-align:center;"></div>
+          </div>
+        </div>
+
+        <!-- Monitoring + Network -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+            <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:20px;">Monitoring</div>
+            <div style="margin-bottom:20px;"><div style="display:flex;justify-content:space-between;font-size:13.5px;color:var(--text);font-weight:600;"><span>Capture window</span><span style="font-family:'JetBrains Mono';color:var(--accentText);">{{ captureWindow }} min</span></div><input type="range" min="1" max="8" value="{{ captureWindow }}" onInput="{{ setCapture }}" style="width:100%;margin-top:10px;accent-color:var(--accent2);"></div>
+            <div style="margin-bottom:20px;"><div style="display:flex;justify-content:space-between;font-size:13.5px;color:var(--text);font-weight:600;"><span>Post-finding network watch</span><span style="font-family:'JetBrains Mono';color:var(--accentText);">{{ netWatch }} min</span></div><input type="range" min="1" max="15" value="{{ netWatch }}" onInput="{{ setNetWatch }}" style="width:100%;margin-top:10px;accent-color:var(--accent2);"></div>
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--border);"><div style="flex:1;"><div style="font-size:13.5px;color:var(--text);font-weight:600;">Auto-attach new processes</div><div style="font-size:12px;color:var(--dim);margin-top:2px;">Có thể bỏ sót injection quá sớm.</div></div><div onClick="{{ toggleAuto }}" style="{{ autoTrack }}"><div style="{{ autoKnob }}"></div></div></div>
+            <div style="border-top:1px solid var(--border);padding-top:14px;"><div style="font-size:13.5px;color:var(--text);font-weight:600;margin-bottom:10px;">Watched folders</div>
+              <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px;">
+                <sc-for list="{{ folders }}" as="fo" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);background:var(--hole);border:1px solid var(--border);border-radius:8px;padding:7px 10px;">{{ fo.path }}<span onClick="{{ fo.onRemove }}" style="margin-left:auto;cursor:pointer;color:var(--dim);font-size:14px;">×</span></div></sc-for>
+              </div>
+              <div style="display:flex;gap:6px;"><input value="{{ newFolder }}" onInput="{{ setNewFolder }}" placeholder="C:\Lab" style="flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);outline:none;"><div onClick="{{ addFolder }}" style="background:var(--brand);color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;">+</div></div>
+            </div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+            <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:20px;">Network / beacon</div>
+            <div style="display:flex;align-items:center;gap:16px;padding-bottom:16px;border-bottom:1px solid var(--border);"><div style="flex:1;"><div style="font-size:13.5px;color:var(--text);font-weight:600;">Flag non-private destinations</div><div style="font-size:12px;color:var(--dim);margin-top:2px;">Đánh dấu [BEACON?] khi ra ngoài dải nội bộ.</div></div><div onClick="{{ toggleBeacon }}" style="{{ beaconTrack }}"><div style="{{ beaconKnob }}"></div></div></div>
+            <div style="padding-top:16px;"><div style="font-size:13.5px;color:var(--text);font-weight:600;margin-bottom:10px;">Private / allowlist ranges (CIDR)</div>
+              <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px;">
+                <sc-for list="{{ allowlist }}" as="cd" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);background:var(--hole);border:1px solid var(--border);border-radius:8px;padding:7px 10px;">{{ cd.cidr }}<span onClick="{{ cd.onRemove }}" style="margin-left:auto;cursor:pointer;color:var(--dim);font-size:14px;">×</span></div></sc-for>
+              </div>
+              <div style="display:flex;gap:6px;"><input value="{{ newCidr }}" onInput="{{ setNewCidr }}" placeholder="172.16.0.0/12" style="flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--text);outline:none;"><div onClick="{{ addCidr }}" style="background:var(--brand);color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;">+</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="display:flex;align-items:center;gap:14px;position:sticky;bottom:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 22px;box-shadow:var(--cardShadow);">
+          <sc-if value="{{ savedShow }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#46c26a;animation:nlUp .3s;"><span style="width:8px;height:8px;border-radius:50%;background:#46c26a;"></span>Ruleset saved · reloaded into engine</span></sc-if>
+          <div style="margin-left:auto;display:flex;gap:12px;">
+            <div onClick="{{ resetRules }}" style="border:1px solid var(--border);color:var(--muted);border-radius:11px;padding:10px 18px;font-size:13.5px;font-weight:600;cursor:pointer;">Reset defaults</div>
+            <div onClick="{{ saveRules }}" style="background:var(--brand);color:#fff;border-radius:11px;padding:10px 22px;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:var(--brandShadow);">Save ruleset</div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========== ACCOUNT ========== -->
+      <sc-if value="{{ isAccount }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:26px 28px;max-width:720px;display:flex;flex-direction:column;gap:20px;">
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:20px;">Profile</div>
+          <div style="display:flex;gap:18px;align-items:center;margin-bottom:22px;">
+            <div style="width:60px;height:60px;border-radius:16px;background:var(--brand);box-shadow:var(--brandShadow);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Space Grotesk';font-weight:700;font-size:26px;flex:none;">{{ userInitial }}</div>
+            <div style="font-size:12.5px;color:var(--dim);">Ảnh đại diện dùng chữ cái đầu tên.<br>Vai trò do quản trị viên cấp ở mục Access.</div>
+            <span style="margin-left:auto;font-family:'JetBrains Mono';font-size:11px;color:var(--accentText);background:var(--navActive);border:1px solid var(--navBorder);padding:5px 12px;border-radius:8px;">{{ profRole }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div><label style="font-size:12px;color:var(--muted);">Display name</label><input value="{{ profName }}" onInput="{{ setProfName }}" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;"></div>
+            <div><label style="font-size:12px;color:var(--muted);">Email</label><input value="{{ profEmail }}" onInput="{{ setProfEmail }}" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;"></div>
+          </div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:20px;">Change password</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <div><label style="font-size:12px;color:var(--muted);">Current</label><input type="password" placeholder="••••••" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;"></div>
+            <div><label style="font-size:12px;color:var(--muted);">New</label><input type="password" placeholder="••••••" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;"></div>
+            <div><label style="font-size:12px;color:var(--muted);">Confirm</label><input type="password" placeholder="••••••" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--text);outline:none;"></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 22px;box-shadow:var(--cardShadow);">
+          <sc-if value="{{ profileSaved }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#46c26a;animation:nlUp .3s;"><span style="width:8px;height:8px;border-radius:50%;background:#46c26a;"></span>Profile saved</span></sc-if>
+          <div onClick="{{ saveProfile }}" style="margin-left:auto;background:var(--brand);color:#fff;border-radius:11px;padding:10px 22px;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:var(--brandShadow);">Save changes</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========== ACCESS ========== -->
+      <sc-if value="{{ isAccess }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:26px 28px;max-width:940px;display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--accentText);background:var(--navActive);border:1px solid var(--navBorder);padding:4px 11px;border-radius:8px;">ADMIN ONLY</div>
+          <div style="font-size:13px;color:var(--muted);">Quản lý tài khoản và phân quyền truy cập.</div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:18px;">Team members</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ team }}" as="u" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--hole);">
+                <span style="width:34px;height:34px;border-radius:10px;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex:none;">{{ u.initial }}</span>
+                <div style="min-width:0;"><div style="font-size:13.5px;color:var(--text);font-weight:600;">{{ u.name }}</div><div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">{{ u.email }}</div></div>
+                <select value="{{ u.role }}" onChange="{{ u.onRole }}" style="{{ u.roleStyle }}"><option>Admin</option><option>Analyst</option><option>Viewer</option></select>
+                <span onClick="{{ u.onRemove }}" style="cursor:pointer;color:var(--dim);font-size:16px;">×</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+            <input value="{{ newMemberName }}" onInput="{{ setNewMemberName }}" placeholder="Full name" style="flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;">
+            <input value="{{ newMemberEmail }}" onInput="{{ setNewMemberEmail }}" placeholder="email@lab" style="flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);outline:none;">
+            <select value="{{ newMemberRole }}" onChange="{{ setNewMemberRole }}" style="background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;outline:none;cursor:pointer;"><option>Admin</option><option>Analyst</option><option>Viewer</option></select>
+            <div onClick="{{ addMember }}" style="background:var(--brand);color:#fff;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;">Add</div>
+          </div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:4px;">Role permissions</div>
+          <div style="font-size:12.5px;color:var(--dim);margin-bottom:14px;">Bấm ô để cấp / thu quyền cho từng vai trò.</div>
+          <div style="display:flex;padding:10px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);font-family:'JetBrains Mono';letter-spacing:.06em;"><span style="flex:1.6;"></span><span style="flex:1;text-align:center;">ADMIN</span><span style="flex:1;text-align:center;">ANALYST</span><span style="flex:1;text-align:center;">VIEWER</span></div>
+          <sc-for list="{{ permMatrix }}" as="r" hint-placeholder-count="7">
+            <div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);">
+              <span style="flex:1.6;">{{ r.label }}</span>
+              <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3"><span style="flex:1;display:flex;justify-content:center;"><span onClick="{{ c.onToggle }}" style="{{ c.tokStyle }}">{{ c.mark }}</span></span></sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ========== AGENTS ========== -->
+      <sc-if value="{{ isAgents }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:26px 28px;max-width:1000px;display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-family:'JetBrains Mono';font-size:11px;color:var(--accentText);background:var(--navActive);border:1px solid var(--navBorder);padding:4px 11px;border-radius:8px;">ADMIN ONLY</div>
+          <div style="font-size:13px;color:var(--muted);">Web console cấu hình tại đây; agent chạy trên VM/sandbox và kết nối ngược về.</div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);margin-bottom:4px;">This console</div>
+          <div style="font-size:12.5px;color:var(--dim);margin-bottom:18px;">Địa chỉ agent kết nối về. Token dùng để xác thực agent khi enroll.</div>
+          <div style="display:grid;grid-template-columns:1fr 140px;gap:16px;margin-bottom:16px;">
+            <div><label style="font-size:12px;color:var(--muted);">Host / IP</label><input value="{{ serverHost }}" onInput="{{ setHost }}" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono';font-size:13px;color:var(--text);outline:none;"></div>
+            <div><label style="font-size:12px;color:var(--muted);">Port</label><input value="{{ serverPort }}" onInput="{{ setPort }}" style="width:100%;margin-top:6px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono';font-size:13px;color:var(--text);outline:none;"></div>
+          </div>
+          <label style="font-size:12px;color:var(--muted);">Enrollment token</label>
+          <div style="display:flex;gap:10px;margin-top:6px;"><div style="flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono';font-size:13px;color:var(--accentText);">{{ serverToken }}</div><div onClick="{{ regenToken }}" style="border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;">Regenerate</div></div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--cardShadow);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;"><div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);">Deploy an agent</div><sc-if value="{{ copied }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:#46c26a;animation:nlUp .3s;">Copied to clipboard</span></sc-if></div>
+          <div style="font-size:12.5px;color:var(--dim);margin-bottom:18px;">Chạy trên VM (Admin PowerShell). Agent dùng Sysmon + Frida, kết nối về endpoint ở trên.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Run mode — watch folders + auto-attach</div>
+          <div style="position:relative;background:var(--hole);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-family:'JetBrains Mono';font-size:12.5px;color:var(--text);white-space:pre-wrap;word-break:break-all;line-height:1.7;margin-bottom:16px;">{{ runCmd }}<span onClick="{{ copyRun }}" style="position:absolute;top:10px;right:10px;cursor:pointer;font-size:11px;color:var(--accentText);background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:4px 10px;">Copy</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Spawn mode — chạy một loader dưới Frida từ lúc start</div>
+          <div style="background:var(--hole);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-family:'JetBrains Mono';font-size:12.5px;color:var(--text);white-space:pre-wrap;word-break:break-all;line-height:1.7;margin-bottom:18px;">{{ spawnCmd }}</div>
+          <div style="display:flex;align-items:center;gap:14px;"><div onClick="{{ exportConfig }}" style="background:var(--brand);color:#fff;border-radius:11px;padding:10px 20px;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:var(--brandShadow);">Export config (.toml)</div><span style="font-size:12px;color:var(--dim);">Sinh từ ruleset hiện tại — đặt cạnh agent trên VM.</span></div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--cardShadow);">
+          <div style="display:flex;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border);"><span style="font-family:'Space Grotesk';font-weight:600;font-size:16px;color:var(--text);">Connected agents</span><span style="margin-left:auto;font-family:'JetBrains Mono';font-size:12px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:4px 10px;border-radius:8px;">{{ agentCount }}</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--border);background:var(--hole);"><span style="font-size:12.5px;color:var(--muted);">Auto-kill khi severity ≥</span><select value="{{ autoKillSev }}" onChange="{{ setAutoKillSev }}" style="background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'JetBrains Mono';font-size:12px;font-weight:600;outline:none;cursor:pointer;"><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option></select><span style="font-size:12px;color:var(--dim);">Agent bật auto-kill sẽ tự terminate process khi finding đạt ngưỡng.</span></div>
+          <div style="display:grid;grid-template-columns:1.3fr 1.2fr 0.9fr 1.2fr 72px 78px 92px;gap:12px;padding:12px 22px;border-bottom:1px solid var(--border);font-size:10.5px;letter-spacing:.06em;color:var(--dim);font-family:'JetBrains Mono';"><div>AGENT</div><div>OS</div><div>MODE</div><div>WATCHING</div><div>LAST</div><div>STATUS</div><div>AUTO-KILL</div></div>
+          <sc-for list="{{ agents }}" as="a" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.3fr 1.2fr 0.9fr 1.2fr 72px 78px 92px;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border);align-items:center;font-size:12.5px;">
+              <div><div style="font-family:'JetBrains Mono';color:var(--text);font-weight:600;">{{ a.name }}</div><div style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);margin-top:2px;">{{ a.ip }}</div></div>
+              <div style="color:var(--muted);">{{ a.os }}</div>
+              <div style="font-family:'JetBrains Mono';font-size:11.5px;color:var(--accentText);">{{ a.mode }}</div>
+              <div style="font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted);">{{ a.watched }}</div>
+              <div style="font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim);">{{ a.last }}</div>
+              <div style="{{ a.statusStyle }}"><span style="{{ a.dotStyle }}"></span>{{ a.statusText }}</div>
+              <div style="display:flex;justify-content:center;"><div onClick="{{ a.onToggleAutoKill }}" style="{{ a.autoKillTrack }}"><div style="{{ a.autoKillKnob }}"></div></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </main>
+
+  <sc-if value="{{ killToastShow }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:40;background:#e5484d;color:#fff;border-radius:12px;padding:12px 20px;font-size:13.5px;font-weight:600;box-shadow:0 16px 40px -12px rgba(229,72,77,.6);animation:nlUp .25s;">{{ killToast }}</div>
+  </sc-if>
+
+  <!-- ============ FINDING MODAL ============ -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeModal }}" style="position:absolute;inset:0;background:rgba(4,3,14,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:40px;z-index:20;animation:nlUp .2s;">
+    <div style="width:640px;max-height:100%;overflow:auto;background:var(--solid);border:1px solid var(--border);border-radius:20px;padding:28px;box-shadow:0 40px 90px -30px rgba(0,0,0,.7);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+        <span style="{{ modalSevStyle }}">{{ modalSev }}</span>
+        <span style="font-family:'Space Grotesk';font-weight:700;font-size:18px;color:var(--text);">{{ modalTitle }}</span>
+        <span onClick="{{ closeModal }}" style="margin-left:auto;cursor:pointer;color:var(--dim);font-size:22px;line-height:1;">×</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;font-family:'JetBrains Mono';font-size:13px;background:var(--hole);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+        <span style="color:var(--muted);">{{ modalSrc }}</span><span style="color:#ec7b1a;">──▶</span><span style="color:#ec7b1a;font-weight:600;">{{ modalDst }}</span><span style="margin-left:auto;color:var(--dim);">{{ modalTime }}</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+        <sc-for list="{{ modalTags }}" as="t" hint-placeholder-count="2"><span style="font-family:'JetBrains Mono';font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:4px 10px;border-radius:8px;">{{ t.v }}</span></sc-for>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">API CHAIN</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-family:'JetBrains Mono';font-size:12.5px;">
+        <sc-for list="{{ modalChain }}" as="s" hint-placeholder-count="4"><div style="display:flex;gap:12px;"><span style="width:52px;{{ s.opColor }}">{{ s.op }}</span><span style="color:var(--text);">{{ s.api }}</span><span style="color:var(--dim);">{{ s.detail }}</span></div></sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);">
+        <sc-if value="{{ canReport }}" hint-placeholder-val="{{ false }}"><div onClick="{{ exportOne }}" style="border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;">Export report (.md)</div></sc-if>
+        <div style="margin-left:auto;display:flex;gap:12px;">
+          <sc-if value="{{ mKilled }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;font-family:'JetBrains Mono';font-size:12px;color:#e5484d;border:1px solid #e5484d55;border-radius:10px;padding:9px 14px;">Process terminated</span></sc-if>
+          <sc-if value="{{ mKillable }}" hint-placeholder-val="{{ false }}"><div onClick="{{ killModal }}" style="background:#e5484d;color:#fff;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;">Kill process</div></sc-if>
+          <sc-if value="{{ canDelete }}" hint-placeholder-val="{{ false }}"><div onClick="{{ deleteOne }}" style="border:1px solid #e5484d55;color:#e5484d;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;">Mark false positive</div></sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;brandColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#6b46ff&quot;,&quot;options&quot;:[&quot;#6b46ff&quot;,&quot;#2f8f4e&quot;,&quot;#c9282d&quot;,&quot;#0f74d1&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.USERS=[
+      {email:'admin@lab',name:'Admin',role:'Admin',pw:'admin',initial:'A'},
+      {email:'analyst@lab',name:'Mai Analyst',role:'Analyst',pw:'analyst',initial:'M'},
+      {email:'viewer@lab',name:'Khoa Viewer',role:'Viewer',pw:'viewer',initial:'K'},
+    ];
+    this.state = { theme: props.defaultTheme || 'dark', tab:'overview', modal:null, saved:false, rules: this.defaults(), buf:{alloc:'',write:'',exec:'',folder:'',cidr:''},
+      user:null, loginEmail:'', loginPw:'', loginErr:'', profileSaved:false,
+      team:this.USERS.map(u=>({name:u.name,email:u.email,role:u.role,initial:u.initial})),
+      rolePerms:{
+        Admin:{dashboards:true,triage:true,export:true,report:true,del:true,kill:true,rules:true,access:true},
+        Analyst:{dashboards:true,triage:true,export:true,report:false,del:false,kill:true,rules:false,access:false},
+        Viewer:{dashboards:true,triage:false,export:false,report:false,del:false,kill:false,rules:false,access:false},
+      },
+      removed:[], killed:[], killToast:'',
+      server:{host:'10.0.0.4',port:'8765',token:'nlk_7f3c9a21e4b8'}, copied:false, autoKillSev:'CRITICAL',
+      agents:[
+        {name:'VM-WIN10-LAB01', os:'Windows 10 22H2', mode:'spawn', watched:'D:\\thesis', last:'2s ago', status:'online', autoKill:true, ip:'10.0.0.21'},
+        {name:'VM-WIN11-SBX', os:'Windows 11 23H2', mode:'auto-attach', watched:'Downloads, Desktop', last:'14s ago', status:'online', autoKill:false, ip:'10.0.0.22'},
+        {name:'SANDBOX-03', os:'Windows 10 21H2', mode:'attach', watched:'C:\\Lab', last:'6m ago', status:'stale', autoKill:false, ip:'10.0.0.37'},
+      ],
+      newMember:{name:'',email:'',role:'Analyst'} };
+  }
+
+  perms(role){ return this.state.rolePerms[role] || this.state.rolePerms.Viewer; }
+  quickLogin(email){ const u=this.USERS.find(x=>x.email===email); if(u) this.setState({user:{name:u.name,email:u.email,role:u.role,initial:u.initial},loginErr:'',tab:'overview'}); }
+  activeFindings(){ return this.findingsData().filter(f=>!this.state.removed.includes(f.mtime)); }
+  downloadReport(list){
+    let md='# Noirlycan detection report\n\n- Session: session-20250722-1841\n- Window: 4 min\n- Generated: '+new Date().toISOString()+'\n- Findings: '+list.length+'\n\n---\n\n';
+    list.forEach(f=>{ md+='## '+f.sev+' — '+f.title+'\n\n- Flow: '+f.src+' -> '+f.dst+'\n- Time: '+f.mtime+'\n- Primitives: '+f.prims+'\n- Tags: '+f.tags.join(', ')+'\n\n### API chain\n\n'; f.chain.forEach(s=>{ md+='- `'+s.op+'` '+s.api+' — '+s.d+'\n'; }); md+='\n---\n\n'; });
+    const blob=new Blob([md],{type:'text/markdown'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='noirlycan-report.md'; document.body.appendChild(a); a.click(); a.remove();
+  }
+  downloadConfig(){
+    const R=this.state.rules,s=this.state.server; const esc=(x)=>x.replace(/\\/g,'\\\\');
+    const md='[server]\nendpoint = "'+s.host+':'+s.port+'"\ntoken = "'+s.token+'"\n\n[capture]\nwindow_minutes = '+R.capture+'\nnetwork_watch_minutes = '+R.netWatch+'\nauto_attach = '+R.autoAttach+'\nmin_primitives = '+R.minPrimitives+'\n\n[watch]\nfolders = ['+R.folders.map(f=>'"'+esc(f)+'"').join(', ')+']\n\n[network]\nflag_non_private = '+R.beacon+'\nallowlist = ['+R.allowlist.map(c=>'"'+c+'"').join(', ')+']\n';
+    const blob=new Blob([md],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='noirlycan-agent.toml'; document.body.appendChild(a); a.click(); a.remove();
+  }
+  _pid(s){ const mm=(''+s).match(/(\d+)/); return mm?+mm[1]:0; }
+  killProc(pid,name){ if(!pid) return; this.setState(st=>({killed:[...st.killed,pid], killToast:'Kill command sent → '+name+' (PID '+pid+') on workstation'})); setTimeout(()=>this.setState({killToast:''}),2800); }
+
+  defaults(){
+    return {
+      alloc:['VirtualAllocEx','VirtualAllocExNuma','NtAllocateVirtualMemory','NtCreateSection'],
+      write:['WriteProcessMemory','NtWriteVirtualMemory','NtMapViewOfSection'],
+      exec:['CreateRemoteThread','NtCreateThreadEx','QueueUserAPC','SetThreadContext','ResumeThread'],
+      minPrimitives:2, congruence:true, temporal:true, capture:4, netWatch:5, autoAttach:false, beacon:true,
+      folders:['D:\\thesis','C:\\Users\\lab\\Downloads','C:\\Users\\lab\\Desktop'],
+      allowlist:['10.0.0.0/8','192.168.0.0/16','127.0.0.1/32'],
+      sev:[
+        {cond:'cross_process && section_mapping', s:'CRITICAL'},
+        {cond:'3 of 3 primitives observed', s:'CRITICAL'},
+        {cond:'suspended child spawn + write', s:'HIGH'},
+        {cond:'2 of 3 primitives observed', s:'HIGH'},
+        {cond:'unsigned PE dropped', s:'MEDIUM'},
+      ],
+      chains:[
+        {name:'Section-mapping loader', tech:'Process Hollowing (no-unmap)', steps:[{op:'alloc',api:'NtCreateSection'},{op:'write',api:'NtMapViewOfSection'},{op:'exec',api:'SetThreadContext'}]},
+        {name:'Classic hollowing', tech:'Process Hollowing', steps:[{op:'write',api:'NtMapViewOfSection'},{op:'exec',api:'ResumeThread'}]},
+        {name:'Shellcode remote-thread', tech:'Shellcode Injection', steps:[{op:'alloc',api:'VirtualAllocEx'},{op:'write',api:'WriteProcessMemory'},{op:'exec',api:'CreateRemoteThread'}]},
+      ],
+      score:{
+        weights:[
+          {label:'cross_process', pts:30},
+          {label:'section_mapping', pts:25},
+          {label:'primitive observed (each)', pts:15},
+          {label:'suspended child spawn', pts:20},
+          {label:'unsigned PE dropped', pts:15},
+          {label:'outbound beacon', pts:20},
+        ], crit:80, high:55, med:30,
+      },
+    };
+  }
+
+  sevColor(s){ return {CRITICAL:'#e5484d',HIGH:'#ec7b1a',MEDIUM:'#e8c020',LOW:'#46c26a',INFO:'#5b9df0'}[s] || '#5b9df0'; }
+  setR(patch){ this.setState(st => ({ rules:{...st.rules, ...patch}, saved:false })); }
+
+  themeVars(){
+    const brand2 = this.props.brandColor || '#6b46ff';
+    if(this.state.theme === 'light') return `--bg:#f6f7f9;--panel:#ffffff;--panel2:#f2f4f6;--border:#e8eaee;--text:#1c2230;--muted:#8a93a2;--dim:#a8afba;--solid:#ffffff;--track:#eef0f3;--hole:#f6f7f9;--accent:${brand2};--accent2:${brand2};--accentText:#4a2fd6;--navActive:#f0edff;--navBorder:#d9d0ff;--brand:linear-gradient(140deg,#a78bff,${brand2});--brandShadow:0 6px 16px -6px rgba(107,70,255,.45);--cardShadow:0 1px 3px rgba(20,25,34,.05);--critBg:#fef4f4;--critBorder:#f6cccd;--knobOn:#fff;`;
+    return `--bg:radial-gradient(900px 500px at 78% -8%,#241a4a 0%,#0e0b1e 55%),linear-gradient(180deg,#0e0b1e,#0b0917);--panel:rgba(255,255,255,.045);--panel2:rgba(255,255,255,.06);--border:rgba(255,255,255,.09);--text:#d7d3ec;--muted:#948dbb;--dim:#6b6390;--solid:#12102a;--track:rgba(0,0,0,.3);--hole:rgba(0,0,0,.28);--accent:#a78bff;--accent2:${brand2};--accentText:#c4b6ff;--navActive:linear-gradient(120deg,rgba(139,124,255,.22),rgba(139,124,255,.06));--navBorder:rgba(167,139,255,.35);--brand:linear-gradient(140deg,#a78bff,${brand2});--brandShadow:0 8px 22px -6px rgba(139,124,255,.6);--cardShadow:none;--critBg:linear-gradient(160deg,rgba(229,72,77,.18),rgba(255,255,255,.03));--critBorder:rgba(229,72,77,.4);--knobOn:#fff;`;
+  }
+
+  toggleStyle(on){
+    const track = `width:42px;height:24px;border-radius:20px;padding:3px;cursor:pointer;transition:background .2s;display:flex;background:${on?'var(--accent2)':'var(--panel2)'};border:1px solid ${on?'transparent':'var(--border)'};`;
+    const knob = `width:18px;height:18px;border-radius:50%;background:${on?'#fff':'var(--dim)'};transition:transform .2s;transform:translateX(${on?'18px':'0'});`;
+    return {track, knob};
+  }
+  segStyle(active){ return `padding:7px 16px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;color:${active?'#fff':'var(--muted)'};background:${active?'var(--accent2)':'transparent'};`; }
+
+  navItem(key,label,badge,badgeColor){
+    const active = this.state.tab === key;
+    const style = `display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;font-size:14px;cursor:pointer;font-weight:${active?'600':'500'};color:${active?'var(--accentText)':'var(--muted)'};background:${active?'var(--navActive)':'transparent'};border:1px solid ${active?'var(--navBorder)':'transparent'};`;
+    const dotStyle = `width:8px;height:8px;border-radius:50%;background:${active?'var(--accent)':'var(--dim)'};${active?'box-shadow:0 0 10px var(--accent);':''}`;
+    return { label, style, dotStyle, badge, badgeShow: !!badge, badgeStyle:`margin-left:auto;font-family:'JetBrains Mono';font-size:11px;background:${badgeColor}22;color:${badgeColor};padding:1px 8px;border-radius:7px;`, onClick:()=>this.setState({tab:key}) };
+  }
+
+  findingsData(){
+    return [
+      {sev:'CRITICAL', title:'Probable process injection chain', flow:'loader.exe → msedge.exe', prims:'3 / 3', time:'18:41:07',
+        src:'loader.exe · 4821', dst:'msedge.exe · 6120', mtime:'18:41:07.312',
+        tags:['section_mapping=true','cross_process=true','3 / 3 primitives'],
+        chain:[{op:'alloc',c:'#46c26a',api:'NtCreateSection',d:'PAGE_EXECUTE_READWRITE'},{op:'write',c:'#e8c020',api:'NtMapViewOfSection',d:'local view'},{op:'write',c:'#e8c020',api:'NtMapViewOfSection',d:'remote → msedge.exe'},{op:'exec',c:'#ec7b1a',api:'SetThreadContext',d:'entry = 0x2000'},{op:'exec',c:'#e5484d',api:'ResumeThread',d:'payload runs'}]},
+      {sev:'HIGH', title:'Suspended process spawn', flow:'loader.exe → msedge.exe', prims:'2 / 3', time:'18:41:05',
+        src:'loader.exe · 4821', dst:'msedge.exe · 6120', mtime:'18:41:05.­018',
+        tags:['CREATE_SUSPENDED','cross_process=true'],
+        chain:[{op:'proc',c:'#5b9df0',api:'CreateProcessW',d:'CREATE_SUSPENDED'},{op:'exec',c:'#ec7b1a',api:'ResumeThread',d:'deferred'}]},
+      {sev:'MEDIUM', title:'RWX memory in remote process', flow:'loader.exe → msedge.exe', prims:'1 / 3', time:'18:41:04',
+        src:'loader.exe · 4821', dst:'msedge.exe · 6120', mtime:'18:41:04.­771',
+        tags:['PAGE_EXECUTE_READWRITE'],
+        chain:[{op:'alloc',c:'#46c26a',api:'NtCreateSection',d:'RWX'}]},
+      {sev:'MEDIUM', title:'Unsigned PE dropped to disk', flow:'loader.exe → D:\\drop_*.exe', prims:'—', time:'18:40:58',
+        src:'loader.exe · 4821', dst:'aes_decrypt_loader.exe', mtime:'18:40:58.­203',
+        tags:['unsigned','entropy=7.8'],
+        chain:[{op:'file',c:'#5b9df0',api:'FileCreate',d:'Sysmon EID 11'}]},
+      {sev:'LOW', title:'ntdll.dll image load', flow:'msedge.exe', prims:'—', time:'18:40:55',
+        src:'msedge.exe · 6120', dst:'ntdll.dll', mtime:'18:40:55.­900',
+        tags:['baseline'],
+        chain:[{op:'load',c:'#5b9df0',api:'Image load',d:'Sysmon EID 7'}]},
+    ];
+  }
+
+  groupsData(){
+    const f = this.findingsData();
+    const rank={CRITICAL:5,HIGH:4,MEDIUM:3,LOW:2,INFO:1};
+    const defs=[
+      {src:'loader.exe · 4821', victim:'msedge.exe', vpid:'6120', summary:'Injection chain into a suspended browser process', tags:['section_mapping','cross_process'], idx:[1,2,0,4]},
+      {src:'loader.exe · 4821', victim:'disk drop', vpid:'', summary:'Payload staged on disk before injection', tags:['file drop','unsigned'], idx:[3]},
+    ];
+    return defs.map(d=>{ const members=d.idx.map(i=>f[i]).filter(x=>!this.state.removed.includes(x.mtime)); if(!members.length) return null; const top=members.slice().sort((a,b)=>rank[b.sev]-rank[a.sev])[0].sev; return {...d, members, topSev:top, count:members.length}; }).filter(Boolean);
+  }
+
+  renderVals(){
+    const R = this.state.rules, T = this.toggleStyle.bind(this);
+    const cong=T(R.congruence), temp=T(R.temporal), auto=T(R.autoAttach), beac=T(R.beacon);
+    const titles={overview:['Overview','session-20250722-1841 · 4-min window'],findings:['Findings','12 findings · newest first'],activity:['Activity','event stream + file drops'],network:['Network','beacons & outbound connections'],rules:['Detection rules','admin configuration · applied live'],account:['Account','your profile & password'],access:['Access control','users & role permissions'],agents:['Agents','deploy & connect collectors']};
+    const tt = titles[this.state.tab] || titles.overview;
+    const m = this.state.modal;
+    const role = this.state.user ? this.state.user.role : 'Viewer';
+    const P = this.perms(role);
+    const findings = this.findingsData();
+
+    const mkChip = (group, arr) => arr.map((name,i)=>({ name, onRemove:()=>this.setR({[group]: R[group].filter((_,j)=>j!==i)}) }));
+    const addApi = (group, bufKey) => { const v=(this.state.buf[bufKey]||'').trim(); if(!v) return; this.setState(st=>({rules:{...st.rules,[group]:[...st.rules[group],v]},buf:{...st.buf,[bufKey]:''},saved:false})); };
+    const setBuf = (k)=>(e)=>{ const val=e.target.value; this.setState(st=>({buf:{...st.buf,[k]:val}})); };
+
+    return {
+      rootStyle: `${this.themeVars()} font-family:'Manrope',sans-serif;position:relative;display:flex;flex-direction:column;min-height:840px;min-width:1180px;background:var(--bg);color:var(--text);`,
+      themeIcon: this.state.theme==='light' ? '☀' : '☾',
+      toggleTheme: ()=>this.setState(st=>({theme: st.theme==='light'?'dark':'light'})),
+      tabTitle: tt[0], tabSub: tt[1],
+      isOverview:this.state.tab==='overview', isFindings:this.state.tab==='findings', isActivity:this.state.tab==='activity', isNetwork:this.state.tab==='network', isRules:this.state.tab==='rules',
+      navItems:(()=>{ const n=[this.navItem('overview','Overview'),this.navItem('findings','Findings','12','#e5484d'),this.navItem('activity','Activity'),this.navItem('network','Network','1','#ec7b1a')]; if(P.rules)n.push(this.navItem('rules','Rules')); if(P.access)n.push(this.navItem('agents','Agents')); n.push(this.navItem('account','Account')); if(P.access)n.push(this.navItem('access','Access')); return n; })(),
+      canExport:P.export,
+      canReport:P.report, canDelete:P.del,
+      goFindings:()=>this.setState({tab:'findings'}), goActivity:()=>this.setState({tab:'activity'}), goNetwork:()=>this.setState({tab:'network'}),
+      exportAll:()=>this.downloadReport(this.activeFindings()),
+      exportOne:()=>{ if(m) this.downloadReport([m]); },
+      deleteOne:()=>{ if(m){ const k=m.mtime; this.setState(st=>({removed:[...st.removed,k], modal:null})); } },
+      canKill:P.kill, killToast:this.state.killToast, killToastShow:!!this.state.killToast,
+      ovKilled:this.state.killed.includes(6120), ovKillable:P.kill && !this.state.killed.includes(6120), killOverview:()=>this.killProc(6120,'msedge.exe'),
+      mKilled: m ? this.state.killed.includes(this._pid(m.dst)) : false,
+      mKillable: m ? (P.kill && !this.state.killed.includes(this._pid(m.dst)) && this._pid(m.dst)>0) : false,
+      killModal:()=>{ if(m){ this.killProc(this._pid(m.dst), (m.dst.split('·')[0]||m.dst).trim()); } },
+      permMatrix:(()=>{ const caps=[['dashboards','View dashboards'],['triage','Triage & close findings'],['export','Export JSONL'],['report','Export report (.md)'],['del','Delete findings (false positive)'],['kill','Kill process on workstation'],['rules','Edit detection rules'],['access','Manage users']]; const roles=['Admin','Analyst','Viewer']; return caps.map(([cap,label])=>({ label, cells:roles.map(r=>{ const on=this.state.rolePerms[r][cap]; return { on, mark:on?'✓':'—', tokStyle:`cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:30px;height:26px;border-radius:8px;font-weight:700;font-size:13px;${on?'color:#46c26a;background:rgba(70,194,106,.14);':'color:var(--dim);background:var(--panel2);'}`, onToggle:()=>this.setState(st=>({rolePerms:{...st.rolePerms,[r]:{...st.rolePerms[r],[cap]:!st.rolePerms[r][cap]}}})) }; }) })); })(),
+      loggedIn:!!this.state.user, loggedOut:!this.state.user,
+      loginEmail:this.state.loginEmail, loginPw:this.state.loginPw, loginErr:this.state.loginErr, loginErrShow:!!this.state.loginErr,
+      setLoginEmail:(e)=>{const v=e.target.value; this.setState({loginEmail:v});},
+      setLoginPw:(e)=>{const v=e.target.value; this.setState({loginPw:v});},
+      doLogin:()=>{ const em=(this.state.loginEmail||'').trim().toLowerCase(); const u=this.USERS.find(x=>x.email===em&&x.pw===this.state.loginPw); if(!u){this.setState({loginErr:'Sai email hoặc mật khẩu.'});return;} this.setState({user:{name:u.name,email:u.email,role:u.role,initial:u.initial},loginErr:'',loginPw:'',tab:'overview'}); },
+      quickAdmin:()=>this.quickLogin('admin@lab'), quickAnalyst:()=>this.quickLogin('analyst@lab'), quickViewer:()=>this.quickLogin('viewer@lab'),
+      logout:()=>this.setState({user:null,loginEmail:'',loginPw:'',loginErr:''}),
+      userInitial:this.state.user?this.state.user.initial:'', userName:this.state.user?this.state.user.name:'', userEmail:this.state.user?this.state.user.email:'', userRole:role,
+      isAccount:this.state.tab==='account', isAccess:this.state.tab==='access', isAgents:this.state.tab==='agents',
+      serverHost:this.state.server.host, serverPort:this.state.server.port, serverToken:this.state.server.token,
+      setHost:(e)=>{const v=e.target.value; this.setState(st=>({server:{...st.server,host:v}}));},
+      setPort:(e)=>{const v=e.target.value; this.setState(st=>({server:{...st.server,port:v}}));},
+      regenToken:()=>{ let t='nlk_'; for(let k=0;k<12;k++) t+='0123456789abcdef'[Math.floor(Math.random()*16)]; this.setState(st=>({server:{...st.server,token:t}})); },
+      runCmd:'noirlycan-telemetry run --server '+this.state.server.host+':'+this.state.server.port+' --token '+this.state.server.token+' --watch-sysmon --auto-attach-new-processes',
+      spawnCmd:'noirlycan-telemetry spawn --server '+this.state.server.host+':'+this.state.server.port+' --token '+this.state.server.token+' --watch-sysmon -- C:\\Lab\\loader.exe',
+      copied:this.state.copied,
+      copyRun:()=>{ const c='noirlycan-telemetry run --server '+this.state.server.host+':'+this.state.server.port+' --token '+this.state.server.token+' --watch-sysmon --auto-attach-new-processes'; try{navigator.clipboard&&navigator.clipboard.writeText(c);}catch(e){} this.setState({copied:true}); setTimeout(()=>this.setState({copied:false}),1500); },
+      exportConfig:()=>this.downloadConfig(),
+      agentCount:this.state.agents.length+' connected',
+      agents:this.state.agents.map((a,i)=>{ const tk=this.toggleStyle(a.autoKill); return { name:a.name, os:a.os, mode:a.mode, watched:a.watched, last:a.last, ip:a.ip,
+        statusText:a.status==='online'?'online':'stale', statusStyle:`display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono';font-size:11px;color:${a.status==='online'?'#46c26a':'#ec7b1a'};`,
+        dotStyle:`width:7px;height:7px;border-radius:50%;background:${a.status==='online'?'#46c26a':'#ec7b1a'};${a.status==='online'?'box-shadow:0 0 7px #46c26a;':''}`,
+        autoKillTrack:tk.track, autoKillKnob:tk.knob, onToggleAutoKill:()=>this.setState(st=>({agents:st.agents.map((x,j)=>j===i?{...x,autoKill:!x.autoKill}:x)})) }; }),
+      autoKillSev:this.state.autoKillSev, setAutoKillSev:(e)=>{const v=e.target.value; this.setState({autoKillSev:v});},
+      profName:this.state.user?this.state.user.name:'', profEmail:this.state.user?this.state.user.email:'', profRole:role,
+      setProfName:(e)=>{const v=e.target.value; this.setState(st=>({user:{...st.user,name:v},profileSaved:false}));},
+      setProfEmail:(e)=>{const v=e.target.value; this.setState(st=>({user:{...st.user,email:v},profileSaved:false}));},
+      saveProfile:()=>this.setState({profileSaved:true}), profileSaved:this.state.profileSaved,
+      team:this.state.team.map((u,i)=>({ name:u.name, email:u.email, role:u.role, initial:u.initial, isSelf:this.state.user&&u.email===this.state.user.email,
+        roleStyle:`background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'Manrope';font-size:12.5px;font-weight:600;outline:none;cursor:pointer;margin-left:auto;`,
+        onRole:(e)=>{const v=e.target.value; this.setState(st=>({team:st.team.map((x,j)=>j===i?{...x,role:v}:x)}));},
+        onRemove:()=>this.setState(st=>({team:st.team.filter((_,j)=>j!==i)})) })),
+      newMemberName:this.state.newMember.name, newMemberEmail:this.state.newMember.email, newMemberRole:this.state.newMember.role,
+      setNewMemberName:(e)=>{const v=e.target.value; this.setState(st=>({newMember:{...st.newMember,name:v}}));},
+      setNewMemberEmail:(e)=>{const v=e.target.value; this.setState(st=>({newMember:{...st.newMember,email:v}}));},
+      setNewMemberRole:(e)=>{const v=e.target.value; this.setState(st=>({newMember:{...st.newMember,role:v}}));},
+      addMember:()=>{ const nm=this.state.newMember; const name=(nm.name||'').trim(), email=(nm.email||'').trim(); if(!name||!email)return; this.setState(st=>({team:[...st.team,{name,email,role:nm.role,initial:name[0].toUpperCase()}],newMember:{name:'',email:'',role:'Analyst'}})); },
+
+      minPrimitives:R.minPrimitives,
+
+      // Findings list
+      findings: findings.map(f=>({ sev:f.sev, title:f.title, flow:f.flow, prims:f.prims, time:f.time,
+        sevStyle:`font-family:'JetBrains Mono';font-size:10.5px;font-weight:600;color:#fff;background:${this.sevColor(f.sev)};padding:3px 9px;border-radius:6px;`,
+        onOpen:()=>this.setState({modal:f}) })),
+
+      groups: this.groupsData().map(g=>({
+        src:g.src, victim:g.victim, vpid:g.vpid, summary:g.summary, count:g.count+' detections', topSev:g.topSev,
+        gKilled:this.state.killed.includes(+(g.vpid||0)), gKillable:P.kill && !!g.vpid && !this.state.killed.includes(+(g.vpid||0)), onKill:()=>this.killProc(+(g.vpid||0), g.victim),
+        topSevStyle:`font-family:'JetBrains Mono';font-size:11px;font-weight:600;color:#fff;background:${this.sevColor(g.topSev)};padding:4px 11px;border-radius:8px;flex:none;`,
+        tags:g.tags.map(v=>({v, style:`font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:4px 9px;border-radius:7px;`})),
+        members:g.members.map((f,i)=>({ sev:f.sev, title:f.title, prims:f.prims, time:f.time, step:'#'+(i+1),
+          sevStyle:`font-family:'JetBrains Mono';font-size:10px;font-weight:600;color:#fff;background:${this.sevColor(f.sev)};padding:3px 8px;border-radius:6px;`, canDelete:P.del,
+          onDelete:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState(st=>({removed:[...st.removed,f.mtime]})); },
+          onOpen:()=>this.setState({modal:f}) })),
+      })),
+
+      // Activity
+      events:[
+        {t:'41:07',kind:'EXEC',c:'#e5484d',msg:'ResumeThread → msedge.exe 6120',hi:true},
+        {t:'41:07',kind:'EXEC',c:'#ec7b1a',msg:'SetThreadContext eax=0x2000'},
+        {t:'41:06',kind:'WRITE',c:'#e8c020',msg:'NtMapViewOfSection remote'},
+        {t:'41:06',kind:'WRITE',c:'#e8c020',msg:'NtMapViewOfSection local'},
+        {t:'41:05',kind:'ALLOC',c:'#46c26a',msg:'NtCreateSection RWX'},
+        {t:'41:05',kind:'PROC',c:'#5b9df0',msg:'CreateProcessW msedge.exe SUSPENDED'},
+        {t:'40:58',kind:'FILE',c:'#5b9df0',msg:'FileCreate D:\\drop_9931.exe'},
+      ].map(e=>({t:e.t,kind:e.kind,msg:e.msg, rowStyle:`display:flex;gap:12px;padding:8px 12px;border-radius:9px;${e.hi?'background:rgba(229,72,77,.12);':''}`, kindStyle:`color:${e.c};width:48px;`})),
+      drops:[
+        {badge:'UNSIGNED',bc:'#e5484d',name:'aes_decrypt_loader.exe',meta:'sha256 8f3c… · entropy 7.8 · PE · no Authenticode'},
+        {badge:'PE',bc:'#ec7b1a',name:'drop_9931.exe',meta:'sha256 1ad2… · dropped by loader.exe 4821'},
+        {badge:'SCRIPT',bc:'#e8c020',name:'stage2.ps1',meta:'sha256 77be… · Downloads'},
+      ].map(d=>({name:d.name,meta:d.meta,badge:d.badge, badgeStyle:`font-family:'JetBrains Mono';font-size:10px;font-weight:600;color:#fff;background:${d.bc};padding:2px 8px;border-radius:6px;`})),
+      // Network
+      conns:[
+        {proc:'msedge.exe 6120',dst:'185.12.44.9:443',cls:'PUBLIC',c:'#ec7b1a',n:'3'},
+        {proc:'msedge.exe 6120',dst:'10.0.0.5:445',cls:'PRIVATE',c:'#46c26a',n:'1'},
+        {proc:'svchost.exe 980',dst:'192.168.1.1:53',cls:'PRIVATE',c:'#46c26a',n:'6'},
+      ].map(c=>({proc:c.proc,dst:c.dst,cls:c.cls,n:c.n, classStyle:`color:${c.c};`})),
+
+      // ---- RULES bindings ----
+      allocApis: mkChip('alloc',R.alloc), writeApis: mkChip('write',R.write), execApis: mkChip('exec',R.exec),
+      newAlloc:this.state.buf.alloc, newWrite:this.state.buf.write, newExec:this.state.buf.exec,
+      setNewAlloc:setBuf('alloc'), setNewWrite:setBuf('write'), setNewExec:setBuf('exec'),
+      addAlloc:()=>addApi('alloc','alloc'), addWrite:()=>addApi('write','write'), addExec:()=>addApi('exec','exec'),
+
+      min2Style:this.segStyle(R.minPrimitives===2), min3Style:this.segStyle(R.minPrimitives===3),
+      setMin2:()=>this.setR({minPrimitives:2}), setMin3:()=>this.setR({minPrimitives:3}),
+      congTrack:cong.track, congKnob:cong.knob, toggleCong:()=>this.setR({congruence:!R.congruence}),
+      tempTrack:temp.track, tempKnob:temp.knob, toggleTemp:()=>this.setR({temporal:!R.temporal}),
+
+      sevRules:R.sev.map((r,i)=>({ cond:r.cond, sev:r.s, selStyle:`background:var(--panel2);color:${this.sevColor(r.s)};border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'JetBrains Mono';font-size:11.5px;font-weight:600;outline:none;cursor:pointer;`, onChange:(e)=>{ const v=e.target.value; this.setState(st=>({rules:{...st.rules, sev:st.rules.sev.map((x,j)=>j===i?{...x,s:v}:x)}, saved:false})); } })),
+
+      namedChains:R.chains.map((c,i)=>({ name:c.name, tech:c.tech,
+        techStyle:`background:var(--panel2);color:var(--accentText);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'JetBrains Mono';font-size:11px;font-weight:600;outline:none;cursor:pointer;`,
+        steps:(c.steps||[]).map((s,k)=>({ op:s.op, api:s.api, style:`display:inline-flex;align-items:center;font-family:'JetBrains Mono';font-size:11px;padding:3px 8px;border-radius:6px;color:#fff;background:${s.op==='alloc'?'#46c26a':s.op==='write'?'#e8c020':'#ec7b1a'};`, onRemove:()=>this.setState(st=>({rules:{...st.rules,chains:st.rules.chains.map((x,j)=>j===i?{...x,steps:x.steps.filter((_,q)=>q!==k)}:x)},saved:false})) })),
+        stepOptions:[...R.alloc.map(a=>({value:'alloc::'+a,label:'alloc · '+a})),...R.write.map(a=>({value:'write::'+a,label:'write · '+a})),...R.exec.map(a=>({value:'exec::'+a,label:'exec · '+a}))],
+        onAddStep:(e)=>{ const v=e.target.value; if(!v)return; const p=v.split('::'); this.setState(st=>({rules:{...st.rules,chains:st.rules.chains.map((x,j)=>j===i?{...x,steps:[...(x.steps||[]),{op:p[0],api:p[1]}]}:x)},saved:false})); },
+        onName:(e)=>{const v=e.target.value; this.setState(st=>({rules:{...st.rules,chains:st.rules.chains.map((x,j)=>j===i?{...x,name:v}:x)},saved:false}));},
+        onTech:(e)=>{const v=e.target.value; this.setState(st=>({rules:{...st.rules,chains:st.rules.chains.map((x,j)=>j===i?{...x,tech:v}:x)},saved:false}));},
+        onRemove:()=>this.setState(st=>({rules:{...st.rules,chains:st.rules.chains.filter((_,j)=>j!==i)},saved:false})),
+      })),
+      addChain:()=>this.setState(st=>({rules:{...st.rules,chains:[...st.rules.chains,{name:'New chain',tech:'Custom',steps:[]}]},saved:false})),
+      scoreWeights:R.score.weights.map((w,i)=>({ label:w.label, pts:w.pts,
+        onPts:(e)=>{const v=+e.target.value; this.setState(st=>({rules:{...st.rules,score:{...st.rules.score,weights:st.rules.score.weights.map((x,j)=>j===i?{...x,pts:v}:x)}},saved:false}));} })),
+      scoreCrit:R.score.crit, scoreHigh:R.score.high, scoreMed:R.score.med,
+      setCrit:(e)=>{const v=+e.target.value; this.setR({score:{...R.score,crit:v}});},
+      setHigh:(e)=>{const v=+e.target.value; this.setR({score:{...R.score,high:v}});},
+      setMed:(e)=>{const v=+e.target.value; this.setR({score:{...R.score,med:v}});},
+      captureWindow:R.capture, netWatch:R.netWatch,
+      setCapture:(e)=>this.setR({capture:+e.target.value}), setNetWatch:(e)=>this.setR({netWatch:+e.target.value}),
+      autoTrack:auto.track, autoKnob:auto.knob, toggleAuto:()=>this.setR({autoAttach:!R.autoAttach}),
+      beaconTrack:beac.track, beaconKnob:beac.knob, toggleBeacon:()=>this.setR({beacon:!R.beacon}),
+
+      folders:R.folders.map((path,i)=>({path, onRemove:()=>this.setR({folders:R.folders.filter((_,j)=>j!==i)})})),
+      newFolder:this.state.buf.folder, setNewFolder:setBuf('folder'),
+      addFolder:()=>{ const v=(this.state.buf.folder||'').trim(); if(!v) return; this.setState(st=>({rules:{...st.rules,folders:[...st.rules.folders,v]},buf:{...st.buf,folder:''},saved:false})); },
+      allowlist:R.allowlist.map((cidr,i)=>({cidr, onRemove:()=>this.setR({allowlist:R.allowlist.filter((_,j)=>j!==i)})})),
+      newCidr:this.state.buf.cidr, setNewCidr:setBuf('cidr'),
+      addCidr:()=>{ const v=(this.state.buf.cidr||'').trim(); if(!v) return; this.setState(st=>({rules:{...st.rules,allowlist:[...st.rules.allowlist,v]},buf:{...st.buf,cidr:''},saved:false})); },
+
+      savedShow:this.state.saved,
+      saveRules:()=>{ this.setState({saved:true}); },
+      resetRules:()=>{ this.setState({rules:this.defaults(), saved:false}); },
+
+      // ---- Modal ----
+      modalOpen: !!m,
+      closeModal: ()=>this.setState({modal:null}),
+      modalSev: m?m.sev:'', modalTitle: m?m.title:'', modalSrc: m?m.src:'', modalDst: m?m.dst:'', modalTime: m?m.mtime:'',
+      modalSevStyle: m?`font-family:'JetBrains Mono';font-size:11px;font-weight:600;color:#fff;background:${this.sevColor(m.sev)};padding:4px 11px;border-radius:8px;`:'',
+      modalTags: m? m.tags.map(v=>({v})) : [],
+      modalChain: m? m.chain.map(s=>({op:s.op, api:s.api, detail:s.d, opColor:`color:${s.c};`})) : [],
+    };
+  }
+}
+</script>
+</body>
+</html>

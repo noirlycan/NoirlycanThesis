@@ -6,4 +6,17 @@ venv/
 *.jsonl
 lab-output/
 logs/*.jsonl
+logs/*.db
+logs/*.db-*
+logs/.classifier_rules.json
+logs/.collector_launch.json
+logs/.runtime.json
 src/noirlycan_telemetry.egg-info/
+.DS_Store
+dashboard-ui/node_modules/
+dashboard-ui/dist/
+dashboard-ui/logs/
+dashboard-ui/.env.production
+dashboard-ui/tsconfig.tsbuildinfo
+thesis/*.docx
+thesis/~$*

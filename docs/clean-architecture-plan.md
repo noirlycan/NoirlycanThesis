@@ -11,7 +11,8 @@ Tài liệu mô tả kiến trúc sau khi tái cấu trúc codebase theo **Clean
 | **collector** | Thu thập Sysmon + Frida + file-drop trên Windows VM | 8782 (health) |
 | **storage** | Ghi/đọc JSONL, SQLite uploads | 8780 |
 | **analysis** | Correlator 2/3, classifier, reclassify | 8781 |
-| **dashboard** | Django REST + WebSocket UI | 8765 |
+| **dashboard** | Django REST + WebSocket UI (legacy) | 8765 |
+| **console** | FastAPI + React lab console (design handoff) | 8765 |
 
 **Shared kernel** (`kernel/`) chứa domain entities và business rules — không phụ thuộc framework hay I/O.
 
@@ -68,25 +69,12 @@ flowchart TB
 ## 3. Cấu trúc thư mục
 
 ```text
-src/noirlycan_telemetry/
-├── kernel/                          # Domain thuần (shared)
-│   ├── entities/models.py           # FileEvent, Finding, MemoryPrimitive…
-│   ├── analysis/                    # primitives, payload, evasion, injection_graph
-│   └── classification/              # technique_classifier, custom_rule_engine
-├── services/
-│   ├── collector/
-│   │   ├── application/             # collector_runtime, analysis_queue, runtime_config
-│   │   ├── infrastructure/        # sysmon, frida_manager, file_watch, triage
-│   │   └── api.py                   # GET /health
-│   ├── analysis/
-│   │   ├── domain/                  # correlation, reclassify, batch_runner
-│   │   └── api.py                   # POST /api/reclassify
-│   ├── storage/
-│   │   ├── infrastructure/          # log_store, analysis_db, atomic_io
-│   │   └── api.py                   # GET /api/sessions, POST /api/events
-│   └── dashboard/                   # Django app (presentation)
-├── contracts/events.py              # TelemetryEnvelope — wire format giữa services
-└── cli.py                           # Composition root (monolith mode)
+src/
+  noirlycan_core/          # kernel, storage, analysis, runtime
+  noirlycan_agent/         # collector + agent CLI
+  noirlycan_console/       # FastAPI console + Django dashboard
+  noirlycan_telemetry/     # backward-compatible CLI shim
+dashboard-ui/
 ```
 
 ---
@@ -157,8 +145,19 @@ flowchart LR
 ### Monolith (mặc định)
 
 ```powershell
-noirlycan-telemetry run --watch-sysmon
-noirlycan-telemetry dashboard
+# Agent trên Windows VM
+noirlycan-agent run --watch-sysmon
+
+# Console trên máy lab
+noirlycan-console console
+```
+
+Tương thích cũ: `noirlycan-telemetry run` / `noirlycan-telemetry console`
+
+Legacy Django dashboard:
+
+```powershell
+noirlycan-console dashboard
 ```
 
 ### Microservices (Docker)
@@ -191,14 +190,55 @@ noirlycan-telemetry dashboard --port 8765 --no-auto-collector
 ## 7. Import paths
 
 ```python
-from noirlycan_telemetry.kernel.entities.models import Finding
-from noirlycan_telemetry.services.analysis.domain.correlation import Correlator
-from noirlycan_telemetry.services.dashboard import make_client
+from noirlycan_core.kernel.entities.models import Finding
+from noirlycan_core.analysis.domain.correlation import Correlator
+from noirlycan_agent.cli import main as run_agent
+from noirlycan_console.cli import main as run_console
 ```
 
 ---
 
-## 8. Lộ trình tiếp theo
+## 8. Console (design handoff)
+
+Kiến trúc mới theo `design_handoff_noirlycan_console/`:
+
+```mermaid
+flowchart LR
+  subgraph vm [Windows VM]
+    AGENT[noirlycan-telemetry agent]
+  end
+
+  subgraph console_host [Console machine]
+    UI[React dashboard-ui]
+    API[FastAPI console :8765]
+    DB[(SQLite noirlycan.db)]
+    LOGS[(logs/*.jsonl)]
+  end
+
+  AGENT -->|POST /api/ingest Bearer token| API
+  API --> LOGS
+  API --> DB
+  UI -->|JWT REST + auto-refresh| API
+  API -->|ruleset .toml| AGENT
+  API -->|POST /agents/id/kill| AGENT
+```
+
+| Thành phần | Mô tả |
+|------------|-------|
+| `services/console/` | FastAPI: auth JWT, RBAC, rules, agents, ingest |
+| `dashboard-ui/` | React UI — theme Aurora/Daylight, 10 màn hình |
+| Demo users | admin@lab / analyst@lab / viewer@lab |
+
+Lệnh:
+
+```bash
+cd dashboard-ui && npm install && npm run build
+noirlycan-telemetry console
+```
+
+---
+
+## 9. Lộ trình tiếp theo
 
 1. **Event bus** — Redis pub/sub thay vì ghi JSONL trực tiếp giữa collector và storage
 2. **gRPC/Protobuf** — thay HTTP JSON cho high-volume primitive stream

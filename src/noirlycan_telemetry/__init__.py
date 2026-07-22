@@ -1,5 +1,5 @@
-"""Noirlycan Windows telemetry prototype."""
+"""Backward-compatible package shim."""
 
-__all__ = ["__version__"]
+from noirlycan_core.kernel.entities.models import Finding  # noqa: F401
 
-__version__ = "0.1.0"
+__all__ = ["Finding"]

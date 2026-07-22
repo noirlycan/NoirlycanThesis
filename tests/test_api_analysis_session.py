@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from noirlycan_telemetry import cli as cli_module
+from noirlycan_agent import cli as cli_module
 
 
 def test_schedule_api_analysis_once_per_session() -> None:

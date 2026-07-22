@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from noirlycan_telemetry.services.analysis.domain.classifier_config import (
+from noirlycan_core.analysis.domain.classifier_config import (
     ClassifierRulesConfig,
     RuleSettings,
     classifier_rules_payload,
@@ -12,12 +12,12 @@ from noirlycan_telemetry.services.analysis.domain.classifier_config import (
     passes_rule_gates,
     save_classifier_config,
 )
-from noirlycan_telemetry.kernel.classification.custom_rule_engine import CustomRule, parse_custom_rules
-from noirlycan_telemetry.kernel.entities.models import MemoryPrimitive, PrimitiveKind, Severity
-from noirlycan_telemetry.kernel.classification.technique_classifier import InjectionTechnique, TechniqueConfidence, classify_finding
-from noirlycan_telemetry.kernel.entities.models import Finding
-from noirlycan_telemetry.services.dashboard import make_client
-from noirlycan_telemetry.kernel.classification.technique_classifier import classifier_rule_catalog
+from noirlycan_core.kernel.classification.custom_rule_engine import CustomRule, parse_custom_rules
+from noirlycan_core.kernel.entities.models import MemoryPrimitive, PrimitiveKind, Severity
+from noirlycan_core.kernel.classification.technique_classifier import InjectionTechnique, TechniqueConfidence, classify_finding
+from noirlycan_core.kernel.entities.models import Finding
+from noirlycan_dashboard import make_client
+from noirlycan_core.kernel.classification.technique_classifier import classifier_rule_catalog
 
 
 def test_classifier_rules_roundtrip(tmp_path: Path) -> None:
