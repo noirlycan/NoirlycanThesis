@@ -56,8 +56,8 @@ class ConsoleRemoteClient:
         self.mode = mode
         self.timeout = timeout
         self.logs_dir = Path(logs_dir).expanduser().resolve() if logs_dir else None
-        self.policy_version = load_agent_policy(self.logs_dir).version if self.logs_dir else 0
-        self.policy = load_agent_policy(self.logs_dir)
+        self.policy = load_agent_policy(self.logs_dir) if self.logs_dir else None
+        self.policy_version = self.policy.version if self.policy else 0
         self.runtime = AgentRuntimePolicy.from_policy(self.policy) if self.policy else AgentRuntimePolicy()
         self.agent_auto_kill = False
         self._pending_kills: list[dict[str, Any]] = []
