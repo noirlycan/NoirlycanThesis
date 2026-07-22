@@ -141,3 +141,44 @@ def agent_hello(
     schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
     payload = database.rules_payload_for_agent()
     return {"ok": True, "agent": agent, **payload}
+
+
+@router.post("/heartbeat")
+def agent_heartbeat(
+    body: AgentHello,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    database = get_database()
+    token = _bearer_token(authorization)
+    auth = database.authenticate_agent(body.agent_id, token)
+    if auth == "invalid":
+        raise HTTPException(status_code=401, detail="Invalid agent token")
+    if auth == "global" and not database.agent_exists(body.agent_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Register this agent on the dashboard and use its enrollment token",
+        )
+    database.touch_agent_ip(body.agent_id, _resolve_agent_ip(request, body.ip_address))
+    schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
+    return {"ok": True}
+
+
+@router.post("/goodbye")
+def agent_goodbye(
+    body: AgentHello,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    database = get_database()
+    token = _bearer_token(authorization)
+    auth = database.authenticate_agent(body.agent_id, token)
+    if auth == "invalid":
+        raise HTTPException(status_code=401, detail="Invalid agent token")
+    if auth == "global" and not database.agent_exists(body.agent_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Register this agent on the dashboard and use its enrollment token",
+        )
+    database.mark_agent_offline(body.agent_id)
+    schedule_broadcast({"type": "agent", "agent_id": body.agent_id})
+    return {"ok": True}

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import platform
 import socket
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -91,6 +92,8 @@ class ConsoleRemoteClient:
         self.runtime = AgentRuntimePolicy.from_policy(self.policy) if self.policy else AgentRuntimePolicy()
         self.agent_auto_kill = False
         self._pending_kills: list[dict[str, Any]] = []
+        self._last_heartbeat_at = 0.0
+        self._heartbeat_interval_seconds = 15.0
 
     def hello(self, *, watching: str = "") -> dict[str, Any]:
         payload = {
@@ -103,7 +106,38 @@ class ConsoleRemoteClient:
         }
         response = self._post("/api/ingest/hello", payload)
         self._apply_console_response(response)
+        self._last_heartbeat_at = time.monotonic()
         return response
+
+    def heartbeat(self, *, watching: str = "", force: bool = False) -> None:
+        now = time.monotonic()
+        if not force and now - self._last_heartbeat_at < self._heartbeat_interval_seconds:
+            return
+        payload = {
+            "agent_id": self.agent_id,
+            "hostname": socket.gethostname(),
+            "os_name": platform.system() or "Windows",
+            "mode": self.mode,
+            "watching": watching,
+            "ip_address": _local_ip_for_server(self.base_url),
+        }
+        try:
+            self._post("/api/ingest/heartbeat", payload)
+            self._last_heartbeat_at = now
+        except Exception as exc:
+            print(f"[!] Console heartbeat failed: {exc}", flush=True)
+
+    def goodbye(self) -> None:
+        payload = {
+            "agent_id": self.agent_id,
+            "hostname": socket.gethostname(),
+            "os_name": platform.system() or "Windows",
+            "mode": self.mode,
+        }
+        try:
+            self._post("/api/ingest/goodbye", payload)
+        except Exception as exc:
+            print(f"[!] Console goodbye failed: {exc}", flush=True)
 
     def write(self, event_type: str, value: Any) -> None:
         payload = {

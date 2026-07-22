@@ -7,7 +7,7 @@ import secrets
 import sqlite3
 import threading
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -20,8 +20,15 @@ from noirlycan_backend.domain.ruleset import Ruleset
 from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir
 
 
+AGENT_STALE_SECONDS = 45
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _utc_before(seconds: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(seconds=seconds)).isoformat()
 
 
 def _hash_password(password: str, salt: str) -> str:
@@ -528,7 +535,42 @@ class ConsoleDatabase:
     def agent_label(agent: dict[str, Any]) -> str:
         return str(agent.get("display_name") or agent.get("hostname") or agent.get("id") or "")
 
+    def mark_stale_agents_offline(
+        self,
+        *,
+        max_age_seconds: int = AGENT_STALE_SECONDS,
+    ) -> int:
+        cutoff = _utc_before(max_age_seconds)
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE console_agents
+                SET status = 'offline'
+                WHERE status = 'online'
+                  AND last_seen IS NOT NULL
+                  AND last_seen < ?
+                """,
+                (cutoff,),
+            )
+            return int(cursor.rowcount)
+
+    def mark_agent_offline(self, agent_id: str) -> bool:
+        safe_id = sanitize_agent_id(agent_id)
+        if not safe_id:
+            return False
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE console_agents
+                SET status = 'offline'
+                WHERE id = ? AND status != 'pending'
+                """,
+                (safe_id,),
+            )
+            return cursor.rowcount > 0
+
     def list_agents(self) -> list[dict[str, Any]]:
+        self.mark_stale_agents_offline()
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM console_agents ORDER BY last_seen DESC"

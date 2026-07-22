@@ -219,8 +219,12 @@ def command_run(args: argparse.Namespace) -> int:
                     auto_attach=auto_attach,
                 )
             drain_agent_commands(remote)
+            if remote is not None:
+                remote.heartbeat(watching=", ".join(_WATCH_PATHS))
             time.sleep(args.poll_interval)
     except KeyboardInterrupt:
+        if remote is not None:
+            remote.goodbye()
         if file_watcher is not None:
             file_watcher.stop()
         if logs_dir is not None:
@@ -889,6 +893,7 @@ def _handle_file_event(
                 file=sys.stderr,
                 flush=True,
             )
+        _schedule_file_triage(event, correlator, writer, source="auto", write_event=False)
     elif auto_static:
         _schedule_file_triage(event, correlator, writer, source="auto", write_event=False)
     else:
