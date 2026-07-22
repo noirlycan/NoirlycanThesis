@@ -20,7 +20,30 @@ from noirlycan_backend.domain.ruleset import Ruleset
 from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir
 
 
-AGENT_STALE_SECONDS = 45
+AGENT_STALE_SECONDS = 15
+
+
+def effective_agent_status(
+    agent: dict[str, Any],
+    *,
+    max_age_seconds: int = AGENT_STALE_SECONDS,
+    now: datetime | None = None,
+) -> str:
+    status = str(agent.get("status") or "offline")
+    if status != "online":
+        return status
+    last_seen = agent.get("last_seen")
+    if not last_seen:
+        return status
+    try:
+        seen = datetime.fromisoformat(str(last_seen))
+    except ValueError:
+        return status
+    if seen.tzinfo is None:
+        seen = seen.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    age = (current - seen).total_seconds()
+    return "offline" if age > max_age_seconds else "online"
 
 
 def _utc_now() -> str:
@@ -570,7 +593,14 @@ class ConsoleDatabase:
             return cursor.rowcount > 0
 
     def list_agents(self) -> list[dict[str, Any]]:
-        self.mark_stale_agents_offline()
+        marked = self.mark_stale_agents_offline()
+        if marked:
+            try:
+                from noirlycan_backend.infrastructure.live_hub import schedule_broadcast
+
+                schedule_broadcast({"type": "agent", "reason": "stale"})
+            except Exception:
+                pass
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM console_agents ORDER BY last_seen DESC"
@@ -580,6 +610,7 @@ class ConsoleDatabase:
             item = dict(row) | {"auto_kill": bool(row["auto_kill"])}
             item["label"] = self.agent_label(item)
             item["enrollment_token"] = str(row["enrollment_token"] or "")
+            item["status"] = effective_agent_status(item)
             payload.append(item)
         return payload
 

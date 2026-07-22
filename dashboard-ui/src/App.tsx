@@ -469,34 +469,40 @@ function FindingsView({
         return (
         <div key={group.key} className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div className="group-header">
-            <SevBadge severity={group.top_severity} />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>
-                <span style={{ color: "var(--muted)" }}>{group.source}</span> ──▶{" "}
-                <span style={{ color: "#ec7b1a" }}>{group.victim}</span>{" "}
-                <span style={{ color: "var(--dim)" }}>{group.vpid ?? ""}</span>
+            <div className="group-header-top">
+              <SevBadge severity={group.top_severity} />
+              <div className="group-header-body">
+                <div className="mono" style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.45 }}>
+                  <span style={{ color: "var(--muted)" }}>{group.source}</span> ──▶{" "}
+                  <span style={{ color: "#ec7b1a" }}>{group.victim}</span>{" "}
+                  <span style={{ color: "var(--dim)" }}>{group.vpid ?? ""}</span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--dim)", marginTop: 4, lineHeight: 1.45 }}>{group.summary}</div>
               </div>
-              <div style={{ fontSize: 12, color: "var(--dim)", marginTop: 3 }}>{group.summary}</div>
+              <div className="group-header-actions">
+                {groupKilled ? (
+                  <span className="mono" style={{ fontSize: 11, color: "#e5484d", whiteSpace: "nowrap" }}>
+                    TERMINATED
+                  </span>
+                ) : null}
+                {canKill && groupPid > 0 && !groupKilled ? (
+                  <button
+                    type="button"
+                    className="btn-brand"
+                    style={{ background: "#e5484d", boxShadow: "none", padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                    onClick={() => onKill(groupPid, group.victim, group.agent_id)}
+                  >
+                    Kill process
+                  </button>
+                ) : null}
+                <span className="badge">{group.count}</span>
+              </div>
             </div>
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <TagChips tags={group.tags || []} />
-              {groupKilled ? (
-                <span className="mono" style={{ fontSize: 11, color: "#e5484d" }}>
-                  TERMINATED
-                </span>
-              ) : null}
-              {canKill && groupPid > 0 && !groupKilled ? (
-                <button
-                  type="button"
-                  className="btn-brand"
-                  style={{ background: "#e5484d", boxShadow: "none", padding: "6px 12px", fontSize: 12 }}
-                  onClick={() => onKill(groupPid, group.victim, group.agent_id)}
-                >
-                  Kill process
-                </button>
-              ) : null}
-              <span className="badge">{group.count}</span>
-            </div>
+            {(group.tags || []).length ? (
+              <div className="group-header-tags">
+                <TagChips tags={group.tags || []} />
+              </div>
+            ) : null}
           </div>
           {group.members.map((member) => (
             <div
