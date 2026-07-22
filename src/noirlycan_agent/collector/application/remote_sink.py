@@ -94,6 +94,10 @@ class ConsoleRemoteClient:
         self._pending_kills: list[dict[str, Any]] = []
         self._last_heartbeat_at = 0.0
         self._heartbeat_interval_seconds = 5.0
+        self._heartbeat_supported: bool | None = None
+        self._last_heartbeat_error_log_at = 0.0
+        self._last_command_error_log_at = 0.0
+        self._remote_error_log_interval_seconds = 60.0
 
     def hello(self, *, watching: str = "") -> dict[str, Any]:
         payload = {
@@ -117,7 +121,17 @@ class ConsoleRemoteClient:
         if isinstance(commands, list):
             self._pending_kills.extend(item for item in commands if isinstance(item, dict))
 
+    def _log_remote_error(self, label: str, exc: Exception, *, attr: str) -> None:
+        now = time.monotonic()
+        last = float(getattr(self, attr, 0.0))
+        if now - last < self._remote_error_log_interval_seconds:
+            return
+        setattr(self, attr, now)
+        print(f"[!] {label}: {exc}", flush=True)
+
     def heartbeat(self, *, watching: str = "", force: bool = False) -> None:
+        if self._heartbeat_supported is False:
+            return
         now = time.monotonic()
         if not force and now - self._last_heartbeat_at < self._heartbeat_interval_seconds:
             return
@@ -131,17 +145,28 @@ class ConsoleRemoteClient:
         }
         try:
             response = self._post("/api/ingest/heartbeat", payload)
+            self._heartbeat_supported = True
             self._absorb_commands(response)
             self._last_heartbeat_at = now
         except Exception as exc:
-            print(f"[!] Console heartbeat failed: {exc}", flush=True)
+            detail = str(exc)
+            if "Not Found" in detail:
+                if self._heartbeat_supported is not False:
+                    self._heartbeat_supported = False
+                    print(
+                        "[!] Console heartbeat unavailable on server — run `git pull` on Mac and restart "
+                        "noirlycan-backend api (agent will keep using command poll + ingest)",
+                        flush=True,
+                    )
+                return
+            self._log_remote_error("Console heartbeat failed", exc, attr="_last_heartbeat_error_log_at")
 
     def fetch_commands(self) -> None:
         try:
             response = self._get(f"/api/agents/{self.agent_id}/commands")
             self._absorb_commands(response)
         except Exception as exc:
-            print(f"[!] Console command poll failed: {exc}", flush=True)
+            self._log_remote_error("Console command poll failed", exc, attr="_last_command_error_log_at")
 
     def pending_commands(self) -> list[dict[str, Any]]:
         pending = list(self._pending_kills)
