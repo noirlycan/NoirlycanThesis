@@ -35,10 +35,24 @@ export function ApiChainList({ finding }: { finding: Record<string, unknown> | u
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {rows.map((row, index) => (
-        <div key={`${row.api}-${index}`} className="mono" style={{ display: "flex", gap: 12, alignItems: "baseline", fontSize: 12 }}>
-          <span style={{ width: 52, color: opColor(row.op), fontWeight: 600 }}>{row.op}</span>
-          <span style={{ minWidth: 180 }}>{row.api}</span>
-          {row.detail ? <span style={{ color: "var(--dim)" }}>{row.detail}</span> : null}
+        <div
+          key={`${row.api}-${index}`}
+          className="mono"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "92px minmax(160px, 1fr) minmax(0, 1fr)",
+            gap: "4px 12px",
+            alignItems: "baseline",
+            fontSize: 12,
+          }}
+        >
+          <span style={{ color: opColor(row.op), fontWeight: 600, whiteSpace: "nowrap" }}>{row.op}</span>
+          <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{row.api}</span>
+          {row.detail ? (
+            <span style={{ color: "var(--dim)", minWidth: 0, overflowWrap: "anywhere" }}>{row.detail}</span>
+          ) : (
+            <span />
+          )}
         </div>
       ))}
     </div>

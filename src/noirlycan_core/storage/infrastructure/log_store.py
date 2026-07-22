@@ -435,9 +435,16 @@ def _build_process_image_index(events: list[dict[str, Any]]) -> dict[int, str]:
             continue
         pid = value.get("pid")
         image = value.get("image")
-        if pid is None or not image:
-            continue
-        images[int(pid)] = str(image)
+        if pid is not None and image:
+            images[int(pid)] = str(image)
+        data = value.get("data")
+        if isinstance(data, dict):
+            for key_pid, key_image in (
+                (data.get("TargetProcessId"), data.get("TargetImage")),
+                (data.get("SourceProcessId"), data.get("SourceImage")),
+            ):
+                if key_pid is not None and key_image:
+                    images[int(key_pid)] = str(key_image)
     return images
 
 

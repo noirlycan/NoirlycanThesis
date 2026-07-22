@@ -252,6 +252,7 @@ def process_sysmon_batch(
             handle_network_event(event, correlator, writer)
         elif isinstance(event, TelemetryEvent):
             writer.write("sysmon", event)
+            correlator.note_sysmon_process_ref(event)
 
 
 def drain_frida(

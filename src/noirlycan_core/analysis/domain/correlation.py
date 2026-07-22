@@ -16,6 +16,7 @@ from noirlycan_core.kernel.entities.models import (
     PrimitiveKind,
     ProcessEvent,
     Severity,
+    TelemetryEvent,
 )
 from noirlycan_core.analysis.domain.classifier_config import (
     ClassifierRulesConfig,
@@ -109,7 +110,32 @@ class Correlator:
                 flags=event.flags,
             )
         self.processes_by_pid[event.pid] = event
+        if event.image:
+            self._pid_image_cache[event.pid] = event.image
         self._expire(event.timestamp)
+
+    def note_sysmon_process_ref(self, event: TelemetryEvent) -> None:
+        """Index source/target PIDs from Sysmon E8/E10 for later image resolution."""
+        data = event.data or {}
+        rows: list[tuple[int | None, str | None]] = [
+            (_safe_int(data.get("SourceProcessId")), data.get("SourceImage")),
+            (_safe_int(data.get("TargetProcessId")), data.get("TargetImage")),
+            (_safe_int(data.get("ProcessId")), data.get("Image")),
+            (event.pid, event.process_image),
+        ]
+        for pid, image in rows:
+            if pid is None or pid <= 0 or not image:
+                continue
+            path = str(image).strip()
+            if not path:
+                continue
+            self._pid_image_cache[pid] = path
+            if pid not in self.processes_by_pid:
+                self.processes_by_pid[pid] = ProcessEvent(
+                    timestamp=event.timestamp,
+                    pid=pid,
+                    image=path,
+                )
 
     def add_primitive(self, event: MemoryPrimitive) -> list[Finding]:
         enriched = self._enrich_primitive(event)
@@ -602,6 +628,15 @@ def _describe(
 
 def _norm_path(path: str) -> str:
     return str(PureWindowsPath(path)).lower()
+
+
+def _safe_int(value: object | None) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(str(value), 0)
+    except (TypeError, ValueError):
+        return None
 
 
 def now_utc() -> datetime:

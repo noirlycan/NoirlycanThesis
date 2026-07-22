@@ -69,7 +69,10 @@ export function flowLabel(finding: Record<string, unknown> | undefined): string 
   if (targetPid == null) {
     return `${actor} ──▶ disk drop`;
   }
-  const target = `${String(finding.target_image || "target").split(/[/\\]/).pop()} ${targetPid}`;
+  const targetName = finding.target_image
+    ? String(finding.target_image).split(/[/\\]/).pop()
+    : "unknown";
+  const target = `${targetName} (pid ${targetPid})`;
   const suspended = finding.suspended_spawn || (finding.evidence as Record<string, unknown> | undefined)?.suspended_spawn;
   return `${actor} ──▶ ${target}${suspended ? "  SUSPENDED" : ""}`;
 }
