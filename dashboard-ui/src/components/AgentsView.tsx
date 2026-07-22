@@ -27,6 +27,8 @@ export function AgentsView({ data, onReload, onToast }: Props) {
   const [copied, setCopied] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [newAgentId, setNewAgentId] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
 
   async function copy(text: string, label: string) {
     await navigator.clipboard.writeText(text);
@@ -65,8 +67,21 @@ export function AgentsView({ data, onReload, onToast }: Props) {
     onReload();
   }
 
+  async function registerAgent() {
+    const id = newAgentId.trim();
+    if (!id) {
+      onToast("Agent id is required");
+      return;
+    }
+    await api.registerAgent(id, newDisplayName.trim());
+    setNewAgentId("");
+    setNewDisplayName("");
+    onToast("Agent registered");
+    onReload();
+  }
+
   return (
-    <div style={{ maxWidth: 1000, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ maxWidth: 1100, display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span
           className="mono"
@@ -82,14 +97,14 @@ export function AgentsView({ data, onReload, onToast }: Props) {
           ADMIN ONLY
         </span>
         <span style={{ fontSize: 13, color: "var(--muted)" }}>
-          Web console configures here; agents run on VM/sandbox and connect back.
+          Register each workstation with its own agent id and enrollment token.
         </span>
       </div>
 
       <div className="card">
-        <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>This console</div>
+        <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Console endpoint</div>
         <div style={{ fontSize: 12.5, color: "var(--dim)", marginBottom: 18 }}>
-          Agent connection endpoint and enrollment token.
+          Agents connect back to this host and port. Each agent uses its own id + token from the table below.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 16, marginBottom: 16 }}>
           <div>
@@ -101,75 +116,41 @@ export function AgentsView({ data, onReload, onToast }: Props) {
             <input className="field-input mono" style={{ marginTop: 6 }} value={port} onChange={(e) => setPort(e.target.value)} />
           </div>
         </div>
-        <label style={{ fontSize: 12, color: "var(--muted)" }}>Enrollment token</label>
-        <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
-          <div
-            className="mono"
-            style={{
-              flex: 1,
-              background: "var(--panel2)",
-              border: "1px solid var(--border)",
-              borderRadius: 10,
-              padding: "10px 12px",
-              color: "var(--accentText)",
-              wordBreak: "break-all",
-            }}
-          >
-            {data.server.token}
-          </div>
-          <button type="button" className="btn-ghost" onClick={() => api.regenerateToken().then(onReload)}>
-            Regenerate
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button
-            type="button"
-            className="btn-brand"
-            onClick={() => api.saveServer(host, Number(port)).then(onReload)}
-          >
-            Save server
-          </button>
-        </div>
+        <button type="button" className="btn-brand" onClick={() => api.saveServer(host, Number(port)).then(onReload)}>
+          Save server
+        </button>
       </div>
 
       <div className="card">
-        <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Deploy an agent</div>
-        <div style={{ fontSize: 12.5, color: "var(--dim)", marginBottom: 14 }}>Run mode keeps watching; spawn mode launches a sample under Frida.</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <button type="button" className="btn-ghost" onClick={() => copy(data.commands.run, "run command")}>
-            Copy run {copied === "run command" ? "✓" : ""}
-          </button>
-          <button type="button" className="btn-ghost" onClick={() => copy(data.commands.spawn, "spawn command")}>
-            Copy spawn {copied === "spawn command" ? "✓" : ""}
-          </button>
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => {
-              const blob = new Blob([data.toml], { type: "text/plain" });
-              const url = URL.createObjectURL(blob);
-              const anchor = document.createElement("a");
-              anchor.href = url;
-              anchor.download = "noirlycan-agent.toml";
-              anchor.click();
-              URL.revokeObjectURL(url);
-            }}
-          >
-            Export config (.toml)
+        <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Register workstation</div>
+        <div style={{ fontSize: 12.5, color: "var(--dim)", marginBottom: 14 }}>
+          Create one enrollment row per VM. Copy that row&apos;s run command on the target machine.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 12, alignItems: "end" }}>
+          <div>
+            <label style={{ fontSize: 12, color: "var(--muted)" }}>Agent id</label>
+            <input
+              className="field-input mono"
+              style={{ marginTop: 6 }}
+              placeholder="win10-lab-vm"
+              value={newAgentId}
+              onChange={(e) => setNewAgentId(e.target.value)}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "var(--muted)" }}>Display name (optional)</label>
+            <input
+              className="field-input"
+              style={{ marginTop: 6 }}
+              placeholder="Windows 10 lab VM"
+              value={newDisplayName}
+              onChange={(e) => setNewDisplayName(e.target.value)}
+            />
+          </div>
+          <button type="button" className="btn-brand" onClick={() => registerAgent()}>
+            Register
           </button>
         </div>
-        <pre className="mono" style={{ fontSize: 12, whiteSpace: "pre-wrap", margin: 0, color: "var(--dim)" }}>
-          Run mode
-        </pre>
-        <pre className="mono" style={{ fontSize: 12, whiteSpace: "pre-wrap", margin: "4px 0 12px" }}>
-          {data.commands.run}
-        </pre>
-        <pre className="mono" style={{ fontSize: 12, whiteSpace: "pre-wrap", margin: 0, color: "var(--dim)" }}>
-          Spawn mode
-        </pre>
-        <pre className="mono" style={{ fontSize: 12, whiteSpace: "pre-wrap", marginTop: 4 }}>
-          {data.commands.spawn}
-        </pre>
       </div>
 
       <div className="card">
@@ -193,30 +174,32 @@ export function AgentsView({ data, onReload, onToast }: Props) {
         <div
           className="table-row"
           style={{
-            gridTemplateColumns: "1.5fr 1fr 0.8fr 1fr 72px 72px 56px 110px",
+            gridTemplateColumns: "1.3fr 1.1fr 0.7fr 0.7fr 0.9fr 64px 64px 56px 150px",
             fontSize: 11,
             color: "var(--dim)",
           }}
         >
           <span>AGENT</span>
-          <span>OS</span>
-          <span>OS</span>
+          <span>TOKEN</span>
+          <span>STATUS</span>
           <span>MODE</span>
           <span>WATCHING</span>
           <span>LAST</span>
-          <span>STATUS</span>
           <span>KILL</span>
+          <span>IP</span>
           <span>ACTIONS</span>
         </div>
         {data.agents.map((agent) => {
           const id = String(agent.id || "");
           const isEditing = editingId === id;
+          const runCommand = String(agent.run_command || "");
+          const enrollmentToken = String(agent.enrollment_token || "");
           return (
             <div
               key={id}
               className="table-row"
               style={{
-                gridTemplateColumns: "1.5fr 1fr 0.8fr 1fr 72px 72px 56px 110px",
+                gridTemplateColumns: "1.3fr 1.1fr 0.7fr 0.7fr 0.9fr 64px 64px 56px 150px",
                 alignItems: "center",
               }}
             >
@@ -236,19 +219,41 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                 ) : (
                   <span title={id}>
                     <div style={{ fontWeight: 600 }}>{agentName(agent)}</div>
-                    <div className="mono" style={{ fontSize: 11, color: "var(--dim)", marginTop: 2 }}>
-                      {String(agent.ip_address || "—")}
+                    <div className="mono" style={{ fontSize: 10, color: "var(--dim)", marginTop: 2 }}>
+                      {id}
                     </div>
                   </span>
                 )}
               </span>
-              <span>{String(agent.os_name || "-")}</span>
+              <span>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: 10,
+                    color: "var(--accentText)",
+                    wordBreak: "break-all",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {enrollmentToken || "—"}
+                </div>
+                {enrollmentToken ? (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ padding: "2px 0", fontSize: 10, marginTop: 4 }}
+                    onClick={() => copy(enrollmentToken, `token ${id}`)}
+                  >
+                    Copy token {copied === `token ${id}` ? "✓" : ""}
+                  </button>
+                ) : null}
+              </span>
+              <span style={{ color: agent.status === "online" ? "var(--op-alloc)" : "#ec7b1a", textTransform: "capitalize" }}>
+                {String(agent.status || "offline")}
+              </span>
               <span className="mono">{String(agent.mode || "-")}</span>
               <span className="mono">{String(agent.watching || "-")}</span>
               <span className="mono">{String(agent.last_seen || "-").slice(11, 19)}</span>
-              <span style={{ color: agent.status === "online" ? "var(--op-alloc)" : "#ec7b1a" }}>
-                {String(agent.status || "offline")}
-              </span>
               <label style={{ display: "flex", justifyContent: "center" }}>
                 <input
                   type="checkbox"
@@ -256,41 +261,61 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                   onChange={(e) => api.setAgentAutoKill(id, e.target.checked).then(onReload)}
                 />
               </label>
-              <span style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <span className="mono" style={{ fontSize: 10, color: "var(--dim)" }}>
+                {String(agent.ip_address || "—")}
+              </span>
+              <span style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                {runCommand ? (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ padding: "4px 8px", fontSize: 10 }}
+                    onClick={() => copy(runCommand, `run ${id}`)}
+                  >
+                    Copy run {copied === `run ${id}` ? "✓" : ""}
+                  </button>
+                ) : null}
                 {isEditing ? (
-                  <>
-                    <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => saveRename(id)}>
+                  <span style={{ display: "flex", gap: 4 }}>
+                    <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 10 }} onClick={() => saveRename(id)}>
                       Save
                     </button>
-                    <button
-                      type="button"
-                      className="btn-ghost"
-                      style={{ padding: "4px 8px", fontSize: 11 }}
-                      onClick={() => setEditingId(null)}
-                    >
+                    <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 10 }} onClick={() => setEditingId(null)}>
                       Cancel
                     </button>
-                  </>
+                  </span>
                 ) : (
-                  <>
-                    <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => startRename(agent)}>
+                  <span style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 10 }} onClick={() => startRename(agent)}>
                       Rename
                     </button>
                     <button
                       type="button"
                       className="btn-ghost"
-                      style={{ padding: "4px 8px", fontSize: 11, color: "#e5484d" }}
+                      style={{ padding: "4px 8px", fontSize: 10 }}
+                      onClick={() => api.regenerateAgentToken(id).then(onReload)}
+                    >
+                      New token
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      style={{ padding: "4px 8px", fontSize: 10, color: "#e5484d" }}
                       onClick={() => removeAgent(agent)}
                     >
                       Delete
                     </button>
-                  </>
+                  </span>
                 )}
               </span>
             </div>
           );
         })}
-        {!data.agents.length ? <div style={{ color: "var(--dim)", paddingTop: 12 }}>No agents connected yet.</div> : null}
+        {!data.agents.length ? (
+          <div style={{ color: "var(--dim)", paddingTop: 12 }}>
+            No agents registered yet. Create one above, then run its command on the VM.
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -39,29 +39,88 @@ class AgentRenameBody(BaseModel):
     display_name: str = Field(min_length=1, max_length=120)
 
 
+class AgentRegisterBody(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=120)
+    display_name: str = Field(default="", max_length=120)
+
+
+def _agent_run_command(server: dict[str, Any], agent: dict[str, Any]) -> str:
+    endpoint = f"{server['host']}:{server['port']}"
+    token = str(agent.get("enrollment_token") or "")
+    agent_id = str(agent.get("id") or "")
+    return (
+        f"noirlycan-agent run --server {endpoint} --agent-id {agent_id} --token {token} "
+        "--watch-sysmon --auto-attach-new-processes"
+    )
+
+
 @router.get("")
 def list_agents(user: dict[str, Any] = Depends(require_permission("access"))) -> dict[str, Any]:
     database = get_database()
     server = database.load_server_config()
     ruleset = database.load_ruleset()
     endpoint = f"{server['host']}:{server['port']}"
-    token = server["token"]
+    agents = database.list_agents()
+    for agent in agents:
+        agent["run_command"] = _agent_run_command(server, agent)
+    legacy_token = server["token"]
     run_cmd = (
-        f"noirlycan-telemetry run --server {endpoint} --token {token} "
+        f"noirlycan-telemetry run --server {endpoint} --token {legacy_token} "
         "--watch-sysmon --auto-attach-new-processes"
     )
     spawn_cmd = (
-        f"noirlycan-telemetry spawn --server {endpoint} --token {token} "
+        f"noirlycan-telemetry spawn --server {endpoint} --token {legacy_token} "
         "--watch-sysmon -- C:\\Lab\\loader.exe"
     )
-    toml = ruleset_to_toml(ruleset, host=str(server["host"]), port=int(server["port"]), token=str(token))
+    toml = ruleset_to_toml(
+        ruleset,
+        host=str(server["host"]),
+        port=int(server["port"]),
+        token=str(legacy_token),
+    )
     return {
         "server": server,
-        "agents": database.list_agents(),
+        "agents": agents,
         "commands": {"run": run_cmd, "spawn": spawn_cmd},
         "toml": toml,
         "auto_kill_min_severity": ruleset.auto_kill_min_severity,
     }
+
+
+@router.post("/register")
+def register_agent(
+    body: AgentRegisterBody,
+    user: dict[str, Any] = Depends(require_permission("access")),
+) -> dict[str, Any]:
+    database = get_database()
+    try:
+        agent = database.create_agent_enrollment(
+            body.agent_id,
+            display_name=body.display_name,
+            actor=user.get("email"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    server = database.load_server_config()
+    agent["run_command"] = _agent_run_command(server, agent)
+    return {"ok": True, "agent": agent}
+
+
+@router.post("/{agent_id}/regenerate-token")
+def regenerate_agent_enrollment_token(
+    agent_id: str,
+    user: dict[str, Any] = Depends(require_permission("access")),
+) -> dict[str, Any]:
+    database = get_database()
+    token = database.regenerate_agent_token(agent_id, actor=user.get("email"))
+    if token is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    server = database.load_server_config()
+    agent = next((item for item in database.list_agents() if item["id"] == agent_id), None)
+    if agent is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    agent["run_command"] = _agent_run_command(server, agent)
+    return {"ok": True, "agent_id": agent_id, "token": token, "agent": agent}
 
 
 @router.put("/server")
@@ -134,7 +193,7 @@ def agent_commands(
     authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     database = get_database()
-    verify_agent_token(authorization, database)
+    verify_agent_token(authorization, database, agent_id=agent_id)
     return {"commands": database.pop_agent_commands(agent_id)}
 
 

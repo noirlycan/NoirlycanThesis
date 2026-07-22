@@ -44,12 +44,23 @@ def _resolve_agent_ip(request: Request, reported: str = "") -> str:
     return ""
 
 
-def verify_agent_token(authorization: str | None, database) -> None:
+def verify_agent_token(
+    authorization: str | None,
+    database,
+    *,
+    agent_id: str | None = None,
+) -> None:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing agent token")
     token = authorization.split(" ", 1)[1].strip()
-    if not database.verify_agent_token(token):
+    if not database.verify_agent_token(token, agent_id=agent_id):
         raise HTTPException(status_code=401, detail="Invalid agent token")
+
+
+def _bearer_token(authorization: str | None) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return ""
+    return authorization.split(" ", 1)[1].strip()
 
 
 def _append_event(session_path, payload: dict[str, Any]) -> None:
@@ -65,9 +76,9 @@ def ingest_event(
     x_agent_id: str | None = Header(default=None, alias="X-Agent-Id"),
 ) -> dict[str, Any]:
     database = get_database()
-    verify_agent_token(authorization, database)
     logs_dir = ensure_logs_dir(get_logs_dir())
     agent_id = (x_agent_id or "").strip()
+    verify_agent_token(authorization, database, agent_id=agent_id or None)
     if agent_id:
         database.touch_agent_ip(agent_id, _resolve_agent_ip(request))
     if agent_id:
@@ -107,7 +118,15 @@ def agent_hello(
     authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     database = get_database()
-    verify_agent_token(authorization, database)
+    token = _bearer_token(authorization)
+    auth = database.authenticate_agent(body.agent_id, token)
+    if auth == "invalid":
+        raise HTTPException(status_code=401, detail="Invalid agent token")
+    if auth == "global" and not database.agent_exists(body.agent_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Register this agent on the dashboard and use its enrollment token",
+        )
     agent = database.upsert_agent(
         body.agent_id,
         hostname=body.hostname,

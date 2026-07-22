@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from noirlycan_backend.domain.agent_sessions import ensure_agent_session_file
+from noirlycan_backend.domain.agent_sessions import ensure_agent_session_file, sanitize_agent_id
 from noirlycan_backend.domain.permissions import (
     DEFAULT_ROLE_PERMISSIONS,
     normalize_role_permissions,
@@ -186,6 +186,18 @@ class ConsoleDatabase:
             connection.execute(
                 "ALTER TABLE console_agents ADD COLUMN ip_address TEXT NOT NULL DEFAULT ''"
             )
+        if "enrollment_token" not in columns:
+            connection.execute(
+                "ALTER TABLE console_agents ADD COLUMN enrollment_token TEXT NOT NULL DEFAULT ''"
+            )
+            rows = connection.execute(
+                "SELECT id FROM console_agents WHERE enrollment_token = ''"
+            ).fetchall()
+            for row in rows:
+                connection.execute(
+                    "UPDATE console_agents SET enrollment_token = ? WHERE id = ?",
+                    (secrets.token_urlsafe(24), str(row["id"])),
+                )
 
     def seed_defaults(self) -> None:
         demo_users = [
@@ -525,8 +537,64 @@ class ConsoleDatabase:
         for row in rows:
             item = dict(row) | {"auto_kill": bool(row["auto_kill"])}
             item["label"] = self.agent_label(item)
+            item["enrollment_token"] = str(row["enrollment_token"] or "")
             payload.append(item)
         return payload
+
+    def agent_exists(self, agent_id: str) -> bool:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT 1 FROM console_agents WHERE id = ?",
+                (sanitize_agent_id(agent_id),),
+            ).fetchone()
+        return row is not None
+
+    def create_agent_enrollment(
+        self,
+        agent_id: str,
+        *,
+        display_name: str = "",
+        actor: str | None = None,
+    ) -> dict[str, Any]:
+        safe_id = sanitize_agent_id(agent_id)
+        if not safe_id:
+            raise ValueError("agent_id is required")
+        if self.agent_exists(safe_id):
+            raise ValueError(f"agent already registered: {safe_id}")
+        label = display_name.strip() or safe_id
+        token = secrets.token_urlsafe(24)
+        now = _utc_now()
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO console_agents (
+                    id, hostname, os_name, mode, watching, last_seen, status,
+                    auto_kill, enrolled_at, display_name, ip_address, enrollment_token
+                ) VALUES (?, ?, 'Windows', 'run', '', NULL, 'pending', 0, ?, ?, '', ?)
+                """,
+                (safe_id, label, now, label, token),
+            )
+            self._audit(
+                connection,
+                actor,
+                "agent.register",
+                {"agent_id": safe_id, "display_name": label},
+            )
+        agents = self.list_agents()
+        return next(item for item in agents if item["id"] == safe_id)
+
+    def regenerate_agent_token(self, agent_id: str, *, actor: str | None = None) -> str | None:
+        safe_id = sanitize_agent_id(agent_id)
+        token = secrets.token_urlsafe(24)
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "UPDATE console_agents SET enrollment_token = ? WHERE id = ?",
+                (token, safe_id),
+            )
+            if cursor.rowcount == 0:
+                return None
+            self._audit(connection, actor, "agent.regenerate_token", {"agent_id": safe_id})
+        return token
 
     def upsert_agent(
         self,
@@ -540,6 +608,7 @@ class ConsoleDatabase:
     ) -> dict[str, Any]:
         now = _utc_now()
         ip = ip_address.strip()
+        safe_id = sanitize_agent_id(agent_id)
         with self._connect() as connection:
             connection.execute(
                 """
@@ -558,10 +627,10 @@ class ConsoleDatabase:
                         ELSE console_agents.ip_address
                     END
                 """,
-                (agent_id, hostname, os_name, mode, watching, now, now, ip),
+                (safe_id, hostname, os_name, mode, watching, now, now, ip),
             )
         agents = self.list_agents()
-        return next(item for item in agents if item["id"] == agent_id)
+        return next(item for item in agents if item["id"] == safe_id)
 
     def touch_agent_ip(self, agent_id: str, ip_address: str) -> None:
         ip = ip_address.strip()
@@ -690,9 +759,29 @@ class ConsoleDatabase:
             self._audit(connection, actor, "agent.delete", {"agent_id": agent_id})
             return True
 
-    def verify_agent_token(self, token: str) -> bool:
+    def verify_agent_token(self, token: str, *, agent_id: str | None = None) -> bool:
+        return self.authenticate_agent(agent_id or "", token) != "invalid"
+
+    def authenticate_agent(self, agent_id: str, token: str) -> str:
+        """Return 'agent', 'global', or 'invalid'."""
+        token = str(token or "").strip()
+        if not token:
+            return "invalid"
+        safe_id = sanitize_agent_id(agent_id) if agent_id else ""
+        if safe_id:
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT enrollment_token FROM console_agents WHERE id = ?",
+                    (safe_id,),
+                ).fetchone()
+            if row is not None:
+                enrolled = str(row["enrollment_token"] or "")
+                if enrolled:
+                    return "agent" if secrets.compare_digest(enrolled, token) else "invalid"
         config = self.load_server_config()
-        return secrets.compare_digest(str(config.get("token") or ""), token)
+        if secrets.compare_digest(str(config.get("token") or ""), token):
+            return "global"
+        return "invalid"
 
     def list_removed_findings(self) -> set[str]:
         with self._connect() as connection:

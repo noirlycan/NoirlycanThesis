@@ -172,6 +172,18 @@ export const api = {
   deleteAgent(agentId: string) {
     return request<{ ok: boolean }>(`/api/agents/${encodeURIComponent(agentId)}`, { method: "DELETE" });
   },
+  registerAgent(agentId: string, displayName = "") {
+    return request<{ ok: boolean; agent: Record<string, unknown> }>("/api/agents/register", {
+      method: "POST",
+      body: JSON.stringify({ agent_id: agentId, display_name: displayName }),
+    });
+  },
+  regenerateAgentToken(agentId: string) {
+    return request<{ ok: boolean; token: string; agent: Record<string, unknown> }>(
+      `/api/agents/${encodeURIComponent(agentId)}/regenerate-token`,
+      { method: "POST" },
+    );
+  },
   addMember(body: { name: string; email: string; role: string; password: string }) {
     return request("/api/users/team", { method: "POST", body: JSON.stringify(body) });
   },

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from noirlycan_core.kernel.entities.models import Finding
-from noirlycan_core.runtime.agent_identity import resolve_agent_id
+from noirlycan_core.runtime.agent_identity import resolve_agent_credentials
 from noirlycan_core.runtime.agent_policy import AgentPolicy, load_agent_policy
 from noirlycan_agent.collector.application.collector_runtime import JsonlWriter, jsonable
 from noirlycan_agent.collector.application.policy_sync import apply_server_policy
@@ -85,7 +85,7 @@ class ConsoleRemoteClient:
         self.mode = mode
         self.timeout = timeout
         self.logs_dir = Path(logs_dir).expanduser().resolve() if logs_dir else None
-        self.agent_id = resolve_agent_id(self.logs_dir, agent_id)
+        self.agent_id = resolve_agent_credentials(self.logs_dir, agent_id, None)[0]
         self.policy = load_agent_policy(self.logs_dir) if self.logs_dir else None
         self.policy_version = self.policy.version if self.policy else 0
         self.runtime = AgentRuntimePolicy.from_policy(self.policy) if self.policy else AgentRuntimePolicy()

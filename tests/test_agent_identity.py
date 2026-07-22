@@ -5,6 +5,7 @@ from pathlib import Path
 from noirlycan_core.runtime.agent_identity import (
     generate_agent_id,
     load_agent_identity,
+    resolve_agent_credentials,
     resolve_agent_id,
     save_agent_identity,
 )
@@ -23,7 +24,10 @@ def test_resolve_agent_id_honors_explicit_override(tmp_path: Path) -> None:
     assert load_agent_identity(tmp_path) == "lab-vm-win01"
 
 
-def test_generate_agent_id_uses_hostname_prefix() -> None:
-    agent_id = generate_agent_id()
-    assert "-" in agent_id
-    assert len(agent_id.split("-")[-1]) == 8
+def test_resolve_agent_credentials_persists_token(tmp_path: Path) -> None:
+    agent_id, token = resolve_agent_credentials(tmp_path, "win10-lab", "secret-token")
+    assert agent_id == "win10-lab"
+    assert token == "secret-token"
+    again_id, again_token = resolve_agent_credentials(tmp_path, None, None)
+    assert again_id == "win10-lab"
+    assert again_token == "secret-token"
