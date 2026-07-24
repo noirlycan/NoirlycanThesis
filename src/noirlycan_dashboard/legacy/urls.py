@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from django.conf import settings
 from django.contrib import admin
 from django.contrib.staticfiles.views import serve as staticfiles_serve
-from django.urls import include, path, re_path
+from django.urls import path, re_path
 
 from . import views
 

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from noirlycan_backend.infrastructure.live_hub import broadcast, register, unregister
+from noirlycan_backend.infrastructure.live_hub import register, unregister
 
 router = APIRouter(tags=["ws"])
 

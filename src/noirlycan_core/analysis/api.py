@@ -7,7 +7,7 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 
 from noirlycan_core.analysis.domain.correlation import Correlator
 from noirlycan_core.analysis.domain.reclassify import reclassify_session

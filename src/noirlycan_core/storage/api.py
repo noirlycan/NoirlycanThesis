@@ -7,12 +7,10 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 
-from noirlycan_core.storage.infrastructure.analysis_db import AnalysisDatabase
 from noirlycan_core.storage.infrastructure.log_store import (
     list_log_files,
-    read_jsonl,
     resolve_logs_dir,
     session_detail,
 )

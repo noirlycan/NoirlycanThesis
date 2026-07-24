@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 
-from noirlycan_backend.api.auth import get_current_user, require_permission
+from noirlycan_backend.api.auth import require_permission
 from noirlycan_backend.api.deps import get_database, get_logs_dir
 from noirlycan_backend.domain.findings_groups import load_console_findings
 from noirlycan_backend.domain.reports import finding_to_markdown, session_report_markdown

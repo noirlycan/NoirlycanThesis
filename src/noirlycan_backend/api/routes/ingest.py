@@ -3,14 +3,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from noirlycan_backend.api.auth import get_current_user, require_permission
 from noirlycan_backend.api.deps import get_database, get_logs_dir
-from noirlycan_backend.domain.findings_groups import load_console_findings
-from noirlycan_backend.domain.reports import finding_to_markdown, session_report_markdown
 from noirlycan_backend.infrastructure.live_hub import schedule_broadcast
 from noirlycan_core.runtime.config import touch_collector_heartbeat
 from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir, new_session_log_path
