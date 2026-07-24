@@ -91,6 +91,18 @@ Or Docker:
 docker compose up backend-api dashboard-ui
 ```
 
+### One-command launcher (backend + dashboard)
+
+`scripts/lab_stack.py` wraps steps 2–3 into a single process group (Ctrl+C stops both):
+
+```bash
+./scripts/run-lab.sh --host 0.0.0.0 --backend-port 8888
+# or directly:
+python scripts/lab_stack.py up --host 0.0.0.0 --backend-port 8888
+```
+
+Prints the backend health URL, dashboard URL, and the exact `noirlycan-agent`/`lab_stack.py agent` command to run on the Windows VM once you've copied its enrollment token from **Agents**. Individual pieces are also available: `lab_stack.py backend`, `lab_stack.py dashboard`, `lab_stack.py agent`, `lab_stack.py sysmon`.
+
 ## Quick start — Windows agent (VM)
 
 Use a **disposable VM snapshot**. Isolate from production networks.
@@ -119,6 +131,12 @@ Or pass server/token directly:
 
 ```powershell
 noirlycan-agent run --server 192.168.1.10:8765 --agent-id vm01 --token YOUR_TOKEN --watch-sysmon --auto-attach-new-processes
+```
+
+Or the launcher shortcut (same flags, wraps `lab_stack.py agent`):
+
+```powershell
+.\scripts\run-lab-agent.ps1 -Server 192.168.1.10:8765 -AgentId vm01 -Token YOUR_TOKEN
 ```
 
 Credentials persist in `logs\.agent_identity.json` next to the working directory.
@@ -176,6 +194,7 @@ From repo root:
 
 ```powershell
 .\scripts\install-sysmon.ps1
+# or: .\scripts\run-lab-sysmon.ps1
 ```
 
 Equivalent manual install:
@@ -286,6 +305,10 @@ docs/                           architecture, threat model, thesis notes
 scripts/
   install-agent.ps1             Agent-only Windows install
   install-sysmon.ps1            Sysmon + repo config
+  lab_stack.py                  Launch backend/dashboard/agent (up/backend/dashboard/agent/sysmon)
+  run-lab.sh                    Mac/Linux: lab_stack.py up
+  run-lab-agent.ps1             Windows VM: lab_stack.py agent
+  run-lab-sysmon.ps1            Windows VM: lab_stack.py sysmon
 src/
   noirlycan_core/               correlation, storage, classification
   noirlycan_agent/              collector + Frida hooks
