@@ -356,6 +356,7 @@ select {
 
 .modal-card {
   width: 640px;
+  max-width: calc(100vw - 40px);
   max-height: 90vh;
   overflow: auto;
   background: var(--solid);
@@ -502,8 +503,8 @@ select {
 
 .finding-row {
   display: grid;
-  grid-template-columns: 44px 96px minmax(0, 1fr) 90px 84px 32px;
-  gap: 12px;
+  grid-template-columns: 44px 80px minmax(0, 1fr) minmax(0, 90px) 70px 32px;
+  gap: 10px;
   align-items: center;
   padding: 14px 22px;
   cursor: pointer;

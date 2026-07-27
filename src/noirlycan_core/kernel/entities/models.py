@@ -95,6 +95,8 @@ class NetworkConnectionEvent:
     destination_hostname: str | None
     destination_port: int | None
     initiated: bool | None = None
+    succeeded: bool | None = None
+    source: str | None = None
 
     @property
     def endpoint(self) -> str:
@@ -134,3 +136,4 @@ class Finding:
     injection_chain: tuple[int, ...] | None = None
     chain_depth: int = 0
     is_recursive: bool = False
+    network_connections: list[dict[str, Any]] = field(default_factory=list)

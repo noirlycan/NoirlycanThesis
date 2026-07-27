@@ -9,7 +9,12 @@ from importlib.resources import files
 from typing import Any, Callable
 
 from noirlycan_agent.collector.infrastructure.frida_hook_catalog import build_runtime_config
-from noirlycan_core.kernel.entities.models import MemoryPrimitive, PrimitiveKind, ProcessEvent
+from noirlycan_core.kernel.entities.models import (
+    MemoryPrimitive,
+    NetworkConnectionEvent,
+    PrimitiveKind,
+    ProcessEvent,
+)
 from noirlycan_core.runtime.agent_policy import AgentPolicy
 
 try:
@@ -75,6 +80,19 @@ class FridaInjectionMonitor:
                 return
             self._attach_pid(pid)
 
+    def enable_auto_attach(self) -> None:
+        """No-op kept for cli.py compatibility.
+
+        Session.enable_child_gating() was tried here to reliably catch child
+        processes (CreateProcessW arg-parsing and Sysmon poll timing both miss
+        cases), but it stalled the loader's own Frida message channel the
+        moment a gated child appeared — later hook events (NtMapViewOfSection,
+        GetThreadContext, SetThreadContext, ResumeThread) stopped being
+        reported even though the underlying Windows APIs kept succeeding.
+        Reverted until that's root-caused; auto-attach falls back to the
+        existing Sysmon EID1 / CreateProcess*-arg-parsing paths only."""
+        return
+
     def reload_policy(self, policy: AgentPolicy | None) -> bool:
         """Recompile hook script from dashboard policy and reattach active sessions."""
         version = policy.version if policy else 0
@@ -101,7 +119,7 @@ class FridaInjectionMonitor:
     def _attach_pid(self, pid: int) -> None:
         session = frida.attach(pid)
         script = session.create_script(self.script_source)
-        script.on("message", self._on_message)
+        script.on("message", lambda msg, data, _s=script: self._on_message(msg, data, _s))
         script.load()
         self._sessions[pid] = (session, script)
 
@@ -125,7 +143,7 @@ class FridaInjectionMonitor:
             if primitive is not None:
                 callback(primitive)
 
-    def _on_message(self, message: dict[str, Any], data: bytes | None) -> None:
+    def _on_message(self, message: dict[str, Any], data: bytes | None, script: Any = None) -> None:
         if message.get("type") != "send":
             return
         payload = message.get("payload")
@@ -139,7 +157,41 @@ class FridaInjectionMonitor:
         event_type = payload.get("type")
         if not isinstance(event_type, str):
             return
+        if event_type == "child_attach_debug":
+            reason = payload.get("reason", "?")
+            resume_pid = payload.get("resume_target_pid")
+            pending = payload.get("pending_pids", [])
+            print(
+                f"[DEBUG] child attach {reason}: "
+                f"resume_pid={resume_pid}, pending={pending}",
+                flush=True,
+            )
+            return
+        if event_type == "attach_child_request":
+            child_pid = _safe_int(payload.get("child_pid"))
+            if child_pid is not None:
+                t = threading.Thread(
+                    target=self._handle_attach_child,
+                    args=(child_pid, script),
+                    daemon=True,
+                )
+                t.start()
+            return
         self._queue.put(FridaRuntimeEvent(event_type=event_type, payload=payload))
+
+    def _handle_attach_child(self, child_pid: int, parent_script: Any) -> None:
+        with self._lock:
+            if child_pid not in self._sessions:
+                try:
+                    self._attach_pid(child_pid)
+                    print(f"[+] Frida auto-attached to child PID {child_pid} (pre-resume sync)")
+                except Exception as exc:
+                    print(f"[!] Could not auto-attach to child PID {child_pid}: {exc}")
+        if parent_script is not None:
+            try:
+                parent_script.post({"type": "child_attached"})
+            except Exception:
+                pass
 
 
 _OBSERVATION_KINDS: dict[str, PrimitiveKind] = {
@@ -175,6 +227,29 @@ def runtime_event_to_primitive(event: FridaRuntimeEvent) -> MemoryPrimitive | No
         size=_safe_int(payload.get("size")),
         api=payload.get("api", event.event_type),
         details={key: value for key, value in payload.items() if key not in _BASE_KEYS},
+    )
+
+
+def runtime_event_to_network(event: FridaRuntimeEvent) -> NetworkConnectionEvent | None:
+    if event.event_type != "network_connect":
+        return None
+    payload = event.payload
+    pid = _safe_int(payload.get("pid"))
+    destination_ip = payload.get("destination_ip")
+    if pid is None or not destination_ip:
+        return None
+    succeeded = payload.get("succeeded")
+    return NetworkConnectionEvent(
+        timestamp=_parse_timestamp(payload.get("timestamp")),
+        pid=pid,
+        image=payload.get("image"),
+        protocol=payload.get("protocol") or "tcp",
+        destination_ip=destination_ip,
+        destination_hostname=None,
+        destination_port=_safe_int(payload.get("destination_port")),
+        initiated=True,
+        succeeded=bool(succeeded) if isinstance(succeeded, bool) else None,
+        source="frida",
     )
 
 

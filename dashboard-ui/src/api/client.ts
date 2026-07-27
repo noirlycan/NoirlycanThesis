@@ -140,10 +140,10 @@ export const api = {
   regenerateToken() {
     return request<{ token: string }>("/api/agents/server/regenerate-token", { method: "POST" });
   },
-  kill(agentId: string, pid: number, image?: string) {
+  kill(agentId: string, pid: number, image?: string, extraPid?: number) {
     return request<{ ok: boolean; message: string }>(`/api/agents/${encodeURIComponent(agentId)}/kill`, {
       method: "POST",
-      body: JSON.stringify({ pid, image }),
+      body: JSON.stringify({ pid, image, extra_pid: extraPid || undefined }),
     });
   },
   team() {

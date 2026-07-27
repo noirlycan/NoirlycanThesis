@@ -114,7 +114,7 @@ class AgentPolicy:
             congruence=bool(raw.get("congruence", True)),
             temporal=bool(raw.get("temporal", True)),
             capture_minutes=max(1, min(8, int(raw.get("capture_minutes", 5)))),
-            net_watch_minutes=max(1, min(15, int(raw.get("net_watch_minutes", 5)))),
+            net_watch_minutes=max(1, min(15, int(raw.get("network_watch_minutes", raw.get("net_watch_minutes", 5))))),
             auto_attach=bool(raw.get("auto_attach", True)),
             beacon=bool(raw.get("beacon", True)),
             auto_kill=bool(raw.get("auto_kill", False)),

@@ -22,6 +22,7 @@ class ServerConfigBody(BaseModel):
 class KillRequest(BaseModel):
     pid: int = Field(ge=1)
     image: str | None = None
+    extra_pid: int | None = Field(default=None, ge=1)
 
 
 class AutoKillBody(BaseModel):
@@ -209,9 +210,24 @@ def kill_process(
         image=body.image,
         actor=user.get("email"),
     )
+    pids = [body.pid]
+    if body.extra_pid and body.extra_pid != body.pid:
+        database.record_kill(
+            agent_id=agent_id,
+            pid=body.extra_pid,
+            image=None,
+            actor=user.get("email"),
+        )
+        pids.append(body.extra_pid)
+    message = (
+        f"Kill command sent → {body.image or 'process'} (PID {body.pid}) on workstation"
+        if len(pids) == 1
+        else f"Kill commands sent → PID {' and '.join(str(p) for p in pids)} on workstation"
+    )
     return {
         "ok": True,
-        "message": f"Kill command sent → {body.image or 'process'} (PID {body.pid}) on workstation",
+        "message": message,
         "agent_id": agent_id,
         "pid": body.pid,
+        "pids": pids,
     }

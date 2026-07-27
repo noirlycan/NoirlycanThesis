@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import secrets
+import shutil
 import sqlite3
 import threading
 from contextlib import contextmanager
@@ -849,7 +850,16 @@ class ConsoleDatabase:
             connection.execute("DELETE FROM console_agents WHERE id = ?", (agent_id,))
             self._audit(connection, actor, "agent.delete", {"agent_id": agent_id})
             self.cleanup_orphan_agent_sessions()
+            self._delete_agent_logs(agent_id)
             return True
+
+    def _delete_agent_logs(self, agent_id: str) -> None:
+        agent_dir = (self.logs_dir / "agents" / sanitize_agent_id(agent_id)).resolve()
+        try:
+            agent_dir.relative_to((self.logs_dir / "agents").resolve())
+        except ValueError:
+            return
+        shutil.rmtree(agent_dir, ignore_errors=True)
 
     def verify_agent_token(self, token: str, *, agent_id: str | None = None) -> bool:
         return self.authenticate_agent(agent_id or "", token) != "invalid"

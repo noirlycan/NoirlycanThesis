@@ -316,7 +316,12 @@ function extractExecutablePath(commandLine) {
   return space === -1 ? trimmed : trimmed.substring(0, space);
 }
 
+var _onCrossProcessTarget = null;
+
 function emit(primitive, api, fields) {
+  if (_onCrossProcessTarget && fields.target_pid && fields.target_pid !== currentPid()) {
+    _onCrossProcessTarget(fields.target_pid);
+  }
   if (fields.target_pid && !fields.target_image) {
     fields.target_image = processImageFromPid(fields.target_pid);
   }
@@ -445,10 +450,16 @@ function processInformationPid(processInformation) {
     return null;
   }
   try {
-    return Memory.readU32(processInformation.add(Process.pointerSize * 2));
-  } catch (_) {
-    return null;
-  }
+    var pid = Memory.readU32(processInformation.add(Process.pointerSize * 2));
+    if (pid) return pid;
+  } catch (_) {}
+  try {
+    var hProcess = Memory.readPointer(processInformation);
+    if (hProcess && !hProcess.isNull()) {
+      return processIdFromHandle(hProcess);
+    }
+  } catch (_) {}
+  return null;
 }
 
 function hookAtAddress(apiName, address, handlers) {

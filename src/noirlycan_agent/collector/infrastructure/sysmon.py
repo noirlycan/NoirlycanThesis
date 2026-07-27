@@ -124,6 +124,11 @@ def parse_sysmon_xml(
             destination_hostname=data.get("DestinationHostname") or None,
             destination_port=_safe_int(data.get("DestinationPort")),
             initiated=None if initiated is None else initiated.lower() == "true",
+            # Sysmon's NetworkConnect (EID 3) only fires once the TCP
+            # handshake actually completes — there's nothing to report here
+            # for a connect() attempt that timed out or was refused.
+            succeeded=True,
+            source="sysmon",
         )
     if event_id in {7, 8, 10, 22, 23, 26}:
         return TelemetryEvent(

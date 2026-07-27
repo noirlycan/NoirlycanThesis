@@ -611,6 +611,8 @@ def _normalize_network(value: dict[str, Any], timestamp: str | None) -> dict[str
         "destination_port": destination_port,
         "endpoint": endpoint,
         "initiated": value.get("initiated"),
+        "succeeded": value.get("succeeded"),
+        "source": value.get("source"),
         "beacon_candidate": beacon_candidate,
     }
 
@@ -769,4 +771,5 @@ def _normalize_finding(value: dict[str, Any], timestamp: str | None) -> dict[str
         "apis": apis,
         "evidence": evidence,
         "primitives": primitives,
+        "network_connections": value.get("network_connections") or [],
     }

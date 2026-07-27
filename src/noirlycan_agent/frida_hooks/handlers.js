@@ -157,8 +157,10 @@ const API_HANDLERS = {
   },
   NtResumeThread: {
     onEnter(args) {
+      const targetPid = processIdFromThreadHandle(args[0]);
+      requestChildAttach(targetPid);
       emit("execute", "NtResumeThread", {
-        target_pid: processIdFromThreadHandle(args[0]),
+        target_pid: targetPid,
         address: null,
         size: null,
         thread_handle: args[0].toString(),
@@ -167,8 +169,10 @@ const API_HANDLERS = {
   },
   NtAlertResumeThread: {
     onEnter(args) {
+      const targetPid = processIdFromThreadHandle(args[0]);
+      requestChildAttach(targetPid);
       emit("execute", "NtAlertResumeThread", {
-        target_pid: processIdFromThreadHandle(args[0]),
+        target_pid: targetPid,
         address: null,
         size: null,
         thread_handle: args[0].toString(),
@@ -289,6 +293,21 @@ function installZwAliases() {
 
 installZwAliases();
 
+var lastNtCreateUserProcessPid = null;
+var awaitingChildPid = false;
+var pendingChildPids = {};
+
+_onCrossProcessTarget = function (targetPid) {
+  if (awaitingChildPid) {
+    pendingChildPids[targetPid] = true;
+    awaitingChildPid = false;
+  }
+};
+
+function requestChildAttach(targetPid) {
+  return;
+}
+
 function installStaticHooks() {
   hook(kernel32, "CreateProcessW", {
     onEnter(args) {
@@ -301,7 +320,8 @@ function installStaticHooks() {
       if (!boolSuccess(retval)) {
         return;
       }
-      const pid = processInformationPid(this.processInformation);
+      const pid = processInformationPid(this.processInformation) || lastNtCreateUserProcessPid;
+      lastNtCreateUserProcessPid = null;
       const image = this.image || extractExecutablePath(this.commandLine) || this.commandLine;
       emitProcessCreate("CreateProcessW", {
         pid: pid,
@@ -311,6 +331,13 @@ function installStaticHooks() {
       });
       if (pid && image) {
         rememberProcessImage(pid, image);
+      }
+      if (Array.isArray(this.flags) && this.flags.indexOf("CREATE_SUSPENDED") >= 0) {
+        if (pid) {
+          pendingChildPids[pid] = true;
+        } else {
+          awaitingChildPid = true;
+        }
       }
     },
   });
@@ -326,7 +353,8 @@ function installStaticHooks() {
       if (!boolSuccess(retval)) {
         return;
       }
-      const pid = processInformationPid(this.processInformation);
+      const pid = processInformationPid(this.processInformation) || lastNtCreateUserProcessPid;
+      lastNtCreateUserProcessPid = null;
       const image = this.image || extractExecutablePath(this.commandLine) || this.commandLine;
       emitProcessCreate("CreateProcessA", {
         pid: pid,
@@ -336,6 +364,13 @@ function installStaticHooks() {
       });
       if (pid && image) {
         rememberProcessImage(pid, image);
+      }
+      if (Array.isArray(this.flags) && this.flags.indexOf("CREATE_SUSPENDED") >= 0) {
+        if (pid) {
+          pendingChildPids[pid] = true;
+        } else {
+          awaitingChildPid = true;
+        }
       }
     },
   });
@@ -467,8 +502,10 @@ function installStaticHooks() {
 
   hook(kernel32, "ResumeThread", {
     onEnter(args) {
+      const targetPid = processIdFromThreadHandle(args[0]);
+      requestChildAttach(targetPid);
       emit("execute", "ResumeThread", {
-        target_pid: processIdFromThreadHandle(args[0]),
+        target_pid: targetPid,
         address: null,
         size: null,
         thread_handle: args[0].toString(),
@@ -684,12 +721,20 @@ function installPaperExtendedHooks() {
     },
     onLeave(retval) {
       if (ntSuccess(retval)) {
+        var loadedModule = readUtf16Safe(Memory.readPointer(this.modulePointer));
         emit("execute", "LdrLoadDll", {
           target_pid: currentPid(),
           address: null,
           size: null,
-          module: readUtf16Safe(Memory.readPointer(this.modulePointer)),
+          module: loadedModule,
         });
+        if (loadedModule) {
+          var lower = loadedModule.toLowerCase();
+          if (lower.indexOf("ws2_32") >= 0 || lower.indexOf("winhttp") >= 0 ||
+              lower.indexOf("wininet") >= 0) {
+            installNetworkHooks();
+          }
+        }
       }
     },
   });
@@ -732,12 +777,21 @@ function installPaperExtendedHooks() {
 
   hook(ntdll, "NtCreateUserProcess", {
     onEnter(args) {
+      this.processHandlePtr = args[0];
       this.flags = args[6].toString();
     },
     onLeave(retval) {
+      var pid = null;
+      if (ntSuccess(retval) && this.processHandlePtr && !this.processHandlePtr.isNull()) {
+        try {
+          var hProcess = Memory.readPointer(this.processHandlePtr);
+          pid = processIdFromHandle(hProcess);
+        } catch (_) {}
+      }
+      lastNtCreateUserProcessPid = pid;
       if (ntSuccess(retval)) {
         emitProcessCreate("NtCreateUserProcess", {
-          pid: null,
+          pid: pid,
           image: null,
           flags: [this.flags],
         });
@@ -929,6 +983,7 @@ function installEvasionHooks() {
       emitEvasion("debugger_check", "IsDebuggerPresent", {
         result: boolSuccess(retval),
       });
+      retval.replace(ptr(0));
     },
   });
 
@@ -1010,6 +1065,32 @@ function installEvasionHooks() {
       },
     });
   }
+
+  hook(kernel32, "ExitProcess", {
+    onEnter(args) {
+      emitEvasion("process_exit", "ExitProcess", {
+        exit_code: ptrToNumber(args[0]),
+      });
+    },
+  });
+
+  hook(kernel32, "TerminateProcess", {
+    onEnter(args) {
+      emitEvasion("process_exit", "TerminateProcess", {
+        target_pid: processIdFromHandle(args[0]),
+        exit_code: ptrToNumber(args[1]),
+      });
+    },
+  });
+
+  hook(ntdll, "NtTerminateProcess", {
+    onEnter(args) {
+      emitEvasion("process_exit", "NtTerminateProcess", {
+        target_pid: processIdFromHandle(args[0]),
+        exit_code: ptrToNumber(args[1]),
+      });
+    },
+  });
 }
 
 function installIredTeamHooks() {
@@ -1269,6 +1350,200 @@ const FILE_DISPOSITION_INFORMATION_EX = 64;
 // ProcessInformationClass values from winternl.h for instrumentation hooks.
 const PROCESS_INSTRUMENTATION_CALLBACK = 40;
 
+// AF_INET / AF_INET6 constants from winsock2.h.
+const AF_INET = 2;
+const AF_INET6 = 23;
+
+function parseSockAddr(addrPtr) {
+  if (!addrPtr || addrPtr.isNull()) {
+    return null;
+  }
+  try {
+    const family = Memory.readU16(addrPtr);
+    const portBytes = new Uint8Array(Memory.readByteArray(addrPtr.add(2), 2));
+    const port = (portBytes[0] << 8) | portBytes[1];
+    if (family === AF_INET) {
+      const ipBytes = new Uint8Array(Memory.readByteArray(addrPtr.add(4), 4));
+      return { ip: ipBytes.join("."), port: port, family: "IPv4" };
+    }
+    if (family === AF_INET6) {
+      const ipBytes = new Uint8Array(Memory.readByteArray(addrPtr.add(8), 16));
+      const groups = [];
+      for (let i = 0; i < 16; i += 2) {
+        groups.push(((ipBytes[i] << 8) | ipBytes[i + 1]).toString(16));
+      }
+      return { ip: groups.join(":"), port: port, family: "IPv6" };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function emitNetworkConnect(api, addrPtr, succeeded) {
+  const parsed = parseSockAddr(addrPtr);
+  if (!parsed) {
+    return;
+  }
+  send({
+    type: "network_connect",
+    api: api,
+    pid: currentPid(),
+    image: actorImage(),
+    protocol: "tcp",
+    destination_ip: parsed.ip,
+    destination_port: parsed.port,
+    succeeded: succeeded,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+var _networkHooksInstalled = false;
+
+function installNetworkHooks() {
+  if (_networkHooksInstalled) {
+    return;
+  }
+  const ws2_32 = "ws2_32.dll";
+  if (!getModuleByName(ws2_32)) {
+    return;
+  }
+
+  hook(ws2_32, "WSASocketW", {
+    onLeave(retval) {
+      send({
+        type: "network_connect",
+        api: "WSASocketW",
+        pid: currentPid(),
+        image: actorImage(),
+        protocol: "socket_create",
+        destination_ip: "0.0.0.0",
+        destination_port: 0,
+        succeeded: ptrToNumber(retval) !== -1,
+        timestamp: new Date().toISOString(),
+      });
+    },
+  });
+
+  hook(ws2_32, "socket", {
+    onLeave(retval) {
+      send({
+        type: "network_connect",
+        api: "socket",
+        pid: currentPid(),
+        image: actorImage(),
+        protocol: "socket_create",
+        destination_ip: "0.0.0.0",
+        destination_port: 0,
+        succeeded: ptrToNumber(retval) !== -1,
+        timestamp: new Date().toISOString(),
+      });
+    },
+  });
+
+  hook(ws2_32, "connect", {
+    onEnter(args) {
+      this.addrPtr = args[1];
+    },
+    onLeave(retval) {
+      emitNetworkConnect("connect", this.addrPtr, ptrToNumber(retval) === 0);
+    },
+  });
+
+  hook(ws2_32, "WSAConnect", {
+    onEnter(args) {
+      this.addrPtr = args[1];
+    },
+    onLeave(retval) {
+      emitNetworkConnect("WSAConnect", this.addrPtr, ptrToNumber(retval) === 0);
+    },
+  });
+
+  hook(ws2_32, "sendto", {
+    onEnter(args) {
+      this.addrPtr = args[4];
+      this.addrLen = ptrToNumber(args[5]);
+    },
+    onLeave(retval) {
+      if (this.addrPtr && !this.addrPtr.isNull() && this.addrLen > 0) {
+        emitNetworkConnect("sendto", this.addrPtr, ptrToNumber(retval) >= 0);
+      }
+    },
+  });
+
+  var winhttp = "winhttp.dll";
+  if (getModuleByName(winhttp)) {
+    hook(winhttp, "WinHttpConnect", {
+      onEnter(args) {
+        this.server = readUtf16Safe(args[1]);
+        this.port = ptrToNumber(args[2]);
+      },
+      onLeave(retval) {
+        if (!retval.isNull() && this.server) {
+          send({
+            type: "network_connect",
+            api: "WinHttpConnect",
+            pid: currentPid(),
+            image: actorImage(),
+            protocol: "http",
+            destination_ip: this.server,
+            destination_port: this.port || 443,
+            succeeded: true,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      },
+    });
+  }
+
+  var wininet = "wininet.dll";
+  if (getModuleByName(wininet)) {
+    hook(wininet, "InternetConnectW", {
+      onEnter(args) {
+        this.server = readUtf16Safe(args[1]);
+        this.port = ptrToNumber(args[2]);
+      },
+      onLeave(retval) {
+        if (!retval.isNull() && this.server) {
+          send({
+            type: "network_connect",
+            api: "InternetConnectW",
+            pid: currentPid(),
+            image: actorImage(),
+            protocol: "http",
+            destination_ip: this.server,
+            destination_port: this.port || 80,
+            succeeded: true,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      },
+    });
+
+    hook(wininet, "InternetConnectA", {
+      onEnter(args) {
+        this.server = readAnsiSafe(args[1]);
+        this.port = ptrToNumber(args[2]);
+      },
+      onLeave(retval) {
+        if (!retval.isNull() && this.server) {
+          send({
+            type: "network_connect",
+            api: "InternetConnectA",
+            pid: currentPid(),
+            image: actorImage(),
+            protocol: "http",
+            destination_ip: this.server,
+            destination_port: this.port || 80,
+            succeeded: true,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      },
+    });
+  }
+
+  _networkHooksInstalled = true;
+}
+
 function installAdvancedInjectionHooks() {
   // ---- Process Ghosting / Herpaderping precursor ----
   hook(ntdll, "NtSetInformationFile", {
@@ -1451,6 +1726,7 @@ installIredTeamHooks();
 installAdvancedInjectionHooks();
 installDynamicResolverHooks();
 installEvasionHooks();
+installNetworkHooks();
 
 send({
   type: "hook_ready",
@@ -1458,6 +1734,10 @@ send({
   actor_pid: currentPid(),
   actor_image: actorImage(),
   hooked_exports: hookedAddresses.size,
+  network_hooks: _networkHooksInstalled,
+  ws2_32_loaded: !!getModuleByName("ws2_32.dll"),
+  winhttp_loaded: !!getModuleByName("winhttp.dll"),
+  wininet_loaded: !!getModuleByName("wininet.dll"),
   policy_version: CONFIG ? CONFIG.version || 0 : 0,
   policy_hooks: ENABLED_EXPORTS ? ENABLED_EXPORTS.size : null,
 });

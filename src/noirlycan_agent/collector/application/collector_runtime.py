@@ -25,6 +25,7 @@ from noirlycan_core.runtime.agent_policy import load_agent_policy
 from noirlycan_agent.collector.infrastructure.frida_manager import (
     FridaInjectionMonitor,
     FridaUnavailable,
+    runtime_event_to_network,
     runtime_event_to_primitive,
     runtime_event_to_process,
 )
@@ -34,6 +35,8 @@ from noirlycan_agent.collector.infrastructure.sysmon import (
     SysmonPoller,
     SysmonUnavailable,
 )
+from noirlycan_agent.collector.infrastructure.tcp_watch import TcpWatchPoller
+from noirlycan_agent.collector.infrastructure.wfp_watch import WfpPoller
 
 
 class JsonlWriter:
@@ -115,8 +118,17 @@ def print_finding(finding: Finding) -> None:
     if finding.score >= 70 and finding.target_pid is not None:
         print(
             f"  Network watch enabled for PID {finding.target_pid} "
-            f"(5 min, outbound Sysmon EID 3)"
+            f"(WFP audit + TCP table + Sysmon EID 3)"
         )
+    if finding.network_connections:
+        print(f"  Network ({len(finding.network_connections)} connections):")
+        for conn in finding.network_connections[-5:]:
+            status = "OK" if conn.get("succeeded") else "FAIL"
+            print(
+                f"    -> {conn.get('destination', '?')} "
+                f"[{conn.get('protocol', '?')}] {status} "
+                f"(via {conn.get('source', '?')})"
+            )
 
 
 def create_sysmon_or_none(watch_sysmon: bool) -> SysmonPoller | None:
@@ -175,10 +187,12 @@ def handle_network_event(
     correlator: Correlator,
     writer: JsonlWriter,
 ) -> None:
-    watched = correlator.add_network_connection(event)
+    watched, enriched_finding = correlator.add_network_connection(event)
     if watched is None:
         return
     writer.write("network", watched)
+    if enriched_finding is not None:
+        writer.write("finding", enriched_finding)
     policy = correlator.reload_agent_policy()
     beacon_enabled = policy.beacon if policy is not None else True
     allowlist = policy.allowlist if policy is not None else None
@@ -191,8 +205,17 @@ def handle_network_event(
         print(
             f"[NETWORK:BEACON?] PID {watched.pid} "
             f"({watched.image or 'unknown'}) -> {watched.endpoint} "
-            f"via {watched.protocol or 'unknown'}"
+            f"via {watched.protocol or 'unknown'}",
+            flush=True,
         )
+        if enriched_finding is not None:
+            print(
+                f"  ^ Linked to finding: [{enriched_finding.severity.value.upper()}:{enriched_finding.score}] "
+                f"{enriched_finding.actor_image or 'loader'} -> "
+                f"{enriched_finding.target_image or 'beacon'} -> "
+                f"{watched.endpoint}",
+                flush=True,
+            )
     else:
         print(
             f"[NETWORK] PID {watched.pid} "
@@ -260,6 +283,30 @@ def process_sysmon_batch(
     return len(events)
 
 
+def drain_tcp_watch(
+    tcp_poller: TcpWatchPoller,
+    correlator: Correlator,
+    writer: JsonlWriter,
+) -> None:
+    watched = correlator.network_watch_pids()
+    if not watched:
+        return
+    for event in tcp_poller.poll(watched):
+        handle_network_event(event, correlator, writer)
+
+
+def drain_wfp_watch(
+    wfp_poller: WfpPoller,
+    correlator: Correlator,
+    writer: JsonlWriter,
+) -> None:
+    watched = correlator.network_watch_pids()
+    if not watched:
+        return
+    for event in wfp_poller.poll(watched):
+        handle_network_event(event, correlator, writer)
+
+
 def drain_frida(
     monitor: FridaInjectionMonitor,
     correlator: Correlator,
@@ -272,6 +319,27 @@ def drain_frida(
         except queue.Empty:
             return
         writer.write("frida_raw", runtime_event.payload)
+        if runtime_event.event_type == "hook_ready":
+            pid = runtime_event.payload.get("actor_pid", "?")
+            net = runtime_event.payload.get("network_hooks", False)
+            n_hooks = runtime_event.payload.get("hooked_exports", 0)
+            ws2 = runtime_event.payload.get("ws2_32_loaded", False)
+            wh = runtime_event.payload.get("winhttp_loaded", False)
+            wi = runtime_event.payload.get("wininet_loaded", False)
+            mods = []
+            if ws2:
+                mods.append("ws2_32")
+            if wh:
+                mods.append("winhttp")
+            if wi:
+                mods.append("wininet")
+            print(
+                f"[HOOKS] PID {pid}: {n_hooks} exports hooked, "
+                f"network={'OK' if net else 'PENDING'}, "
+                f"net modules: {', '.join(mods) or 'none'}",
+                flush=True,
+            )
+            continue
         if runtime_event.event_type == "process_create":
             parent_pid = runtime_event.payload.get("parent_pid")
             try:
@@ -296,6 +364,10 @@ def drain_frida(
             if auto_attach and should_auto_attach(process_event):
                 safe_attach(monitor, process_event.pid)
             continue
+        network_event = runtime_event_to_network(runtime_event)
+        if network_event is not None:
+            handle_network_event(network_event, correlator, writer)
+            continue
         primitive = runtime_event_to_primitive(runtime_event)
         if primitive is None:
             continue
@@ -303,3 +375,9 @@ def drain_frida(
         for finding in correlator.add_primitive(primitive):
             writer.write("finding", finding)
             print_finding(finding)
+            if finding.target_pid is not None and finding.score >= 70:
+                print(
+                    f"  [!] Skipping Frida attach to PID {finding.target_pid} "
+                    f"(beacon anti-instrumentation). Relying on Sysmon EID 3.",
+                    flush=True,
+                )

@@ -54,6 +54,7 @@ class Correlator:
         self._network_watch_until: dict[int, datetime] = {}
         self.network_connections: dict[int, list[NetworkConnectionEvent]] = defaultdict(list)
         self._pid_image_cache: dict[int, str] = {}
+        self._findings_by_target: dict[int, Finding] = {}
         self._injection_graph = InjectionGraph()
         self._rules_config: ClassifierRulesConfig | None = None
         self._rules_config_mtime: float = -1.0
@@ -174,12 +175,24 @@ class Correlator:
         self._expire(enriched.timestamp)
         return self._evaluate_chain(chain_key, enriched)
 
-    def add_network_connection(self, event: NetworkConnectionEvent) -> NetworkConnectionEvent | None:
+    def add_network_connection(
+        self, event: NetworkConnectionEvent
+    ) -> tuple[NetworkConnectionEvent | None, Finding | None]:
         self._expire(event.timestamp)
         if event.pid not in self._active_network_watch_pids(event.timestamp):
-            return None
+            return None, None
         self.network_connections[event.pid].append(event)
-        return event
+        finding = self._findings_by_target.get(event.pid)
+        if finding is not None:
+            conn_entry = {
+                "destination": event.endpoint,
+                "protocol": event.protocol,
+                "succeeded": event.succeeded,
+                "source": event.source,
+                "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+            }
+            finding.network_connections.append(conn_entry)
+        return event, finding
 
     def network_watch_pids(self, now: datetime | None = None) -> set[int]:
         return self._active_network_watch_pids(now or now_utc())
@@ -258,6 +271,8 @@ class Correlator:
         )
         finding = apply_classification(finding, logs_dir=self.logs_dir)
         finding = self._injection_graph.add_finding(finding)
+        if target_pid is not None:
+            self._findings_by_target[target_pid] = finding
         findings.append(finding)
         return findings
 

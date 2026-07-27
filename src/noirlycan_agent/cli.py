@@ -29,10 +29,26 @@ from noirlycan_agent.collector.application.collector_runtime import (
     create_monitor_or_none as _create_monitor_or_none,
     create_sysmon_or_none as _create_sysmon_or_none,
     drain_frida as _drain_frida,
+    drain_tcp_watch as _drain_tcp_watch,
+    drain_wfp_watch as _drain_wfp_watch,
     print_finding,
     process_sysmon_batch as _process_sysmon_batch_core,
     safe_attach as _safe_attach,
 )
+from noirlycan_agent.collector.infrastructure.tcp_watch import TcpWatchPoller
+from noirlycan_agent.collector.infrastructure.wfp_watch import WfpPoller, enable_wfp_audit
+
+
+def _safe_resume(device: Any, pid: int) -> None:
+    # When child gating is active (enable_auto_attach), the gating callback
+    # races to resume the same pid — whichever resumes first wins and the
+    # second call would otherwise raise "invalid operation".
+    try:
+        device.resume(pid)
+    except Exception:
+        pass
+
+
 from noirlycan_agent.collector.application.remote_sink import (
     ConsoleRemoteClient,
     RemoteJsonlWriter,
@@ -171,6 +187,10 @@ def command_run(args: argparse.Namespace) -> int:
     if logs_dir is not None:
         register_collector_pid(logs_dir, os.getpid())
     sysmon = _create_sysmon_or_none(args.watch_sysmon)
+    tcp_poller = TcpWatchPoller()
+    wfp_poller: WfpPoller | None = None
+    if enable_wfp_audit():
+        wfp_poller = WfpPoller()
     file_watcher: FileDropWatcher | None = None
     file_watch_active = False
     _WATCH_PATHS = []
@@ -186,6 +206,8 @@ def command_run(args: argparse.Namespace) -> int:
                 monitor=monitor,
             )
             auto_attach = _effective_auto_attach(args, logs_dir, remote)
+            if auto_attach and monitor is not None:
+                monitor.enable_auto_attach()
             file_watcher, file_watch_active = _sync_file_watcher(
                 args,
                 file_watcher,
@@ -218,10 +240,14 @@ def command_run(args: argparse.Namespace) -> int:
                     writer,
                     auto_attach=auto_attach,
                 )
+            _drain_tcp_watch(tcp_poller, correlator, writer)
+            if wfp_poller is not None:
+                _drain_wfp_watch(wfp_poller, correlator, writer)
             drain_agent_commands(remote)
             if remote is not None:
                 remote.heartbeat(watching=", ".join(_WATCH_PATHS))
-            time.sleep(args.poll_interval)
+            interval = 0.2 if correlator.network_watch_pids() else args.poll_interval
+            time.sleep(interval)
     except KeyboardInterrupt:
         if remote is not None:
             remote.goodbye()
@@ -263,9 +289,11 @@ def command_spawn(args: argparse.Namespace) -> int:
     device = frida.get_local_device()
     pid = device.spawn(spawn_argv)
     _safe_attach(monitor, pid)
-    device.resume(pid)
+    _safe_resume(device, pid)
     print(f"[+] Spawned and attached PID {pid}: {' '.join(spawn_argv)}")
     sysmon = _create_sysmon_or_none(args.watch_sysmon)
+    tcp_poller_spawn = TcpWatchPoller()
+    wfp_spawn = WfpPoller() if enable_wfp_audit() else None
     try:
         while True:
             apply_runtime_policy(
@@ -282,6 +310,9 @@ def command_spawn(args: argparse.Namespace) -> int:
                     auto_attach=False,
                 )
             _drain_frida(monitor, correlator, writer, auto_attach=True)
+            _drain_tcp_watch(tcp_poller_spawn, correlator, writer)
+            if wfp_spawn is not None:
+                _drain_wfp_watch(wfp_spawn, correlator, writer)
             drain_agent_commands(remote)
             time.sleep(0.25)
     except KeyboardInterrupt:
@@ -584,7 +615,7 @@ def _run_api_analysis(
         device = frida.get_local_device()
         pid = device.spawn(spawn_argv)
         _safe_attach(monitor, pid)
-        device.resume(pid)
+        _safe_resume(device, pid)
     except Exception as exc:
         print(f"[!] API spawn failed for {path}: {exc}", file=sys.stderr, flush=True)
         _mark_upload_analysis_failed(writer, resolved, error=str(exc))

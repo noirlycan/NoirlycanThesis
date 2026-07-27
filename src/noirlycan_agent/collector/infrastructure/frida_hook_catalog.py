@@ -375,6 +375,8 @@ EXTRA_HOOKS: list[HookSpec] = [
         bucket=None,
     ),
     HookSpec(module="advapi32", export="RegOpenKeyExW", tier="support", bucket=None),
+    HookSpec(module="ws2_32", export="connect", tier="support", bucket=None),
+    HookSpec(module="ws2_32", export="WSAConnect", tier="support", bucket=None),
 ]
 
 _ZW_ALIAS_HOOKS: list[HookSpec] = []

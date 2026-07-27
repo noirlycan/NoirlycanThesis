@@ -164,7 +164,15 @@ def group_findings(
 ) -> list[dict[str, Any]]:
     removed = removed or set()
     hostnames = agent_hostnames or {}
-    visible = [f for f in findings if _finding_key(f) not in removed]
+    deduped: dict[str, dict[str, Any]] = {}
+    for f in findings:
+        key = _finding_key(f)
+        if key in removed:
+            continue
+        existing = deduped.get(key)
+        if existing is None or len(f.get("network_connections") or []) > len(existing.get("network_connections") or []):
+            deduped[key] = f
+    visible = list(deduped.values())
     buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
     for finding in visible:
@@ -331,7 +339,6 @@ def load_all_agents_findings(
 
         severity = stats.get("severity") or {}
         networks = stats.get("recent_network") or []
-        beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
         triages = _file_drops_for_display(stats, removed_drops=removed_file_drops)
         agent_groups = group_findings(
             visible,
@@ -355,7 +362,7 @@ def load_all_agents_findings(
                 "low": int(severity.get("low", 0)),
                 "injection_chains": _injection_group_count(agent_groups),
                 "file_drops": len(triages),
-                "beacons": len(beacons),
+                "beacons": len(networks),
             }
         )
 
@@ -365,16 +372,12 @@ def load_all_agents_findings(
 
     all_triages: list[dict[str, Any]] = []
     all_network: list[dict[str, Any]] = []
-    all_beacons: list[dict[str, Any]] = []
     all_events: list[dict[str, Any]] = []
     all_chains: list[dict[str, Any]] = []
     totals = Counter()
     for stats in merged_stats:
         all_triages.extend(_file_drops_for_display(stats, removed_drops=removed_file_drops))
         all_network.extend(stats.get("recent_network") or [])
-        all_beacons.extend(
-            n for n in (stats.get("recent_network") or []) if n.get("beacon_candidate") or n.get("is_external")
-        )
         all_events.extend(list(stats.get("recent_primitives") or []) + list(stats.get("recent_processes") or []))
         all_chains.extend(stats.get("injection_chains") or [])
         for key, value in (stats.get("totals") or {}).items():
@@ -446,7 +449,6 @@ def overview_payload(
     groups = bundle.get("groups") or []
     triages = _file_drops_for_display(stats, removed_drops=removed_file_drops)
     networks = stats.get("recent_network") or stats.get("network") or []
-    beacons = [n for n in networks if n.get("beacon_candidate") or n.get("is_external")]
 
     primitive_counts = bundle.get("primitive_kind_counts") or stats.get("primitive_kinds") or stats.get(
         "primitive_kind_counts"
@@ -467,7 +469,7 @@ def overview_payload(
             "critical": len(critical),
             "injection_chains": _injection_group_count(groups),
             "file_drops": len(triages),
-            "beacons": len(beacons),
+            "beacons": len(networks),
             "agents": registered_agents if registered_agents is not None else len(bundle.get("agent_stats") or []),
         },
         "severity_counts": severity_counts,
@@ -478,5 +480,5 @@ def overview_payload(
         "recent_events": recent_events,
         "triages": triages,
         "network": networks,
-        "beacons": beacons,
+        "beacons": networks,
     }

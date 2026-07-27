@@ -41,6 +41,7 @@
     <NetworkConnect onmatch="exclude">
       <DestinationIp condition="is">127.0.0.1</DestinationIp>
       <DestinationIp condition="is">::1</DestinationIp>
+      <DestinationIp condition="is">0:0:0:0:0:0:0:1</DestinationIp>
     </NetworkConnect>
 
     <!-- Detect remote thread injection -->

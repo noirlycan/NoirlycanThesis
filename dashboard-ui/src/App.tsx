@@ -155,13 +155,14 @@ function OverviewView({
   onNavigate: (tab: TabId) => void;
   onOpenFinding: (member: FindingMember) => void;
   canKill: boolean;
-  onKill: (pid: number, image?: string, killAgentId?: string) => void;
+  onKill: (pid: number, image?: string, killAgentId?: string, actorPid?: number) => void;
   killed: Set<number>;
 }) {
   const kpis = data.kpis || { findings: 0, critical: 0, injection_chains: 0, file_drops: 0, beacons: 0, agents: 0 };
   const critical = data.critical_finding as Record<string, unknown> | null | undefined;
   const showCritical = !normalizeSearch(searchQuery) || matchesSearch(searchQuery, critical);
   const pid = critical?.target_pid as number | undefined;
+  const criticalActorPid = Number(critical?.actor_pid || 0) || undefined;
   const isKilled = pid ? killed.has(pid) : false;
   const criticalAgentId = String(critical?.agent_id || "");
   const criticalHostname = agentLabel(critical);
@@ -235,7 +236,7 @@ function OverviewView({
                       type="button"
                       className="btn-brand"
                       style={{ background: "#e5484d", boxShadow: "none", padding: "6px 14px", fontSize: 12 }}
-                      onClick={() => onKill(pid, String(critical.target_image || ""), criticalAgentId || undefined)}
+                      onClick={() => onKill(pid, String(critical.target_image || ""), criticalAgentId || undefined, criticalActorPid)}
                     >
                       Kill process
                     </button>
@@ -444,7 +445,7 @@ function FindingsView({
   agentScope?: { id: string; hostname: string } | null;
   onOpen: (member: FindingMember) => void;
   onDelete: (key: string) => void;
-  onKill: (pid: number, image?: string, killAgentId?: string) => void;
+  onKill: (pid: number, image?: string, killAgentId?: string, actorPid?: number) => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -466,6 +467,7 @@ function FindingsView({
       {groups.map((group) => {
         const groupPid = group.vpid != null ? Number(group.vpid) : 0;
         const groupKilled = groupPid > 0 && killed.has(groupPid);
+        const groupActorPid = Number(group.members?.[0]?.finding?.actor_pid || 0) || undefined;
         return (
         <div key={group.key} className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div className="group-header">
@@ -489,7 +491,7 @@ function FindingsView({
                     type="button"
                     className="btn-brand"
                     style={{ background: "#e5484d", boxShadow: "none", padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-                    onClick={() => onKill(groupPid, group.victim, group.agent_id)}
+                    onClick={() => onKill(groupPid, group.victim, group.agent_id, groupActorPid)}
                   >
                     Kill process
                   </button>
@@ -699,11 +701,15 @@ export default function App() {
     return () => registerUnauthorizedHandler(null);
   }, []);
 
-  async function handleKill(pid: number, image?: string, killAgentId?: string) {
+  async function handleKill(pid: number, image?: string, killAgentId?: string, actorPid?: number) {
     try {
       const selectedAgent = killAgentId || agentId || String(agentsData?.agents?.[0]?.id || "local-agent");
-      const result = await api.kill(selectedAgent, pid, image);
-      setKilled((prev) => new Set(prev).add(pid));
+      const result = await api.kill(selectedAgent, pid, image, actorPid);
+      setKilled((prev) => {
+        const next = new Set(prev).add(pid);
+        if (actorPid) next.add(actorPid);
+        return next;
+      });
       setToast(result.message);
     } catch (err) {
       setToast(String(err));
@@ -1029,7 +1035,8 @@ export default function App() {
           onKill={async () => {
             const pid = Number(modal.finding?.target_pid || 0);
             const killAgentId = String(modal.agent_id || modal.finding?.agent_id || "");
-            if (pid > 0) await handleKill(pid, String(modal.finding?.target_image || ""), killAgentId || undefined);
+            const actorPid = Number(modal.finding?.actor_pid || 0) || undefined;
+            if (pid > 0) await handleKill(pid, String(modal.finding?.target_image || ""), killAgentId || undefined, actorPid);
           }}
         />
       ) : null}
