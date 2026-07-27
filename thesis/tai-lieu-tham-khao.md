@@ -28,7 +28,7 @@
 
 12. Starink, T., et al. (2023), "Behavior Graphs for Malware Detection", *IEEE Transactions on Information Forensics and Security*, 18, pp. 2345-2360.
 
-13. Co, P. V. (2026), *Noirlycan Thesis Telemetry Prototype — Source code and documentation*, Repository NoirlycanThesis, https://github.com/ *(điền URL chính thức khi công bố)*.
+13. Phan, V. C. (2026), *Noirlycan Thesis Telemetry Prototype — Source code and documentation*, Repository NoirlycanThesis, https://github.com/ *(điền URL chính thức khi công bố)*.
 
 14. Hồ Tú Bảo (2010), *Phương pháp nghiên cứu khoa học* (*Scientific Methodology*), Viện Công nghệ Thông tin — Viện Hàn lâm Khoa học và Công nghệ Việt Nam, Hà Nội.
 

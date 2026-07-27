@@ -1,6 +1,6 @@
 # CHƯƠNG 6. ĐÁNH GIÁ THỰC NGHIỆM
 
-Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc dưới các hình thức né tránh* thông qua artifact Noirlycan, căn cứ [4]. Phạm vi **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — tăng recall ~21,2 % — **không** được hiện thực; luận văn **không** so sánh recall với paper trên dataset 56.340 mẫu. Đánh giá tập trung năm trục: (1) kiểm chứng 2-of-3 và biến thể E1/E2 qua test; (2) case study section-mapping; (3) provenance E3; (4) telemetry kép E4; (5) protocol Frida fidelity (E6).
+Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc trước các kĩ thuật né tránh* thông qua artifact Noirlycan, căn cứ [4]. Phạm vi **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — tăng recall ~21,2 % — **không** được hiện thực; luận văn **không** so sánh recall với paper trên dataset 56.340 mẫu. Đánh giá tập trung năm trục: (1) kiểm chứng 2-of-3 và biến thể E1/E2 qua test; (2) case study section-mapping; (3) provenance E3; (4) telemetry kép E4; (5) protocol Frida fidelity (E6).
 
 ---
 
@@ -341,7 +341,33 @@ Hướng phát triển: port subset anti-evasion Sap4Sec hoặc chế độ ETW-
 
 ## 6.14. Đánh giá định tính dashboard và JSONL
 
-Trên session lab thực: JSONL chứa đủ chuỗi `file` → `sysmon` → `primitive` → `finding`, replay offline; dashboard Findings hiển thị `related_file.path`, SHA256, technique badge — analyst nắm tình huống dưới 30 giây; export JSONL phục vụ lưu trữ evidence (Phụ lục C). Bổ sung RQ3 ở mức *qualitative acceptance*; đánh giá định lượng cần khảo sát người dùng — vượt phạm vi.
+Trên session lab thực: JSONL chứa đủ chuỗi `file` → `sysmon` → `primitive` → `finding`, replay offline; dashboard Findings hiển thị `related_file.path`, SHA256, technique badge — analyst nắm tình huống dưới 30 giây; export JSONL phục vụ lưu trữ evidence (Phụ lục C). Bổ sung RQ3 ở mức *qualitative acceptance*; đánh giá định lượng cần khảo sát người dùng — vượt phạm vi. Các hình từ Hình 6.1 đến Hình 6.8 dưới đây minh họa giao diện dashboard trên session lab thực với loader `aes_decrypt_loader` tiêm vào `msedge.exe` (agent `winVM01`).
+
+Hình 6.1 thể hiện màn hình Overview: KPI toàn fleet (2 agent, 10 finding trong đó 7 CRITICAL, 10 injection chain, 30 file drop, 20 network observation), finding CRITICAL mới nhất kèm API chain đầy đủ (allocate → write → context_read → execute) và phân bố injection primitive theo quy tắc 2-of-3 [4].
+
+![Hình 6.1. Màn hình Overview — KPI toàn fleet, finding CRITICAL và phân bố injection primitive](seminar/images/01-overview.png){width=14.5cm}
+
+Hình 6.2 liệt kê danh sách finding theo agent: mỗi dòng gồm đường dẫn loader (`C:\Users\Public\Downloads\aes_decrypt_loader*.exe`), tiến trình đích `msedge.exe`, mức severity và thời điểm phát hiện — hỗ trợ triage theo trình tự thời gian.
+
+![Hình 6.2. Tab Findings — danh sách finding loader → target theo thời gian](seminar/images/02-findings.png){width=12.5cm}
+
+Khi chọn một finding, Hình 6.3 hiển thị chi tiết chuỗi tiêm: score, badge kỹ thuật (`section_mapping`, `cross_process`), số primitive quan sát được so với ngưỡng 2-of-3, cùng timeline API. Tab Evidence (Hình 6.4) liệt kê bằng chứng thô đối chiếu được với JSONL xuất ra — bảo đảm tính truy vết (chain-of-evidence) cho phân tích forensic E3.
+
+![Hình 6.3. Chi tiết finding — score, badge kỹ thuật và timeline API chain](seminar/images/07-finding-detail.png){width=14.5cm}
+
+![Hình 6.4. Chi tiết finding, tab Evidence — bằng chứng thô đối chiếu JSONL](seminar/images/08-finding-detail-evidence.png){width=14.5cm}
+
+Hình 6.5 (tab Activity) là dòng sự kiện hợp nhất Frida + Sysmon theo thời gian thực; Hình 6.6 (tab Network) thể hiện network observation hậu-finding: 20 kết nối `SYN_SENT` từ PID đích (22964, 6548) tới `192.168.0.104:80/443` ở trạng thái NOT ESTABLISHED — nguồn `TCP_TABLE`, minh chứng hành vi beacon C2 của payload sau khi tiêm.
+
+![Hình 6.5. Tab Activity — dòng sự kiện hợp nhất Frida + Sysmon](seminar/images/03-activity.png){width=14.5cm}
+
+![Hình 6.6. Tab Network — network observation hậu-finding từ PID đích (post-injection watch)](seminar/images/04-network.png){width=13.5cm}
+
+Hình 6.7 thể hiện cấu hình quy tắc correlation 2-of-3 [4] trên dashboard (equivalence class API, ngưỡng primitive); Hình 6.8 là màn hình quản trị agent (`winVM01`) với trạng thái policy đồng bộ Frida + Sysmon.
+
+![Hình 6.7. Tab Rules — quy tắc correlation 2-of-3 và equivalence class API](seminar/images/05-rules-correlation.png){width=14.5cm}
+
+![Hình 6.8. Tab Agents — trạng thái agent winVM01 và policy Frida + Sysmon](seminar/images/06-agents.png){width=14.5cm}
 
 ## 6.15. Công thức metric (định nghĩa cho mở rộng tương lai)
 

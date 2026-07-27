@@ -13,7 +13,7 @@ Phương pháp gồm hai tầng:
 1. **Tầng chống biến thể (E1, E2)** — kế thừa [4]: mọi lời gọi API injection ánh xạ vào một trong ba primitive *allocate*, *write*, *execute*; chuỗi được kết luận khi có ≥2 primitive khác loại trên cùng cặp `(actor_pid, target_pid)` thỏa congruence + temporal.
 2. **Tầng ngữ cảnh (E3, E4)** — đóng góp của luận văn: (a) pipeline *file provenance* phục hồi loader khi victim hợp pháp; (b) *telemetry kép* Sysmon ∪ Frida giảm FN khi user-mode hook bị né.
 
-Hình 4.1 so sánh pipeline batch của [4] (QEMU sandbox → trace → analyzer offline) với Noirlycan (Windows real-time): khác biệt then chốt là trục thời gian — Noirlycan dùng cửa sổ trượt và re-evaluation tăng dần.
+So với pipeline batch của [4] (QEMU sandbox → trace → analyzer offline), Noirlycan chạy trên Windows real-time: khác biệt then chốt là trục thời gian — Noirlycan dùng cửa sổ trượt và re-evaluation tăng dần.
 
 ### 4.1.2. Luồng dữ liệu end-to-end
 

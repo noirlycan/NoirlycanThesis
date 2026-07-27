@@ -1,6 +1,5 @@
 ---
-title: "Tăng cường phát hiện mã độc dưới các hình thức né tránh"
-author: "Phan Vinh Cơ"
+# Trang bìa render từ 00-bia-chinh.md (không dùng title block của pandoc)
 lang: vi-VN
 mainfont: "Times New Roman"
 fontsize: 13pt
@@ -10,8 +9,5 @@ geometry:
   - bottom=2cm
   - left=3cm
   - right=2cm
-toc: true
-toc-depth: 3
-toc-title: "MỤC LỤC"
 numbersections: false
 ---

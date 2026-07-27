@@ -1444,7 +1444,7 @@ button.linkish {
 .demo-mode .toolbar .toolbar-actions { opacity: 0.5; }
 
 .demo-mode::after {
-  content: "Noirlycan · Luận văn thạc sĩ · Phan Vinh Co";
+  content: "Noirlycan · Luận văn thạc sĩ · Phan Van Co";
   position: fixed;
   right: 16px;
   bottom: 12px;

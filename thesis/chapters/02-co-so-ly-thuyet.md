@@ -436,7 +436,7 @@ Hai công cụ bổ trợ: Frida cho chi tiết congruence [4], Sysmon cho tin c
 
 E6 không vô hiệu hoá hoàn toàn — luận văn khuyến nghị `spawn` mode cho thí nghiệm rủi ro E6 cao.
 
-### 1.8.4. Kiến trúc kép Sysmon ∪ Frida (Hình 1.1)
+### 1.8.4. Kiến trúc kép Sysmon ∪ Frida
 
 Luận văn kết hợp hai nguồn telemetry độc lập:
 
@@ -452,7 +452,7 @@ Luận văn kết hợp hai nguồn telemetry độc lập:
     [Dashboard / JSONL]
 ```
 
-**Hình 1.1** (đầy đủ tại `docs/design/architecture-comparison-template.svg` và Chương 5) thể hiện trust boundary giữa Frida (user-mode, không tin cậy nếu E4/E6) và Sysmon (kernel, tin cậy nếu O3 không xảy ra). Correlator đặt ngoài agent — tránh mất logic phát hiện khi agent bị vô hiệu hoá.
+Sơ đồ trên thể hiện trust boundary giữa Frida (user-mode, không tin cậy nếu E4/E6) và Sysmon (kernel, tin cậy nếu O3 không xảy ra); bản vẽ đầy đủ trình bày tại Chương 3. Correlator đặt ngoài agent — tránh mất logic phát hiện khi agent bị vô hiệu hoá.
 
 ### 1.8.5. Fidelity và giả định M5
 

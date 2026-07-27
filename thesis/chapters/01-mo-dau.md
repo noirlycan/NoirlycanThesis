@@ -12,7 +12,7 @@ Paper [4] đề xuất abstraction **operational primitive** gồm ba thao tác:
 
 Tuy nhiên, [4] triển khai trên **sandbox QEMU batch**, chưa có pipeline cho **lab Windows endpoint** — nơi malware kết hợp **file-drop loader**, **direct syscall**/unhooking `ntdll`, **anti-instrumentation** nhắm Frida/debugger.
 
-Từ đó, luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh* nhằm: (1) **hiện thực hóa** phương pháp chống biến thể API [4] trên endpoint lab Windows 10/11 qua **Noirlycan Telemetry**; (2) **bổ sung lớp kernel** (Sysmon) khi Frida bị né; (3) **truy vết nguồn gốc** file → process → injection để đối phó inject vào tiến trình sạch; (4) **đánh giá có kiểm chứng** trên kịch bản biến thể (section-mapping, APC, reflective DLL, PoolParty) với ground truth tự xây.
+Từ đó, luận văn *Tăng cường phát hiện mã độc trước các kĩ thuật né tránh* nhằm: (1) **hiện thực hóa** phương pháp chống biến thể API [4] trên endpoint lab Windows 10/11 qua **Noirlycan Telemetry**; (2) **bổ sung lớp kernel** (Sysmon) khi Frida bị né; (3) **truy vết nguồn gốc** file → process → injection để đối phó inject vào tiến trình sạch; (4) **đánh giá có kiểm chứng** trên kịch bản biến thể (section-mapping, APC, reflective DLL, PoolParty) với ground truth tự xây.
 
 Đề tài cung cấp công cụ mã nguồn mở, có threat model formal, giúp tái lập [4] không phụ thuộc sandbox đóng hay EDR thương mại. Luận văn cam kết **trung thực khoa học**: nhóm ngoài phạm vi (E5) khai báo rõ.
 

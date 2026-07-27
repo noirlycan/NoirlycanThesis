@@ -5,9 +5,9 @@
 **ĐẠI HỌC QUỐC GIA HÀ NỘI**  
 **TRƯỜNG ĐẠI HỌC CÔNG NGHỆ**
 
-**PHAN VINH CƠ**
+**PHAN VĂN CƠ**
 
-## TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC DƯỚI CÁC HÌNH THỨC NÉ TRÁNH
+## TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC TRƯỚC CÁC KĨ THUẬT NÉ TRÁNH
 
 Ngành: Công nghệ thông tin  
 Chuyên ngành: *(điền)*  

@@ -6,6 +6,6 @@
 
 *(Nếu sau này có bài báo/hội thảo, bổ sung theo mẫu:)*
 
-1. Phan Vinh Cơ (năm), “(tên bài)”, (tạp chí/kỷ yếu), tập …, số …, tr. …
+1. Phan Văn Cơ (năm), “(tên bài)”, (tạp chí/kỷ yếu), tập …, số …, tr. …
 
 ---

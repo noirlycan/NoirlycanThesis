@@ -1,21 +1,11 @@
-# MỤC LỤC
+<!-- MỤC LỤC — TOC field của Word; mở file trong Word, Ctrl+A rồi F9 (hoặc chấp nhận Update fields khi mở) -->
 
-*(Tạo tự động trong Word: Tham chiếu → Mục lục. Cấu trúc HTW/IMRAD [16] + UET [2].)*
-
-| Phần | Trang |
-|------|------:|
-| Trang bìa / Phụ bìa / Lời cam đoan | |
-| Mục lục | |
-| Danh mục ký hiệu, viết tắt | |
-| Danh mục bảng / hình | |
-| **MỞ ĐẦU — Đặt vấn đề** | |
-| **Chương 1.** Cơ sở lý thuyết | |
-| **Chương 2.** Phương pháp tăng cường phát hiện | |
-| **Chương 3.** Thiết kế và hiện thực hệ thống Noirlycan | |
-| **Chương 4.** Thực nghiệm, kết quả và so sánh đánh giá | |
-| **KẾT LUẬN** | |
-| Danh mục công trình KH của tác giả | |
-| Tài liệu tham khảo | |
-| Phụ lục | |
-
----
+```{=openxml}
+<w:p><w:pPr><w:pStyle w:val="TOCHeading"/><w:jc w:val="center"/></w:pPr><w:r><w:t>MỤC LỤC</w:t></w:r></w:p>
+<w:sdt>
+  <w:sdtPr><w:docPartObj><w:docPartGallery w:val="Table of Contents"/><w:docPartUnique/></w:docPartObj></w:sdtPr>
+  <w:sdtContent>
+    <w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \o "1-3" \h \z \u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>(Mục lục tự động: mở file trong Word, chọn Update Field hoặc nhấn Ctrl+A rồi F9 để hiện nội dung và số trang.)</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>
+  </w:sdtContent>
+</w:sdt>
+```

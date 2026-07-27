@@ -1,6 +1,6 @@
-# Luận văn thạc sĩ — Tăng cường phát hiện mã độc dưới các hình thức né tránh
+# Luận văn thạc sĩ — Tăng cường phát hiện mã độc trước các kĩ thuật né tránh
 
-**Tên đề tài (chính thức):** Tăng cường phát hiện mã độc dưới các hình thức né tránh
+**Tên đề tài (chính thức):** Tăng cường phát hiện mã độc trước các kĩ thuật né tránh
 
 ## Kiến trúc
 

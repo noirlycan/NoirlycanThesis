@@ -198,7 +198,7 @@ Thêm toggle (URL `?demo=1` hoặc nút trong settings):
 
 - Ẩn các filter chip ít dùng để screenshot gọn.
 - Tăng font size 10%.
-- Hiện overlay watermark "Noirlycan — Luận văn thạc sĩ, Phan Vinh Co, 2026" góc dưới.
+- Hiện overlay watermark "Noirlycan — Luận văn thạc sĩ, Phan Van Co, 2026" góc dưới.
 - Disable auto-refresh để screenshot ổn định.
 
 Một toggle, ~30 LOC CSS. Đáng giá cho 70 trang thesis có ~15 screenshot dashboard.

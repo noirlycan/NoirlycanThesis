@@ -19,7 +19,7 @@ const TAB_META: Record<TabId, { title: string; sub: string; perm?: string }> = {
   overview: { title: "Overview", sub: "Fleet KPIs across all connected agents" },
   findings: { title: "Findings", sub: "Grouped by target process / injection chain" },
   activity: { title: "Activity", sub: "Live event stream and file drops" },
-  network: { title: "Network", sub: "Post-finding beacon watch and connections" },
+  network: { title: "Network", sub: "Post-finding network observations and connection states" },
   rules: { title: "Rules", sub: "Detection primitives, chains, and scoring", perm: "rules" },
   agents: { title: "Agents", sub: "Deploy commands and connected workstations", perm: "access" },
   account: { title: "Account", sub: "Profile and password" },
@@ -194,7 +194,7 @@ function OverviewView({
           ["Critical", kpis.critical, "findings", true],
           ["Injection chains", kpis.injection_chains, "findings", false],
           ["File drops", kpis.file_drops, "activity", false],
-          ["Beacons", kpis.beacons, "network", false],
+          ["Network observations", kpis.beacons, "network", false],
         ].map(([label, value, tab, crit]) => (
           <div
             key={String(label)}

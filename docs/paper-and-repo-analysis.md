@@ -1,6 +1,6 @@
 # Phân tích paper ASIA CCS 2025 và repo Noirlycan: cơ sở cho luận văn thạc sĩ
 
-**Tác giả phân tích:** Phan Vinh Co (copv@ssi.com.vn)
+**Tác giả phân tích:** Phan Van Co (copv@ssi.com.vn)
 **Mục tiêu:** Bài viết hợp nhất phục vụ chương *Background — Related Work — Methodology Positioning* của luận văn thạc sĩ. Trình bày (a) phương pháp của paper gốc, (b) thiết kế repo Noirlycan, (c) mối quan hệ giữa hai, (d) định vị đóng góp luận văn.
 
 ---
@@ -365,4 +365,4 @@ Theo lộ trình 12 tuần trong [thesis-outline.md](thesis-outline.md):
 
 ---
 
-*Bài viết phục vụ luận văn thạc sĩ của Phan Vinh Co. Soạn dựa trên audit code thực tế tại commit hiện tại, không bịa số liệu hoặc claim không có evidence.*
+*Bài viết phục vụ luận văn thạc sĩ của Phan Van Co. Soạn dựa trên audit code thực tế tại commit hiện tại, không bịa số liệu hoặc claim không có evidence.*

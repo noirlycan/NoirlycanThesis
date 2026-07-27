@@ -24,8 +24,8 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 function InfoRow({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) {
   if (value === null || value === undefined || value === "" || value === "-") return null;
   return (
-    <div style={{ display: "flex", gap: 8, fontSize: 12, padding: "3px 0", minWidth: 0 }}>
-      <span style={{ color: "var(--dim)", minWidth: 130, flexShrink: 0, fontSize: 11 }}>{label}</span>
+    <div style={{ display: "grid", gridTemplateColumns: "150px minmax(0, 1fr)", gap: 10, fontSize: 12, padding: "4px 0", minWidth: 0 }}>
+      <span style={{ color: "var(--dim)", fontSize: 11 }}>{label}</span>
       <span className="mono" style={{ color: color || "var(--text)", wordBreak: "break-all", minWidth: 0 }}>{value}</span>
     </div>
   );
@@ -68,7 +68,7 @@ function EvidenceGrid({ evidence }: { evidence: Record<string, unknown> }) {
   );
   if (!entries.length) return null;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 16px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "4px 20px" }}>
       {entries.map(([key, val]) => {
         let display: string;
         let color = "var(--text)";
@@ -81,9 +81,9 @@ function EvidenceGrid({ evidence }: { evidence: Record<string, unknown> }) {
           display = String(val);
         }
         return (
-          <div key={key} style={{ display: "flex", gap: 6, fontSize: 11, padding: "3px 0", minWidth: 0 }}>
-            <span style={{ color: "var(--dim)", flexShrink: 0 }}>{key.replace(/_/g, " ")}</span>
-            <span className="mono" style={{ color, marginLeft: "auto", textAlign: "right", wordBreak: "break-all", minWidth: 0 }}>{display}</span>
+          <div key={key} style={{ display: "grid", gridTemplateColumns: "minmax(120px, .9fr) minmax(0, 1.1fr)", gap: 8, fontSize: 11, padding: "4px 0", minWidth: 0 }}>
+            <span style={{ color: "var(--dim)", overflowWrap: "anywhere" }}>{key.replace(/_/g, " ")}</span>
+            <span className="mono" style={{ color, textAlign: "left", wordBreak: "break-word", overflowWrap: "anywhere", minWidth: 0 }}>{display}</span>
           </div>
         );
       })}
@@ -98,7 +98,7 @@ function NetworkChain({ finding }: { finding: Record<string, unknown> }) {
   if (!conns || conns.length === 0) return null;
   return (
     <>
-      <SectionHeader>BEACON NETWORK ({conns.length} connections)</SectionHeader>
+      <SectionHeader>POST-INJECTION NETWORK ACTIVITY ({conns.length} observations)</SectionHeader>
       <div
         style={{
           background: "var(--hole)",
@@ -108,7 +108,9 @@ function NetworkChain({ finding }: { finding: Record<string, unknown> }) {
         }}
       >
         {conns.map((c, i) => {
-          const ok = c.succeeded !== false;
+          const ok = c.succeeded === true;
+          const pendingHandshake =
+            c.succeeded === false && String(c.protocol || "").toUpperCase().includes("SYN_SENT");
           return (
             <div
               key={i}
@@ -117,18 +119,18 @@ function NetworkChain({ finding }: { finding: Record<string, unknown> }) {
                 fontSize: 12,
                 padding: "5px 0",
                 display: "grid",
-                gridTemplateColumns: "44px minmax(0, 1fr) 60px 60px",
+                gridTemplateColumns: "72px minmax(180px, 1fr) 110px 90px",
                 gap: 8,
                 alignItems: "center",
                 borderBottom: i < conns.length - 1 ? "1px solid var(--border)" : undefined,
               }}
             >
-              <span style={{ color: ok ? "#46c26a" : "#e5484d", fontWeight: 700 }}>
-                {ok ? "OK" : "FAIL"}
+              <span style={{ color: ok ? "#46c26a" : pendingHandshake ? "#ec7b1a" : "#e5484d", fontWeight: 700, whiteSpace: "nowrap" }}>
+                {ok ? "OK" : pendingHandshake ? "NOT EST." : "FAILED"}
               </span>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.destination || "?"}</span>
-              <span style={{ color: "var(--dim)", fontSize: 10 }}>{c.protocol || ""}</span>
-              <span style={{ color: "var(--dim)", fontSize: 10, textAlign: "right" }}>{c.source || ""}</span>
+              <span style={{ color: "var(--dim)", fontSize: 10, whiteSpace: "nowrap" }}>{c.protocol || ""}</span>
+              <span style={{ color: "var(--dim)", fontSize: 10, textAlign: "right", overflowWrap: "anywhere" }}>{c.source || ""}</span>
             </div>
           );
         })}
@@ -163,7 +165,11 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 680 }}>
+      <div
+        className="modal-card"
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "min(920px, calc(100vw - 40px))", maxWidth: 920 }}
+      >
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
           <SevBadge severity={member.severity} />
@@ -194,6 +200,7 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
             marginBottom: 16,
             fontSize: 12,
             lineHeight: 1.6,
+            overflowWrap: "anywhere",
           }}
         >
           {flowLabel(finding)}

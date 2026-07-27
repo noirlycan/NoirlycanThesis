@@ -2,7 +2,7 @@
 
 > **Bản luận văn đầy đủ (theo format UET):** xem thư mục [`thesis/`](../thesis/README.md).
 
-> **Tên đề tài chính thức:** *Tăng cường phát hiện mã độc dưới các hình thức né tránh*
+> **Tên đề tài chính thức:** *Tăng cường phát hiện mã độc trước các kĩ thuật né tránh*
 >
 > *Căn cứ phương pháp:* Di Pietro et al., ASIA CCS 2025 — 2-of-3 operational primitive.
 > *Artifact:* Noirlycan Telemetry (`thesis/`).

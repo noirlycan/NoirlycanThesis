@@ -80,11 +80,20 @@ export function flowLabel(finding: Record<string, unknown> | undefined): string 
     : "unknown";
   const target = `${targetName} (pid ${targetPid})`;
   const suspended = finding.suspended_spawn || (finding.evidence as Record<string, unknown> | undefined)?.suspended_spawn;
-  const conns = finding.network_connections as { destination?: string; succeeded?: boolean }[] | undefined;
+  const conns = finding.network_connections as
+    | { destination?: string; succeeded?: boolean; protocol?: string }[]
+    | undefined;
   if (conns && conns.length > 0) {
     const first = conns[0];
     const dest = first.destination || "unknown";
-    const status = first.succeeded === false ? " FAIL" : "";
+    const status =
+      first.succeeded === true
+        ? " ESTABLISHED"
+        : first.succeeded === false && String(first.protocol || "").toUpperCase().includes("SYN_SENT")
+          ? " NOT EST."
+          : first.succeeded === false
+            ? " FAILED"
+            : "";
     const extra = conns.length > 1 ? ` (+${conns.length - 1})` : "";
     return `${actor} ──▶ ${target} ──▶ ${dest}${status}${extra}`;
   }

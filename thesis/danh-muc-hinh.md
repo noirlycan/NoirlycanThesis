@@ -1,14 +1,14 @@
 # DANH MỤC CÁC HÌNH VẼ, ĐỒ THỊ
 
-*(Đầu đề hình ghi phía dưới hình; đánh số gắn số chương — Công văn 139/ĐT UET.)*
+*(Đầu đề hình ghi phía dưới hình; đánh số gắn số chương — Công văn 139/ĐT UET. Cột Trang: cập nhật trong Word bằng Tham chiếu → Insert Table of Figures, hoặc điền tay sau khi dàn trang.)*
 
-| Số | Tên hình |
-|----|----------|
-| 1.1 | Trust boundary: Frida + Sysmon → correlator (conceptual; bản SVG đầy đủ tại `docs/design/architecture-comparison-template.svg`) |
-| 2.1 | Literature map — vị trí luận văn trong không gian nghiên cứu |
-| 4.1 | So sánh pipeline batch [4] (QEMU) và pipeline Noirlycan (lab Windows real-time) |
-| 5.1 | Kiến trúc Clean Architecture / microservices Noirlycan *(chèn từ FigJam hoặc `docs/architecture-diagrams.md` khi xuất Word)* |
-
-*Cột Trang: điền sau khi chèn hình vào Word.*
-
----
+| Số | Tên hình | Trang |
+|----|----------|------:|
+| 4.1 | Màn hình Overview — KPI toàn fleet, finding CRITICAL và phân bố injection primitive | |
+| 4.2 | Tab Findings — danh sách finding loader → target theo thời gian | |
+| 4.3 | Chi tiết finding — score, badge kỹ thuật và timeline API chain | |
+| 4.4 | Chi tiết finding, tab Evidence — bằng chứng thô đối chiếu JSONL | |
+| 4.5 | Tab Activity — dòng sự kiện hợp nhất Frida + Sysmon | |
+| 4.6 | Tab Network — network observation hậu-finding từ PID đích (post-injection watch) | |
+| 4.7 | Tab Rules — quy tắc correlation 2-of-3 và equivalence class API | |
+| 4.8 | Tab Agents — trạng thái agent winVM01 và policy Frida + Sysmon | |

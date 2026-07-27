@@ -16,7 +16,7 @@ Luận văn **hiện thực và mở rộng** phương pháp [4] trong hệ th�
 
 Process injection là hành vi then chốt mà malware Windows dùng để né phát hiện signature và né attribution. Công trình Di Pietro et al. (ASIA CCS 2025) [4] cung cấp nền tảng phương pháp mạnh chống biến thể triển khai (E1, E2) và bằng chứng quy mô lớn về tác động né tránh sandbox (E5 — 21,2 % miss khi thiếu anti-evasion).
 
-Luận văn đã **tăng cường phát hiện mã độc dưới các hình thức né tránh E1–E4** bằng cách: (1) hiện thực có kiểm chứng phương pháp [4] trên Windows 10/11 lab; (2) bổ sung telemetry kernel (Sysmon) khi hook user-mode bị né; (3) mở rộng pipeline file provenance; (4) formal hóa threat model và ranh giới claim khoa học. Đề tài hoàn thành mục tiêu luận văn thạc sĩ với căn cứ lý luận, hiện thực mã nguồn mở, đánh giá methodology và thừa nhận hạn chế E5 trung thực. Hướng mở rộng: anti-evasion module, benchmark E4/H5, PoC-Bench quy mô.
+Luận văn đã **tăng cường phát hiện mã độc trước các kĩ thuật né tránh E1–E4** bằng cách: (1) hiện thực có kiểm chứng phương pháp [4] trên Windows 10/11 lab; (2) bổ sung telemetry kernel (Sysmon) khi hook user-mode bị né; (3) mở rộng pipeline file provenance; (4) formal hóa threat model và ranh giới claim khoa học. Đề tài hoàn thành mục tiêu luận văn thạc sĩ với căn cứ lý luận, hiện thực mã nguồn mở, đánh giá methodology và thừa nhận hạn chế E5 trung thực. Hướng mở rộng: anti-evasion module, benchmark E4/H5, PoC-Bench quy mô.
 
 **Từ khóa:** né tránh mã độc, process injection, operational primitive, ASIA CCS 2025, Sysmon, Frida.
 

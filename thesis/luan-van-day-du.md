@@ -1,78 +1,58 @@
-# TRANG BÌA
+<!-- TRANG BÌA — theo mẫu Phụ lục 1, Công văn 139/ĐT UET (in chữ nhũ, khổ A4) -->
 
-*(Theo mẫu Phụ lục 1 — Công văn 139/ĐT UET; in chữ nhũ đủ dấu Tiếng Việt, khổ A4)*
-
-**ĐẠI HỌC QUỐC GIA HÀ NỘI**  
-**TRƯỜNG ĐẠI HỌC CÔNG NGHỆ**
-
-**PHAN VINH CƠ**
-
-## TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC DƯỚI CÁC HÌNH THỨC NÉ TRÁNH
-
-**LUẬN VĂN THẠC SĨ**  
-**KỸ THUẬT MÁY TÍNH** *(điền ngành học vị được công nhận)*
+```{=openxml}
+<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>ĐẠI HỌC QUỐC GIA HÀ NỘI</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>TRƯỜNG ĐẠI HỌC CÔNG NGHỆ</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="2800" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>PHAN VĂN CƠ</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="2800" w:after="0" w:line="360" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr><w:t>TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC TRƯỚC CÁC KĨ THUẬT NÉ TRÁNH</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="3600" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>LUẬN VĂN THẠC SĨ KỸ THUẬT MÁY TÍNH</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:i/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t>(ghi ngành của học vị được công nhận — xác nhận lại với phòng Đào tạo)</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="3600" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>HÀ NỘI – 2026</w:t></w:r></w:p>
+```
 
 ---
 
----
+<!-- TRANG PHỤ BÌA — theo mẫu Phụ lục 2, Công văn 139/ĐT UET -->
 
-# TRANG PHỤ BÌA
-
-*(Theo mẫu Phụ lục 2 — Công văn 139/ĐT UET)*
-
-**ĐẠI HỌC QUỐC GIA HÀ NỘI**  
-**TRƯỜNG ĐẠI HỌC CÔNG NGHỆ**
-
-**PHAN VINH CƠ**
-
-## TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC DƯỚI CÁC HÌNH THỨC NÉ TRÁNH
-
-Ngành: Công nghệ thông tin  
-Chuyên ngành: An toàn thông tin *(điều chỉnh nếu khác)*  
-Mã số: *(điền mã số chuyên ngành — xem phòng Đào tạo)*
-
-**LUẬN VĂN THẠC SĨ**  
-**KỸ THUẬT MÁY TÍNH** *(điền ngành học vị được công nhận)*
-
-**NGƯỜI HƯỚNG DẪN KHOA HỌC:** …………………………………… *(Chức danh, họ tên)*
-
----
+```{=openxml}
+<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr><w:r><w:br w:type="page"/></w:r><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>ĐẠI HỌC QUỐC GIA HÀ NỘI</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>TRƯỜNG ĐẠI HỌC CÔNG NGHỆ</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="2000" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>PHAN VĂN CƠ</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="2000" w:after="0" w:line="360" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr><w:t>TĂNG CƯỜNG PHÁT HIỆN MÃ ĐỘC TRƯỚC CÁC KĨ THUẬT NÉ TRÁNH</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="2000" w:after="0"/><w:ind w:left="2268"/></w:pPr><w:r><w:rPr><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr><w:t>Ngành: Công nghệ thông tin</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:ind w:left="2268"/></w:pPr><w:r><w:rPr><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr><w:t>Chuyên ngành: An toàn thông tin</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:ind w:left="2268"/></w:pPr><w:r><w:rPr><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr><w:t>Mã số: …………………… (ghi mã số chuyên ngành)</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="2000" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>LUẬN VĂN THẠC SĨ KỸ THUẬT MÁY TÍNH</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="1600" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr><w:t>NGƯỜI HƯỚNG DẪN KHOA HỌC: ……………………………………</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:i/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t>(Chức danh khoa học và Họ tên)</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="2400" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>HÀ NỘI – 2026</w:t></w:r></w:p>
+```
 
 # LỜI CAM ĐOAN
 
-Tôi xin cam đoan luận văn thạc sĩ *Tăng cường phát hiện mã độc dưới các hình thức né tránh* là công trình nghiên cứu của riêng tôi dưới sự hướng dẫn của **……………………………………** *(Chức danh, họ tên GVHD)*. Các kết quả, ý tưởng và tài liệu trích dẫn đã được nêu rõ nguồn gốc theo quy định trích dẫn [n] trong ngoặc vuông. Phương pháp phát hiện process injection căn cứ chính vào công trình Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [4]; phần hiện thực tham chiếu repository `NoirlycanThesis` [13].
+Tôi xin cam đoan luận văn thạc sĩ *Tăng cường phát hiện mã độc trước các kĩ thuật né tránh* là công trình nghiên cứu của riêng tôi dưới sự hướng dẫn của **……………………………………** *(Chức danh, họ tên GVHD)*. Các kết quả, ý tưởng và tài liệu trích dẫn đã được nêu rõ nguồn gốc theo quy định trích dẫn [n] trong ngoặc vuông. Phương pháp phát hiện process injection căn cứ chính vào công trình Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [4]; phần hiện thực tham chiếu repository `NoirlycanThesis` [13].
 
 Tôi xin cam đoan không sao chép, trích dẫn sai hoặc sử dụng tài liệu của người khác mà không ghi nguồn. Mọi sai sót là trách nhiệm của tôi.
 
-Hà Nội, ngày …… tháng …… năm 2026
-
-*(Chữ ký, họ tên)*
-
----
-
----
-
-# MỤC LỤC
-
-*(Tạo tự động trong Word: Tham chiếu → Mục lục. Cấu trúc HTW/IMRAD [16] + UET [2].)*
-
-| Phần | Trang |
-|------|------:|
-| Trang bìa / Phụ bìa / Lời cam đoan | |
-| Mục lục | |
-| Danh mục ký hiệu, viết tắt | |
-| Danh mục bảng / hình | |
-| **MỞ ĐẦU — Đặt vấn đề** | |
-| **Chương 1.** Cơ sở lý thuyết | |
-| **Chương 2.** Phương pháp tăng cường phát hiện | |
-| **Chương 3.** Thiết kế và hiện thực hệ thống Noirlycan | |
-| **Chương 4.** Thực nghiệm, kết quả và so sánh đánh giá | |
-| **KẾT LUẬN** | |
-| Danh mục công trình KH của tác giả | |
-| Tài liệu tham khảo | |
-| Phụ lục | |
+```{=openxml}
+<w:p><w:pPr><w:spacing w:before="480" w:after="0"/><w:ind w:left="4536"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:i/></w:rPr><w:t>Hà Nội, ngày …… tháng …… năm 2026</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:ind w:left="4536"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Học viên</w:t></w:r></w:p>
+<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:ind w:left="4536"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:i/></w:rPr><w:t>(Chữ ký, họ tên)</w:t></w:r></w:p>
+```
 
 ---
+
+<!-- MỤC LỤC — TOC field của Word; mở file trong Word, Ctrl+A rồi F9 (hoặc chấp nhận Update fields khi mở) -->
+
+```{=openxml}
+<w:p><w:pPr><w:pStyle w:val="TOCHeading"/><w:jc w:val="center"/></w:pPr><w:r><w:t>MỤC LỤC</w:t></w:r></w:p>
+<w:sdt>
+  <w:sdtPr><w:docPartObj><w:docPartGallery w:val="Table of Contents"/><w:docPartUnique/></w:docPartObj></w:sdtPr>
+  <w:sdtContent>
+    <w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \o "1-3" \h \z \u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>(Mục lục tự động: mở file trong Word, chọn Update Field hoặc nhấn Ctrl+A rồi F9 để hiện nội dung và số trang.)</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>
+  </w:sdtContent>
+</w:sdt>
+```
 
 ---
 
@@ -129,18 +109,18 @@ Hà Nội, ngày …… tháng …… năm 2026
 
 # DANH MỤC CÁC HÌNH VẼ, ĐỒ THỊ
 
-*(Đầu đề hình ghi phía dưới hình; đánh số gắn số chương — Công văn 139/ĐT UET.)*
+*(Đầu đề hình ghi phía dưới hình; đánh số gắn số chương — Công văn 139/ĐT UET. Cột Trang: cập nhật trong Word bằng Tham chiếu → Insert Table of Figures, hoặc điền tay sau khi dàn trang.)*
 
-| Số | Tên hình |
-|----|----------|
-| 1.1 | Trust boundary: Frida + Sysmon → correlator (conceptual; bản SVG đầy đủ tại `docs/design/architecture-comparison-template.svg`) |
-| 2.1 | Literature map — vị trí luận văn trong không gian nghiên cứu |
-| 4.1 | So sánh pipeline batch [4] (QEMU) và pipeline Noirlycan (lab Windows real-time) |
-| 5.1 | Kiến trúc Clean Architecture / microservices Noirlycan *(chèn từ FigJam hoặc `docs/architecture-diagrams.md` khi xuất Word)* |
-
-*Cột Trang: điền sau khi chèn hình vào Word.*
-
----
+| Số | Tên hình | Trang |
+|----|----------|------:|
+| 4.1 | Màn hình Overview — KPI toàn fleet, finding CRITICAL và phân bố injection primitive | |
+| 4.2 | Tab Findings — danh sách finding loader → target theo thời gian | |
+| 4.3 | Chi tiết finding — score, badge kỹ thuật và timeline API chain | |
+| 4.4 | Chi tiết finding, tab Evidence — bằng chứng thô đối chiếu JSONL | |
+| 4.5 | Tab Activity — dòng sự kiện hợp nhất Frida + Sysmon | |
+| 4.6 | Tab Network — network observation hậu-finding từ PID đích (post-injection watch) | |
+| 4.7 | Tab Rules — quy tắc correlation 2-of-3 và equivalence class API | |
+| 4.8 | Tab Agents — trạng thái agent winVM01 và policy Frida + Sysmon | |
 
 ---
 
@@ -158,7 +138,7 @@ Paper [4] đề xuất abstraction **operational primitive** gồm ba thao tác:
 
 Tuy nhiên, [4] triển khai trên **sandbox QEMU batch**, chưa có pipeline cho **lab Windows endpoint** — nơi malware kết hợp **file-drop loader**, **direct syscall**/unhooking `ntdll`, **anti-instrumentation** nhắm Frida/debugger.
 
-Từ đó, luận văn *Tăng cường phát hiện mã độc dưới các hình thức né tránh* nhằm: (1) **hiện thực hóa** phương pháp chống biến thể API [4] trên endpoint lab Windows 10/11 qua **Noirlycan Telemetry**; (2) **bổ sung lớp kernel** (Sysmon) khi Frida bị né; (3) **truy vết nguồn gốc** file → process → injection để đối phó inject vào tiến trình sạch; (4) **đánh giá có kiểm chứng** trên kịch bản biến thể (section-mapping, APC, reflective DLL, PoolParty) với ground truth tự xây.
+Từ đó, luận văn *Tăng cường phát hiện mã độc trước các kĩ thuật né tránh* nhằm: (1) **hiện thực hóa** phương pháp chống biến thể API [4] trên endpoint lab Windows 10/11 qua **Noirlycan Telemetry**; (2) **bổ sung lớp kernel** (Sysmon) khi Frida bị né; (3) **truy vết nguồn gốc** file → process → injection để đối phó inject vào tiến trình sạch; (4) **đánh giá có kiểm chứng** trên kịch bản biến thể (section-mapping, APC, reflective DLL, PoolParty) với ground truth tự xây.
 
 Đề tài cung cấp công cụ mã nguồn mở, có threat model formal, giúp tái lập [4] không phụ thuộc sandbox đóng hay EDR thương mại. Luận văn cam kết **trung thực khoa học**: nhóm ngoài phạm vi (E5) khai báo rõ.
 
@@ -773,7 +753,7 @@ Hai công cụ bổ trợ: Frida cho chi tiết congruence [4], Sysmon cho tin c
 
 E6 không vô hiệu hoá hoàn toàn — luận văn khuyến nghị `spawn` mode cho thí nghiệm rủi ro E6 cao.
 
-### 1.8.4. Kiến trúc kép Sysmon ∪ Frida (Hình 1.1)
+### 1.8.4. Kiến trúc kép Sysmon ∪ Frida
 
 Luận văn kết hợp hai nguồn telemetry độc lập:
 
@@ -789,7 +769,7 @@ Luận văn kết hợp hai nguồn telemetry độc lập:
     [Dashboard / JSONL]
 ```
 
-**Hình 1.1** (đầy đủ tại `docs/design/architecture-comparison-template.svg` và Chương 5) thể hiện trust boundary giữa Frida (user-mode, không tin cậy nếu E4/E6) và Sysmon (kernel, tin cậy nếu O3 không xảy ra). Correlator đặt ngoài agent — tránh mất logic phát hiện khi agent bị vô hiệu hoá.
+Sơ đồ trên thể hiện trust boundary giữa Frida (user-mode, không tin cậy nếu E4/E6) và Sysmon (kernel, tin cậy nếu O3 không xảy ra); bản vẽ đầy đủ trình bày tại Chương 3. Correlator đặt ngoài agent — tránh mất logic phát hiện khi agent bị vô hiệu hoá.
 
 ### 1.8.5. Fidelity và giả định M5
 
@@ -1127,7 +1107,7 @@ Phương pháp gồm hai tầng:
 1. **Tầng chống biến thể (E1, E2)** — kế thừa [4]: mọi lời gọi API injection ánh xạ vào một trong ba primitive *allocate*, *write*, *execute*; chuỗi được kết luận khi có ≥2 primitive khác loại trên cùng cặp `(actor_pid, target_pid)` thỏa congruence + temporal.
 2. **Tầng ngữ cảnh (E3, E4)** — đóng góp của luận văn: (a) pipeline *file provenance* phục hồi loader khi victim hợp pháp; (b) *telemetry kép* Sysmon ∪ Frida giảm FN khi user-mode hook bị né.
 
-Hình 2.1 so sánh pipeline batch của [4] (QEMU sandbox → trace → analyzer offline) với Noirlycan (Windows real-time): khác biệt then chốt là trục thời gian — Noirlycan dùng cửa sổ trượt và re-evaluation tăng dần.
+So với pipeline batch của [4] (QEMU sandbox → trace → analyzer offline), Noirlycan chạy trên Windows real-time: khác biệt then chốt là trục thời gian — Noirlycan dùng cửa sổ trượt và re-evaluation tăng dần.
 
 ### 2.15.2. Luồng dữ liệu end-to-end
 
@@ -2314,7 +2294,7 @@ Noirlycan `kernel/classification/technique_classifier.py` map output rule-based 
 
 ---
 
-Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc dưới các hình thức né tránh* thông qua artifact Noirlycan, căn cứ [4]. Phạm vi **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — tăng recall ~21,2 % — **không** được hiện thực; luận văn **không** so sánh recall với paper trên dataset 56.340 mẫu. Đánh giá tập trung năm trục: (1) kiểm chứng 2-of-3 và biến thể E1/E2 qua test; (2) case study section-mapping; (3) provenance E3; (4) telemetry kép E4; (5) protocol Frida fidelity (E6).
+Chương này đánh giá mức độ đạt mục tiêu *tăng cường phát hiện mã độc trước các kĩ thuật né tránh* thông qua artifact Noirlycan, căn cứ [4]. Phạm vi **cố ý loại trừ E5** (né sandbox/VM): module anti-evasion của [4] — tăng recall ~21,2 % — **không** được hiện thực; luận văn **không** so sánh recall với paper trên dataset 56.340 mẫu. Đánh giá tập trung năm trục: (1) kiểm chứng 2-of-3 và biến thể E1/E2 qua test; (2) case study section-mapping; (3) provenance E3; (4) telemetry kép E4; (5) protocol Frida fidelity (E6).
 
 ---
 
@@ -2655,7 +2635,33 @@ Hướng phát triển: port subset anti-evasion Sap4Sec hoặc chế độ ETW-
 
 ## 4.24. Đánh giá định tính dashboard và JSONL
 
-Trên session lab thực: JSONL chứa đủ chuỗi `file` → `sysmon` → `primitive` → `finding`, replay offline; dashboard Findings hiển thị `related_file.path`, SHA256, technique badge — analyst nắm tình huống dưới 30 giây; export JSONL phục vụ lưu trữ evidence (Phụ lục C). Bổ sung RQ3 ở mức *qualitative acceptance*; đánh giá định lượng cần khảo sát người dùng — vượt phạm vi.
+Trên session lab thực: JSONL chứa đủ chuỗi `file` → `sysmon` → `primitive` → `finding`, replay offline; dashboard Findings hiển thị `related_file.path`, SHA256, technique badge — analyst nắm tình huống dưới 30 giây; export JSONL phục vụ lưu trữ evidence (Phụ lục C). Bổ sung RQ3 ở mức *qualitative acceptance*; đánh giá định lượng cần khảo sát người dùng — vượt phạm vi. Các hình từ Hình 4.1 đến Hình 4.8 dưới đây minh họa giao diện dashboard trên session lab thực với loader `aes_decrypt_loader` tiêm vào `msedge.exe` (agent `winVM01`).
+
+Hình 4.1 thể hiện màn hình Overview: KPI toàn fleet (2 agent, 10 finding trong đó 7 CRITICAL, 10 injection chain, 30 file drop, 20 network observation), finding CRITICAL mới nhất kèm API chain đầy đủ (allocate → write → context_read → execute) và phân bố injection primitive theo quy tắc 2-of-3 [4].
+
+![Hình 4.1. Màn hình Overview — KPI toàn fleet, finding CRITICAL và phân bố injection primitive](seminar/images/01-overview.png){width=14.5cm}
+
+Hình 4.2 liệt kê danh sách finding theo agent: mỗi dòng gồm đường dẫn loader (`C:\Users\Public\Downloads\aes_decrypt_loader*.exe`), tiến trình đích `msedge.exe`, mức severity và thời điểm phát hiện — hỗ trợ triage theo trình tự thời gian.
+
+![Hình 4.2. Tab Findings — danh sách finding loader → target theo thời gian](seminar/images/02-findings.png){width=12.5cm}
+
+Khi chọn một finding, Hình 4.3 hiển thị chi tiết chuỗi tiêm: score, badge kỹ thuật (`section_mapping`, `cross_process`), số primitive quan sát được so với ngưỡng 2-of-3, cùng timeline API. Tab Evidence (Hình 4.4) liệt kê bằng chứng thô đối chiếu được với JSONL xuất ra — bảo đảm tính truy vết (chain-of-evidence) cho phân tích forensic E3.
+
+![Hình 4.3. Chi tiết finding — score, badge kỹ thuật và timeline API chain](seminar/images/07-finding-detail.png){width=14.5cm}
+
+![Hình 4.4. Chi tiết finding, tab Evidence — bằng chứng thô đối chiếu JSONL](seminar/images/08-finding-detail-evidence.png){width=14.5cm}
+
+Hình 4.5 (tab Activity) là dòng sự kiện hợp nhất Frida + Sysmon theo thời gian thực; Hình 4.6 (tab Network) thể hiện network observation hậu-finding: 20 kết nối `SYN_SENT` từ PID đích (22964, 6548) tới `192.168.0.104:80/443` ở trạng thái NOT ESTABLISHED — nguồn `TCP_TABLE`, minh chứng hành vi beacon C2 của payload sau khi tiêm.
+
+![Hình 4.5. Tab Activity — dòng sự kiện hợp nhất Frida + Sysmon](seminar/images/03-activity.png){width=14.5cm}
+
+![Hình 4.6. Tab Network — network observation hậu-finding từ PID đích (post-injection watch)](seminar/images/04-network.png){width=13.5cm}
+
+Hình 4.7 thể hiện cấu hình quy tắc correlation 2-of-3 [4] trên dashboard (equivalence class API, ngưỡng primitive); Hình 4.8 là màn hình quản trị agent (`winVM01`) với trạng thái policy đồng bộ Frida + Sysmon.
+
+![Hình 4.7. Tab Rules — quy tắc correlation 2-of-3 và equivalence class API](seminar/images/05-rules-correlation.png){width=14.5cm}
+
+![Hình 4.8. Tab Agents — trạng thái agent winVM01 và policy Frida + Sysmon](seminar/images/06-agents.png){width=14.5cm}
 
 ## 4.25. Công thức metric (định nghĩa cho mở rộng tương lai)
 
@@ -3059,7 +3065,7 @@ Luận văn đã **tăng cường phát hiện E1–E4** bằng: (1) hiện th�
 
 *(Nếu sau này có bài báo/hội thảo, bổ sung theo mẫu:)*
 
-1. Phan Vinh Cơ (năm), “(tên bài)”, (tạp chí/kỷ yếu), tập …, số …, tr. …
+1. Phan Văn Cơ (năm), “(tên bài)”, (tạp chí/kỷ yếu), tập …, số …, tr. …
 
 ---
 
@@ -3095,7 +3101,7 @@ Luận văn đã **tăng cường phát hiện E1–E4** bằng: (1) hiện th�
 
 12. Starink, T., et al. (2023), "Behavior Graphs for Malware Detection", *IEEE Transactions on Information Forensics and Security*, 18, pp. 2345-2360.
 
-13. Co, P. V. (2026), *Noirlycan Thesis Telemetry Prototype — Source code and documentation*, Repository NoirlycanThesis, https://github.com/ *(điền URL chính thức khi công bố)*.
+13. Phan, V. C. (2026), *Noirlycan Thesis Telemetry Prototype — Source code and documentation*, Repository NoirlycanThesis, https://github.com/ *(điền URL chính thức khi công bố)*.
 
 14. Hồ Tú Bảo (2010), *Phương pháp nghiên cứu khoa học* (*Scientific Methodology*), Viện Công nghệ Thông tin — Viện Hàn lâm Khoa học và Công nghệ Việt Nam, Hà Nội.
 

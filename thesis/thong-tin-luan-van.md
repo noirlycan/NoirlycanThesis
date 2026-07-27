@@ -12,13 +12,13 @@
 
 ## THÔNG TIN VỀ LUẬN VĂN THẠC SĨ
 
-1. **Họ và tên học viên:** Phan Vinh Cơ  
+1. **Họ và tên học viên:** Phan Văn Cơ  
 2. **Giới tính:** *(điền)*  
 3. **Ngày sinh:** *(điền)*  
 4. **Nơi sinh:** *(điền)*  
 5. **Quyết định công nhận học viên số:** … , ngày … tháng … năm …  
 6. **Các thay đổi trong quá trình đào tạo:** *(ghi hình thức thay đổi và thời gian, hoặc “Không”)*  
-7. **Tên đề tài luận văn:** **Tăng cường phát hiện mã độc dưới các hình thức né tránh**  
+7. **Tên đề tài luận văn:** **Tăng cường phát hiện mã độc trước các kĩ thuật né tránh**  
 8. **Chuyên ngành:** An toàn thông tin *(điều chỉnh nếu khác)*  
 9. **Mã số:** *(điền)*  
 10. **Cán bộ hướng dẫn khoa học:** …………………………………… *(Chức danh, họ tên)*  
@@ -50,7 +50,7 @@ Ngày … tháng … năm 20…
 **SOCIALIST REPUBLIC OF VIETNAM**  
 Independence – Freedom – Happiness
 
-1. **Full name:** Phan Vinh Co  
+1. **Full name:** Phan Van Co  
 2. **Sex:** *(fill in)*  
 3. **Date of birth:** *(fill in)*  
 4. **Place of birth:** *(fill in)*  

@@ -21,6 +21,7 @@ function SourceBadge({ source }: { source: string | undefined }) {
         color: c.fg,
         border: `1px solid ${c.border}`,
         letterSpacing: ".04em",
+        whiteSpace: "nowrap",
       }}
     >
       {label}
@@ -28,7 +29,13 @@ function SourceBadge({ source }: { source: string | undefined }) {
   );
 }
 
-function ResultBadge({ succeeded }: { succeeded: boolean | null | undefined }) {
+function ResultBadge({
+  succeeded,
+  protocol,
+}: {
+  succeeded: boolean | null | undefined;
+  protocol?: unknown;
+}) {
   if (succeeded === true) {
     return (
       <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "#46c26a" }}>
@@ -37,9 +44,10 @@ function ResultBadge({ succeeded }: { succeeded: boolean | null | undefined }) {
     );
   }
   if (succeeded === false) {
+    const pendingHandshake = String(protocol || "").toUpperCase().includes("SYN_SENT");
     return (
       <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "#e5484d" }}>
-        FAIL
+        {pendingHandshake ? "NOT EST." : "FAILED"}
       </span>
     );
   }
@@ -128,7 +136,7 @@ export function NetworkView({
           ["Connections", network.length, "var(--text)"],
           ["Unique PIDs", pids.size, "#ec7b1a"],
           ["Succeeded", totalOk, "#46c26a"],
-          ["Failed", totalFail, "#e5484d"],
+          ["Not established", totalFail, "#e5484d"],
           ["Pending", totalPending, "var(--dim)"],
         ].map(([label, value, color]) => (
           <div key={String(label)} className="card" style={{ padding: "14px 16px" }}>
@@ -150,7 +158,7 @@ export function NetworkView({
         )}
       </div>
 
-      {/* Beacon flow cards - grouped by PID */}
+      {/* Post-finding network activity grouped by PID */}
       {byPid.size > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[...byPid.entries()].map(([pid, conns]) => {
@@ -182,18 +190,18 @@ export function NetworkView({
                       background: "rgba(236,123,26,.12)",
                     }}
                   >
-                    BEACON
+                    POST-INJECTION
                   </span>
                   <span className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{name}</span>
                   <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>PID {pid}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--dim)" }}>
-                    {conns.length} conn{conns.length !== 1 ? "s" : ""}
-                    {okCount > 0 ? <span style={{ color: "#46c26a" }}> {okCount} OK</span> : null}
-                    {failCount > 0 ? <span style={{ color: "#e5484d" }}> {failCount} FAIL</span> : null}
+                  <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "var(--dim)" }}>
+                    <span>{conns.length} observation{conns.length !== 1 ? "s" : ""}</span>
+                    {okCount > 0 ? <span style={{ color: "#46c26a" }}>{okCount} established</span> : null}
+                    {failCount > 0 ? <span style={{ color: "#e5484d" }}>{failCount} not established</span> : null}
                   </span>
                 </div>
                 <div className="mono" style={{ fontSize: 11, color: "var(--dim)", marginBottom: 8 }}>
-                  Injected child process making network calls
+                  Watched target PID network observations
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {conns.slice(0, 4).map((conn, i) => {
@@ -211,15 +219,18 @@ export function NetworkView({
                           padding: "6px 10px",
                           fontSize: 12,
                           display: "grid",
-                          gridTemplateColumns: "minmax(0,1fr) 60px 72px auto",
+                          gridTemplateColumns: "minmax(180px,1fr) 110px 82px 70px",
                           gap: 8,
                           alignItems: "center",
                         }}
                       >
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{String(dest)}</span>
-                        <span style={{ color: "var(--dim)", fontSize: 10 }}>{String(conn.protocol || "")}</span>
+                        <span style={{ color: "var(--dim)", fontSize: 10, whiteSpace: "nowrap" }}>{String(conn.protocol || "")}</span>
                         <SourceBadge source={conn.source as string | undefined} />
-                        <ResultBadge succeeded={conn.succeeded as boolean | null | undefined} />
+                        <ResultBadge
+                          succeeded={conn.succeeded as boolean | null | undefined}
+                          protocol={conn.protocol}
+                        />
                       </div>
                     );
                   })}
@@ -256,14 +267,14 @@ export function NetworkView({
             className="mono"
             style={{
               display: "grid",
-              gridTemplateColumns: "40px 50px 120px minmax(0,1fr) 60px 56px 56px 72px 80px",
+              gridTemplateColumns: "40px 64px 140px minmax(180px,1fr) 110px 64px 92px 90px 80px",
               gap: 8,
               padding: "10px 20px",
               fontSize: 10,
               color: "var(--dim)",
               letterSpacing: ".04em",
               borderBottom: "1px solid var(--border)",
-              minWidth: 720,
+              minWidth: 980,
             }}
           >
             <span>#</span>
@@ -298,13 +309,14 @@ export function NetworkView({
                 key={index}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "40px 50px 120px minmax(0,1fr) 60px 56px 56px 72px 80px",
+                  gridTemplateColumns: "40px 64px 140px minmax(180px,1fr) 110px 64px 92px 90px 80px",
                   gap: 8,
                   padding: "10px 20px",
                   fontSize: 12,
                   cursor: "pointer",
                   borderBottom: "1px solid var(--border)",
-                  minWidth: 720,
+                  minWidth: 980,
+                  alignItems: "center",
                 }}
                 onClick={() => setExpanded(expanded === index ? null : index)}
               >
@@ -327,9 +339,9 @@ export function NetworkView({
                 >
                   {String(dest)}
                 </span>
-                <span className="mono" style={{ color: "var(--dim)" }}>{String(proto)}</span>
+                <span className="mono" style={{ color: "var(--dim)", whiteSpace: "nowrap" }}>{String(proto)}</span>
                 <span className="mono">{String(port)}</span>
-                <ResultBadge succeeded={succeeded} />
+                <ResultBadge succeeded={succeeded} protocol={proto} />
                 <SourceBadge source={row.source as string | undefined} />
                 <span className="mono" style={{ color: "var(--dim)", fontSize: 11 }}>{timeStr}</span>
               </div>
@@ -345,7 +357,7 @@ export function NetworkView({
           <div style={{ color: "var(--dim)", padding: "20px" }}>
             {searchQuery.trim()
               ? `No connections match "${searchQuery.trim()}".`
-              : "No network telemetry. Waiting for post-finding beacon watch (WFP audit + TCP table + Sysmon EID 3)."}
+              : "No network telemetry. Waiting for post-finding network activity (WFP audit + TCP table + Sysmon EID 3)."}
           </div>
         ) : null}
       </div>
