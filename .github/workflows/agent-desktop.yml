@@ -1,0 +1,27 @@
+name: Build Windows desktop Agent
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Build single EXE with Administrator manifest
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          ./scripts/build-agent-desktop.ps1 -Python python -PythonVersion '' -Installer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NoirlycanAgent-windows-x64
+          path: |
+            dist/NoirlycanAgent.exe
+            dist/NoirlycanAgentSetup.exe
+          if-no-files-found: error

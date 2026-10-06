@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
 from noirlycan_backend.api.auth import get_current_user, require_admin, require_permission
-from noirlycan_backend.api.deps import get_database, get_logs_dir
+from noirlycan_backend.api.deps import get_database
 from noirlycan_backend.domain.email import normalize_lab_email
 from noirlycan_backend.domain.permissions import ROLES, role_permissions_payload
 

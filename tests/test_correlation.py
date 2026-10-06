@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from noirlycan_core.analysis.domain.correlation import Correlator
-from noirlycan_core.kernel.entities.models import (
+from noirlycan_core.detection.correlator import Correlator
+from noirlycan_core.models import (
     FileEvent,
     MemoryPrimitive,
     PrimitiveKind,
@@ -547,7 +547,7 @@ def test_read_only_apis_do_not_satisfy_two_of_three() -> None:
     debugger or AV pattern) would already match 2-of-3. After the fix, READ
     is an observation, not a primitive, so this combination is not a chain.
     """
-    from noirlycan_core.kernel.classification.api_manifest import PAPER_API_CLASSES
+    from noirlycan_core.detection.api_classes import PAPER_API_CLASSES
 
     write_class = next(c for c in PAPER_API_CLASSES if c.name == "write")
     assert "NtReadVirtualMemory" not in write_class.apis

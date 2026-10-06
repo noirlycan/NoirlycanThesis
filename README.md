@@ -12,7 +12,7 @@ The correlator scores chains with at least two of three injection primitives:
 2. **Write / map** payload into that process  
 3. **Execute** (thread context, resume, remote thread, …)
 
-Enrichment adds Sysmon context (file create, process create, image load, process access, network) and Frida API telemetry. Typical lab flows:
+Two sensors feed the detector. **Frida** hooks give API-level detail (addresses, sizes, protections). **Sysmon** kernel callbacks still see remote-thread creation (EID 8, as an EXECUTE primitive) and cross-process handle opens with their call stack (EID 10) when a sample bypasses the user-mode hooks with direct syscalls or unhooking; the call stack is checked for direct syscalls and unbacked callers, and a remote thread the kernel saw but Frida missed is flagged as a hook bypass. See [`docs/code-map.md`](docs/code-map.md) for how the code maps to the paper. Typical lab flows:
 
 ```text
 memory-only loader:  decrypt → section mapping → SetThreadContext → ResumeThread
@@ -40,13 +40,11 @@ Three deployable units (see [`deploy/README.md`](deploy/README.md)):
 
 | Package | Role |
 |---------|------|
-| `noirlycan_core` | Correlation, classification, JSONL storage |
-| `noirlycan_agent` | Windows collector (Frida hooks, Sysmon, file watch) |
-| `noirlycan_backend` | REST ingest, auth, rules, agents, findings API |
-| `dashboard-ui/` | React console (Findings, Agents, Rules, File drops) |
-| `noirlycan_dashboard` | Static file server for built UI (+ legacy Django) |
-
-Deprecated shims (still work): `noirlycan-telemetry`, `noirlycan-console` → prefer `noirlycan-agent` / `noirlycan-backend`.
+| `noirlycan_core` | Analysis module: paper rules (`detection/`), technique classification, trace parsers, storage |
+| `noirlycan_agent` | Monitoring module on the VM: sensors (Frida, Sysmon, file watch, network), runtime, lab studies |
+| `noirlycan_backend` | FastAPI console: auth/RBAC, agent channel (signed commands), samples, rules, findings |
+| `dashboard-ui/` | React console (Findings, Activity, Network, Rules, Samples, Agents, Access) |
+| `noirlycan_dashboard` | Static file server for the built UI |
 
 ## Quick start — lab console (Mac / Linux server)
 
@@ -76,7 +74,7 @@ cd dashboard-ui && npm install && npm run dev
 
 Open [http://127.0.0.1:5173](http://127.0.0.1:5173) — Vite proxies `/api` → `http://127.0.0.1:8765`.
 
-**Demo login:** `admin@lab` / `admin` (change in production).
+**Login:** on first start the backend creates `admin@lab` with the password in `NOIRLYCAN_ADMIN_PASSWORD`, or prints a random one to the console. For demos, `NOIRLYCAN_DEMO_USERS=1` seeds `admin@lab`/`admin`, `analyst@lab`/`analyst`, `viewer@lab`/`viewer` instead.
 
 Production build + static serve:
 
@@ -109,6 +107,11 @@ Use a **disposable VM snapshot**. Isolate from production networks.
 
 ### 1. Install agent only
 
+For the desktop version, build on Windows with `.\scripts\build-agent-desktop.ps1`
+and copy `dist\NoirlycanAgent.exe` to the VM. Open it, accept Administrator UAC,
+and enter the server and agent enrollment token from the dashboard. No Python is
+needed on the target VM. See [desktop build and usage](deploy/agent/README.md).
+
 ```powershell
 git clone https://github.com/noirlycan/NoirlycanThesis.git C:\Noirlycan\agent
 cd C:\Noirlycan\agent
@@ -139,7 +142,7 @@ Or the launcher shortcut (same flags, wraps `lab_stack.py agent`):
 .\scripts\run-lab-agent.ps1 -Server 192.168.1.10:8765 -AgentId vm01 -Token YOUR_TOKEN
 ```
 
-Credentials persist in `logs\.agent_identity.json` next to the working directory.
+Credentials persist in `logs\.agent_identity.json` next to the working directory. On Windows the token is encrypted with DPAPI. The file also pins the console's command-signing key (from `command_key` in the exported config): the agent only runs commands signed with that key, addressed to itself, unexpired and not replayed.
 
 ### 3. Agent dependencies (Frida + pywin32)
 
@@ -180,8 +183,8 @@ Download: [Sysmon for Windows](https://learn.microsoft.com/en-us/sysinternals/do
 | **1** ProcessCreate | Log all (exclude none) | Parent/child lineage, **target process name**, auto-attach candidates |
 | **3** NetworkConnect | Outbound, not localhost | Post-finding network watch (beacon hints) |
 | **7** ImageLoad | `ntdll.dll`, `kernel32.dll` | Process/DLL context for correlation |
-| **8** CreateRemoteThread | Log all (exclude none) | Remote-thread injection context |
-| **10** ProcessAccess | Selected `GrantedAccess` masks | Cross-process open / injection staging |
+| **8** CreateRemoteThread | Log all (exclude none) | EXECUTE primitive from the kernel (start address used for congruence when unbacked) |
+| **10** ProcessAccess | Selected `GrantedAccess` masks | Handle-access evidence; `CallTrace` checked for direct syscalls / unbacked callers |
 | **11** FileCreate | `.exe`, `.dll`, `.ps1`, `.vbs`, … | File-drop provenance (with agent file watch) |
 
 Rules intentionally broad for **isolated lab VMs** — expect volume on busy hosts. Tune `configs/sysmon-noirlycan.xml` for your experiment; reload with `-c` (below).
@@ -281,19 +284,15 @@ Default log: `logs/session-<timestamp>.jsonl` (override with `--jsonl`).
 ## Console features
 
 - **Findings** — grouped by actor → target process / injection chain; kill process from dashboard  
-- **Agents** — register VMs, copy run command, auto-kill policy per agent  
+- **Samples** — upload an `.exe`/`.dll`, send it to a lab agent (SHA-256 verified on the VM, run under Frida), view the report; `.jsonl` uploads are imported for offline analysis  
+- **Agents** — register VMs, copy config, auto-kill policy per agent  
 - **Rules** — scoring weights, hook policy, capture window, network watch duration  
-- **File drops** — pending drops + triage metadata  
+- **Activity** — live events, pending file drops + triage metadata  
 - **Access** — RBAC (admin / analyst / viewer)
 
+Classifier rules (built-in catalog, per-rule gates, custom rules) are served at `/api/classifier`; offline corpus stats and re-correlation at `/api/analysis/*`.
+
 UI spec: [`design_handoff_noirlycan_console/`](design_handoff_noirlycan_console/).
-
-Legacy Django dashboard (upload tab, Jet admin):
-
-```powershell
-pip install -e ".[dashboard]"
-noirlycan-dashboard legacy
-```
 
 ## Repository layout
 
@@ -310,10 +309,10 @@ scripts/
   run-lab-agent.ps1             Windows VM: lab_stack.py agent
   run-lab-sysmon.ps1            Windows VM: lab_stack.py sysmon
 src/
-  noirlycan_core/               correlation, storage, classification
-  noirlycan_agent/              collector + Frida hooks
+  noirlycan_core/               detection (paper rules), classification, trace parsers, storage
+  noirlycan_agent/              sensors (Frida, Sysmon, file/network watch), runtime, lab studies
   noirlycan_backend/            FastAPI console backend
-  noirlycan_dashboard/          UI static server + legacy Django
+  noirlycan_dashboard/          static server for the built UI
 tests/
 thesis/                         thesis chapters (Vietnamese / HTW)
 docker-compose.yml
@@ -325,7 +324,9 @@ docker-compose.yml
 |----------|-------------|
 | `NOIRLYCAN_LOGS_DIR` | Logs + SQLite directory (default: `./logs`) |
 | `NOIRLYCAN_CORS_ORIGINS` | Comma-separated dashboard origins for CORS |
-| `NOIRLYCAN_CONSOLE_JWT_SECRET` | JWT signing secret (set in production) |
+| `NOIRLYCAN_CONSOLE_JWT_SECRET` | JWT signing secret (default: random, stored in `logs/.jwt_secret`) |
+| `NOIRLYCAN_ADMIN_PASSWORD` | Password for `admin@lab` on first start (default: random, printed once) |
+| `NOIRLYCAN_DEMO_USERS` | `1` seeds the three well-known demo accounts instead |
 | `NOIRLYCAN_DASHBOARD_UI` | Path to built `dashboard-ui/dist` (optional) |
 
 ## CLI reference
@@ -333,12 +334,15 @@ docker-compose.yml
 | Command | Purpose |
 |---------|---------|
 | `noirlycan-backend api` | Start FastAPI console backend |
+| `noirlycan-backend corpus` | Corpus statistics over stored sessions |
+| `noirlycan-backend reclassify` | Replay a session through the current detector/classifier |
 | `noirlycan-backend seed-demo` | Seed demo agent sessions |
 | `noirlycan-dashboard serve` | Serve built React UI |
 | `noirlycan-agent run` | Collector loop (local and/or remote ingest) |
 | `noirlycan-agent spawn` | Frida-spawn a sample |
 | `noirlycan-agent triage` | Static PE/hash triage |
-| `noirlycan-telemetry …` | Deprecated alias → `noirlycan-agent` |
+| `noirlycan-agent batch` | Run every EXE in a folder (mini-corpus study) |
+| `noirlycan-agent compare` | Compare with Defender / VirusTotal |
 
 ## Development
 
@@ -349,15 +353,18 @@ python -m pytest
 
 Key docs:
 
-- [`docs/clean-architecture-plan.md`](docs/clean-architecture-plan.md) — service boundaries  
+- [`docs/code-map.md`](docs/code-map.md) — code ↔ paper map and module layout  
+- [`docs/proposal-kernel-telemetry.md`](docs/proposal-kernel-telemetry.md) — sensor roadmap (ETW-TI, Sysmon)  
+- [`docs/proposal-platform-architecture.md`](docs/proposal-platform-architecture.md) — agent management and security design  
 - [`docs/architecture-diagrams.md`](docs/architecture-diagrams.md) — diagrams  
 - [`configs/sysmon-noirlycan.xml`](configs/sysmon-noirlycan.xml) — Sysmon lab rules (see **Sysmon configuration** above)  
 - [`deploy/agent/README.md`](deploy/agent/README.md) — minimal VM install  
 
 ## Limitations
 
-- Frida and Sysmon are lab instrumentation; evasive malware can bypass user-mode hooks.  
-- Direct syscalls / kernel techniques are out of scope.  
+- Frida hooks can be bypassed (direct/indirect syscalls, unhooking, anti-Frida). Sysmon keeps kernel-side signal (remote threads, handle opens + call stacks) but has no allocate/write events; restoring full syscall-level primitives needs the ETW Threat-Intelligence sensor described in the kernel-telemetry proposal (not implemented: it requires a PPL/ELAM-signed native sensor).  
+- While Frida is attached, its own trampolines appear as unbacked frames in Sysmon call stacks; that heuristic is only scored for actors Frida did not instrument.  
+- Kernel-mode adversaries are out of scope, as in the paper.  
 - Sysmon config is broad for experiments and can be noisy.  
 - Target process names depend on Sysmon ProcessCreate and/or Frida spawn metadata; install Sysmon on the VM for best results.  
 - Prototype for measurement and thesis work — not an EDR product.

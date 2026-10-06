@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from noirlycan_core.kernel.entities.models import FileEvent, Finding, MemoryPrimitive, PrimitiveKind, Severity
-from noirlycan_core.kernel.classification.technique_classifier import (
+from noirlycan_core.models import FileEvent, Finding, MemoryPrimitive, PrimitiveKind, Severity
+from noirlycan_core.classification.technique_classifier import (
     InjectionTechnique,
     TechniqueConfidence,
     classify_finding,

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from noirlycan_backend.api.auth import require_permission
 from noirlycan_backend.api.deps import get_database, get_logs_dir
 from noirlycan_backend.domain.ruleset import Ruleset, ruleset_to_toml
-from noirlycan_core.analysis.domain.classifier_config import load_classifier_config
+from noirlycan_core.classification.config import load_classifier_config
 from noirlycan_core.runtime.agent_policy import load_agent_policy
 
 router = APIRouter(prefix="/rules", tags=["rules"])

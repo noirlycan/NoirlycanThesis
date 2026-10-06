@@ -6,13 +6,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from noirlycan_core.analysis.domain.classifier_config import (
+from noirlycan_core.classification.config import (
     ClassifierRulesConfig,
     load_classifier_config,
     save_classifier_config,
 )
-from noirlycan_core.storage.infrastructure.atomic_io import atomic_write_text
-from noirlycan_core.storage.infrastructure.log_store import resolve_logs_dir
+from noirlycan_core.runtime.cached_json import load_json_cached
+from noirlycan_core.storage.atomic_io import atomic_write_text
+from noirlycan_core.storage.log_store import resolve_logs_dir
 
 POLICY_FILENAME = ".agent_policy.json"
 
@@ -139,14 +140,8 @@ def policy_path(logs_dir: Path | str | None = None) -> Path:
 
 
 def load_agent_policy(logs_dir: Path | str | None = None) -> AgentPolicy | None:
-    path = policy_path(logs_dir)
-    if not path.is_file():
-        return None
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    return AgentPolicy.from_dict(raw)
+    raw = load_json_cached(policy_path(logs_dir))
+    return AgentPolicy.from_dict(raw) if isinstance(raw, dict) else None
 
 
 def save_agent_policy(policy: AgentPolicy, logs_dir: Path | str | None = None) -> Path:

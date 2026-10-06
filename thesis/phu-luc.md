@@ -2,7 +2,7 @@
 
 ## Phụ lục A. Danh mục API equivalence class (chống né tránh E1)
 
-*Nguồn:* `src/noirlycan_telemetry/kernel/classification/api_manifest.py` — `PAPER_API_CLASSES` căn cứ [4].
+*Nguồn:* `src/noirlycan_core/detection/api_classes.py` — `PAPER_API_CLASSES` căn cứ [7].
 
 ### A.1. Lớp allocate
 
@@ -83,21 +83,23 @@ pip install -e .[dev]
 ### C.3. Chạy thí nghiệm có kiểm soát (spawn — chống E6)
 
 ```powershell
-noirlycan-telemetry spawn --watch-sysmon -- C:\Lab\loader.exe
+noirlycan-agent spawn --watch-sysmon -- C:\Lab\loader.exe
 ```
 
 ### C.4. Chạy file-drop (chống E3)
 
 ```powershell
-noirlycan-telemetry run --watch-sysmon --auto-attach-new-processes
+noirlycan-agent run --watch-sysmon --auto-attach-new-processes
 # Copy sample vào thư mục watch
 ```
 
 ### C.5. Dashboard
 
 ```powershell
-noirlycan-telemetry dashboard --port 8765
-# http://127.0.0.1:8765
+noirlycan-backend api --host 0.0.0.0 --port 8765
+cd dashboard-ui && npm install && npm run build && cd ..
+noirlycan-dashboard serve --port 8080
+# http://127.0.0.1:8080
 ```
 
 ### C.6. Kiểm thử tự động
@@ -135,7 +137,7 @@ Payload: MessageBox only — không shellcode weaponized. Ground truth do tác g
 **Quy trình:**
 
 1. Baseline: `python -m tests.manual.frida_fidelity_driver 1000`
-2. Frida: `noirlycan-telemetry spawn -- python -m tests.manual.frida_fidelity_driver 1000`
+2. Frida: `noirlycan-agent spawn -- python -m tests.manual.frida_fidelity_driver 1000`
 3. So sánh `driver_count` vs event JSONL.
 4. Lặp N = 100, 1000, 10000; mỗi N chạy 3 lần.
 

@@ -8,7 +8,7 @@ import uvicorn
 
 from noirlycan_backend.api.app import create_app
 from noirlycan_backend.api.deps import reset_runtime_paths, warm_database
-from noirlycan_core.storage.infrastructure.log_store import resolve_logs_dir
+from noirlycan_core.storage.log_store import resolve_logs_dir
 
 
 def _default_ui_dist() -> Path | None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -12,13 +13,16 @@ from noirlycan_backend.api.deps import reset_runtime_paths, warm_database
 
 from noirlycan_backend.api.routes import (
     agents,
+    analysis,
     auth,
+    classifier,
     file_drops,
     findings,
     ingest,
     overview,
     reports,
     rules,
+    samples,
     sessions,
     users,
     ws,
@@ -38,18 +42,20 @@ def _cors_origins() -> list[str]:
 
 
 def create_app(*, ui_dist: Path | None = None) -> FastAPI:
-    app = FastAPI(
-        title="Noirlycan Backend API",
-        version="0.2.0",
-        description="Lab backend for process-injection telemetry (ingest, auth, rules, agents)",
-    )
-
-    @app.on_event("startup")
-    def _startup_database() -> None:
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
         reset_runtime_paths()
         database = warm_database()
         print(f"[+] Logs dir: {database.logs_dir}")
         print(f"[+] SQLite ready: {database.db_path}")
+        yield
+
+    app = FastAPI(
+        title="Noirlycan Backend API",
+        version="0.3.0",
+        description="Lab backend for process-injection telemetry (ingest, auth, rules, agents)",
+        lifespan=lifespan,
+    )
 
     app.add_middleware(
         CORSMiddleware,
@@ -64,6 +70,9 @@ def create_app(*, ui_dist: Path | None = None) -> FastAPI:
     app.include_router(findings.router, prefix="/api")
     app.include_router(file_drops.router, prefix="/api")
     app.include_router(rules.router, prefix="/api")
+    app.include_router(classifier.router, prefix="/api")
+    app.include_router(samples.router, prefix="/api")
+    app.include_router(analysis.router, prefix="/api")
     app.include_router(agents.router, prefix="/api")
     app.include_router(users.router, prefix="/api")
     app.include_router(sessions.router, prefix="/api")
@@ -73,7 +82,7 @@ def create_app(*, ui_dist: Path | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
-        return {"status": "ok", "service": "backend", "api_version": "0.2.0"}
+        return {"status": "ok", "service": "backend", "api_version": "0.3.0"}
 
     if ui_dist and ui_dist.is_dir():
         assets = ui_dist / "assets"

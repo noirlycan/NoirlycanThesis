@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from noirlycan_core.runtime.command_signing import COMMAND_TTL as KILL_RESULT_TIMEOUT, CommandSigner
 from noirlycan_backend.domain.agent_sessions import ensure_agent_session_file, sanitize_agent_id
 from noirlycan_backend.domain.findings_groups import file_drop_key
 from noirlycan_backend.domain.permissions import (
@@ -19,7 +20,7 @@ from noirlycan_backend.domain.permissions import (
     normalize_role_permissions,
 )
 from noirlycan_backend.domain.ruleset import Ruleset
-from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir
+from noirlycan_core.storage.log_store import ensure_logs_dir
 
 
 AGENT_STALE_SECONDS = 15
@@ -66,6 +67,27 @@ def _hash_password(password: str, salt: str) -> str:
     return digest.hex()
 
 
+def _initial_users() -> list[tuple[str, str, str, str]]:
+    """Users created on first start.
+
+    ``NOIRLYCAN_DEMO_USERS=1`` seeds the three well-known lab accounts
+    (admin/analyst/viewer, password = role name) for demos. Otherwise only
+    ``admin@lab`` is created, with ``NOIRLYCAN_ADMIN_PASSWORD`` or a random
+    password printed once to the console.
+    """
+    if os.environ.get("NOIRLYCAN_DEMO_USERS", "").strip() == "1":
+        return [
+            ("admin@lab", "Lab Admin", "Admin", "admin"),
+            ("analyst@lab", "Lab Analyst", "Analyst", "analyst"),
+            ("viewer@lab", "Lab Viewer", "Viewer", "viewer"),
+        ]
+    password = os.environ.get("NOIRLYCAN_ADMIN_PASSWORD", "").strip()
+    if not password:
+        password = secrets.token_urlsafe(12)
+        print(f"[+] First start: created admin@lab with password {password} (change it under Account)", flush=True)
+    return [("admin@lab", "Lab Admin", "Admin", password)]
+
+
 class ConsoleDatabase:
     def __init__(self, logs_dir: Path | str | None = None) -> None:
         self._lock = threading.RLock()
@@ -77,6 +99,7 @@ class ConsoleDatabase:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_schema()
         self.seed_defaults()
+        self.signer = CommandSigner.load_or_create(self.logs_dir)
 
     def close(self) -> None:
         with self._lock:
@@ -215,6 +238,15 @@ class ConsoleDatabase:
             self._migrate_schema(connection)
 
     def _migrate_schema(self, connection: sqlite3.Connection) -> None:
+        kill_columns = {row[1] for row in connection.execute("PRAGMA table_info(console_killed_processes)")}
+        for column, ddl in (
+            ("status", "TEXT NOT NULL DEFAULT 'terminated'"),  # rows from before results were reported
+            ("command_id", "INTEGER"),
+            ("detail", "TEXT"),
+            ("updated_at", "TEXT"),
+        ):
+            if column not in kill_columns:
+                connection.execute(f"ALTER TABLE console_killed_processes ADD COLUMN {column} {ddl}")
         columns = {row[1] for row in connection.execute("PRAGMA table_info(console_agents)")}
         if "display_name" not in columns:
             connection.execute(
@@ -238,14 +270,10 @@ class ConsoleDatabase:
                 )
 
     def seed_defaults(self) -> None:
-        demo_users = [
-            ("admin@lab", "Lab Admin", "Admin", "admin"),
-            ("analyst@lab", "Lab Analyst", "Analyst", "analyst"),
-            ("viewer@lab", "Lab Viewer", "Viewer", "viewer"),
-        ]
         with self._connect() as connection:
             count = connection.execute("SELECT COUNT(*) FROM console_users").fetchone()[0]
             if count == 0:
+                demo_users = _initial_users()
                 now = _utc_now()
                 for email, name, role, password in demo_users:
                     salt = secrets.token_hex(16)
@@ -315,7 +343,7 @@ class ConsoleDatabase:
         if row is None:
             return None
         expected = _hash_password(password, row["password_salt"])
-        if expected != row["password_hash"]:
+        if not secrets.compare_digest(expected, row["password_hash"]):
             return None
         return self._user_payload(row)
 
@@ -502,6 +530,7 @@ class ConsoleDatabase:
         return {
             "rules": ruleset.to_dict(),
             "rules_version": self.active_ruleset_version(),
+            "command_public_key": self.signer.public_key,
         }
 
     def save_ruleset(self, ruleset: Ruleset) -> Ruleset:
@@ -864,6 +893,19 @@ class ConsoleDatabase:
     def verify_agent_token(self, token: str, *, agent_id: str | None = None) -> bool:
         return self.authenticate_agent(agent_id or "", token) != "invalid"
 
+    def resolve_enrollment_token(self, token: str) -> str | None:
+        """Resolve only a registered agent token; never accept the server token."""
+        token = str(token or "").strip()
+        if not token:
+            return None
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, enrollment_token FROM console_agents WHERE enrollment_token <> ''"
+            ).fetchall()
+        matches = [row["id"] for row in rows
+                   if secrets.compare_digest(str(row["enrollment_token"]).encode(), token.encode())]
+        return matches[0] if len(matches) == 1 else None
+
     def authenticate_agent(self, agent_id: str, token: str) -> str:
         """Return 'agent', 'global', or 'invalid'."""
         token = str(token or "").strip()
@@ -921,28 +963,58 @@ class ConsoleDatabase:
             )
             self._audit(connection, actor, "file_drop.remove", {"drop_key": drop_key})
 
-    def record_kill(self, *, agent_id: str, pid: int, image: str | None, actor: str | None) -> None:
-        self.enqueue_agent_command(agent_id, "kill", {"pid": pid, "image": image})
+    def record_kill(self, *, agent_id: str, pid: int, image: str | None, actor: str | None) -> int:
+        """Queue a kill. The row stays ``pending`` until the agent reports the outcome."""
+        command_id = self.enqueue_agent_command(agent_id, "kill", {"pid": pid, "image": image})
+        now = _utc_now()
         with self._connect() as connection:
             connection.execute(
                 """
-                INSERT OR REPLACE INTO console_killed_processes (pid, agent_id, image, killed_at)
-                VALUES (?, ?, ?, ?)
+                INSERT OR REPLACE INTO console_killed_processes
+                    (pid, agent_id, image, killed_at, status, command_id, detail, updated_at)
+                VALUES (?, ?, ?, ?, 'pending', ?, NULL, ?)
                 """,
-                (pid, agent_id, image, _utc_now()),
+                (pid, agent_id, image, now, command_id, now),
             )
             self._audit(connection, actor, "process.kill", {"agent_id": agent_id, "pid": pid, "image": image})
+        return command_id
+
+    def record_command_result(self, agent_id: str, command_id: int, *, ok: bool, detail: str | None) -> bool:
+        """Apply an agent-reported outcome. Only the agent that received the command may report it."""
+        status = "terminated" if ok else "failed"
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE console_killed_processes SET status = ?, detail = ?, updated_at = ?
+                WHERE agent_id = ? AND command_id = ? AND status = 'pending'
+                """,
+                (status, (detail or "")[:300] or None, _utc_now(), agent_id, command_id),
+            )
+            connection.execute(
+                "UPDATE console_agent_commands SET status = ? WHERE id = ? AND agent_id = ?",
+                (f"done:{status}", command_id, agent_id),
+            )
+            if cursor.rowcount:
+                self._audit(connection, agent_id, f"process.kill.{status}", {"command_id": command_id, "detail": detail})
+        return bool(cursor.rowcount)
 
     def enqueue_agent_command(self, agent_id: str, command: str, payload: dict[str, Any]) -> int:
+        """Queue a command; the stored payload is the signed envelope the agent verifies."""
         with self._connect() as connection:
             cursor = connection.execute(
                 """
                 INSERT INTO console_agent_commands (agent_id, command, payload_json, status, created_at)
-                VALUES (?, ?, ?, 'pending', ?)
+                VALUES (?, ?, '{}', 'pending', ?)
                 """,
-                (agent_id, command, json.dumps(payload), _utc_now()),
+                (agent_id, command, _utc_now()),
             )
-            return int(cursor.lastrowid)
+            command_id = int(cursor.lastrowid)
+            envelope = self.signer.sign(agent_id, command, payload, command_id=command_id)
+            connection.execute(
+                "UPDATE console_agent_commands SET payload_json = ? WHERE id = ?",
+                (json.dumps(envelope), command_id),
+            )
+            return command_id
 
     def pop_agent_commands(self, agent_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
         with self._connect() as connection:
@@ -974,15 +1046,42 @@ class ConsoleDatabase:
                 payload = {}
             if not isinstance(payload, dict):
                 payload = {}
-            commands.append({"command": row["command"], **payload})
+            commands.append({**payload, "command": row["command"]})
         return commands
+
+    def agent_was_sent_sample(self, agent_id: str, upload_id: int) -> bool:
+        """True if a sample.run command for this upload was issued to this agent."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT payload_json FROM console_agent_commands WHERE agent_id = ? AND command = 'sample.run'",
+                (agent_id,),
+            ).fetchall()
+        for row in rows:
+            try:
+                if int(json.loads(row["payload_json"]).get("upload_id", -1)) == upload_id:
+                    return True
+            except (json.JSONDecodeError, TypeError, ValueError, AttributeError):
+                continue
+        return False
+
+    def audit(self, actor: str | None, action: str, detail: dict[str, Any] | None = None) -> None:
+        with self._connect() as connection:
+            self._audit(connection, actor, action, detail)
 
     def list_killed(self) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT pid, agent_id, image, killed_at FROM console_killed_processes"
+                "SELECT pid, agent_id, image, killed_at, status, detail, updated_at FROM console_killed_processes"
             ).fetchall()
-        return [dict(row) for row in rows]
+        expiry = _utc_before(int(KILL_RESULT_TIMEOUT.total_seconds()))
+        result = []
+        for row in rows:
+            item = dict(row)
+            # A command the agent never picked up expires with its signature (10 min).
+            if item["status"] == "pending" and str(item["killed_at"]) < expiry:
+                item["status"] = "expired"
+            result.append(item)
+        return result
 
     def _audit(
         self,

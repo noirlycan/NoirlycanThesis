@@ -141,8 +141,8 @@ def finding_to_markdown(finding: dict[str, Any]) -> str:
         "",
         "### Process details",
         "",
-        f"| Role | Image | PID |",
-        f"|------|-------|-----|",
+        "| Role | Image | PID |",
+        "|------|-------|-----|",
         f"| Loader (actor) | `{actor_image}` | {actor_pid} |",
         f"| Target (victim) | `{target_image}` | {target_pid} |",
     ])

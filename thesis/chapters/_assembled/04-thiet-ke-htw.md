@@ -4,500 +4,305 @@ Chương cụ thể hóa phương pháp Chương 2 thành artifact phần mềm 
 
 ---
 
-Chương này mô tả artifact **Noirlycan Telemetry** — prototype cho phòng lab Windows 10/11 cô lập, triển khai phương pháp ở Chương 4. Hệ thống tổ chức bốn miền: thu thập (collectors), xử lý (correlator, triage, classifier), lưu trữ (JSONL, SQLite), trình bày (dashboard Django). Tầng correlator bám sát [4]; module provenance và dashboard là đóng góp engineering. **Module anti-evasion (E5) của [4] không được hiện thực** — `kernel/analysis/evasion.py` chỉ ghi nhận tín hiệu sandbox, không patch timing; giới hạn tuyên bố ở 5.10.4.
+Chương này mô tả artifact **Noirlycan** — prototype cho phòng lab Windows 10/11 cô lập, triển khai phương pháp ở Chương 4. Thiết kế đi theo đúng hai module của [7] (Figure 1, §3.3): **monitoring module** thu trace API trên máy chạy mẫu và **analysis module** phát hiện rồi phân loại injection. [7] hiện thực monitoring module bằng BluePill trên Intel Pin và khẳng định phương pháp *"can be integrated into any dynamic analysis system that intercepts API calls"*; Noirlycan thay monitoring module bằng hai sensor (Frida user-mode, Sysmon kernel-mode) và **giữ nguyên** analysis module. Module provenance, console và kênh agent là đóng góp engineering. **Anti-evasion (E5) của [7] không được hiện thực** — `extensions/evasion.py` chỉ ghi nhận tín hiệu; giới hạn tuyên bố ở 5.10.4.
 
 ---
 
 ## 3.1. Kiến trúc tổng thể
 
-Codebase tổ chức theo **Clean Architecture**, triển khai dạng **monolith** (mặc định) hoặc **microservices** (Docker Compose). Tách miền nghiệp vụ khỏi framework cho phép thay tầng I/O mà không động vào quy tắc 2-of-3. **Lõi correlator 2-of-3 của [4] không đổi** — chỉ tách boundary module. Chi tiết refactor: `docs/clean-architecture-plan.md`.
-
-### 3.1.1. Sơ đồ Clean Architecture
+### 3.1.1. Ba đơn vị triển khai
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  Presentation                                                    │
-│  cli.py · services/dashboard/ (Django REST + WebSocket)          │
-│  services/storage/api.py · services/analysis/api.py              │
-├──────────────────────────────────────────────────────────────────┤
-│  Application                                                     │
-│  collector_runtime · analysis_queue · reclassify · upload_finalize│
-├──────────────────────────────────────────────────────────────────┤
-│  Domain (kernel/) — không phụ thuộc framework/I/O               │
-│  entities/models · analysis/primitives · analysis/injection_graph│
-│  classification/technique_classifier · classification/api_manifest│
-├──────────────────────────────────────────────────────────────────┤
-│  Infrastructure                                                  │
-│  collector: sysmon · frida_manager · file_watch · triage         │
-│  storage: log_store · analysis_db · atomic_io                    │
-│  analysis/domain: correlation · session_analytics · batch_runner  │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────── Windows lab VM ────────────────┐        ┌──────── Máy analyst ────────┐
+│ noirlycan-agent  (MONITORING MODULE)           │  HTTP  │ noirlycan-backend (FastAPI) │
+│  sensors/  Frida · Sysmon · file watch · mạng  │ ─────► │  ingest · samples · rules   │
+│  runtime/  pipeline → Correlator (lõi [7])     │ ◄───── │  findings · auth/RBAC       │
+│            sink JSONL + upload batch           │  lệnh  │  SQLite + JSONL theo agent  │
+│            lệnh đã ký Ed25519                  │  ký số │                             │
+└────────────────────────────────────────────────┘        │ dashboard-ui (React)        │
+                                                          └─────────────────────────────┘
+          noirlycan_core (ANALYSIS MODULE, thuần Python, dùng chung cả hai phía)
 ```
 
-**Quy tắc phụ thuộc:** Presentation → Application → Domain ← Infrastructure. Layer `kernel/` không import Django, Frida, `win32evtlog`; I/O tiêm vào qua dataclass thuần Python. Nhờ vậy test unit của classifier và correlator chạy trên CI Linux mà không cần Windows hay Frida.
+Agent chạy bản `Correlator` ngay trên VM để báo finding thời gian thực; backend dùng cùng lõi để replay (`reclassify`) và thống kê corpus. Lõi `noirlycan_core` không import Frida, `win32evtlog`, FastAPI hay bất kỳ thứ gì của agent — nên toàn bộ test của detector và classifier chạy trên CI macOS/Linux.
 
-### 3.1.2. Bốn microservice và chế độ triển khai
+Backend là *modular monolith*, không tách microservice: lab chỉ có vài VM, tách service chỉ thêm chi phí vận hành mà không phục vụ câu hỏi nghiên cứu (lập luận chi tiết ở `docs/proposal-platform-architecture.md`).
 
-**Bảng 3.1.** Service boundary
+### 3.1.2. Ánh xạ paper → module
 
-| Service | Vai trò | Port | Entry point |
-|---------|---------|------|-------------|
-| **collector** | Sysmon + Frida + file-drop trên Windows VM | 8782 (health) | `noirlycan-telemetry run` |
-| **storage** | Ghi/đọc JSONL, SQLite uploads | 8780 | `noirlycan-storage` |
-| **analysis** | Correlator, reclassify, corpus | 8781 | `noirlycan-analysis` |
-| **dashboard** | UI analyst | 8765 | `noirlycan-telemetry dashboard` |
+**Bảng 3.1.** Thành phần của [7] và vị trí trong repo
 
-Bốn service là bốn ranh giới logic, không bắt buộc bốn process. Monolith dùng một process Python; microservices đóng gói từng service thành image Docker, giao tiếp qua HTTP/JSONL trên volume chung.
+| Khái niệm [7] | Module | Ghi chú |
+|---------------|--------|---------|
+| Monitoring module (BluePill/Pin) | `noirlycan_agent/sensors/` | Frida + Sysmon thay cho DBI |
+| Trace format | `noirlycan_core/trace/frida.py`, `trace/sysmon.py` | Message sensor → `MemoryPrimitive` |
+| Ba primitive (§3.1) | `noirlycan_core/models.py` `PrimitiveKind` | + `CONTEXT_READ` (không tính 2/3) |
+| Lớp tương đương API (§3.1, App. B) | `detection/api_classes.py` `PAPER_API_CLASSES` | 67 API của paper |
+| 2/3 · congruence · temporal (§3.2) | `detection/rules.py` | Hàm thuần, docstring trích mục paper |
+| Gom chuỗi (actor, victim) | `detection/correlator.py` | Cửa sổ trượt 300 s |
+| Chuỗi đệ quy (§3.1) | `detection/injection_graph.py` | `is_recursive`, `chain_depth` |
+| Phân loại kỹ thuật | `noirlycan_core/classification/` | 36 kỹ thuật |
+| *[mở rộng]* điểm, provenance, network watch | `detection/scoring.py`, `provenance.py`, `network_watch.py` | Không đổi quyết định của rules |
+| *[mở rộng]* bằng chứng kernel | `extensions/kernel_evidence.py` | Call stack, đối chiếu sensor |
 
-| Mode | Mô tả | Khi dùng |
-|------|-------|----------|
-| **Monolith** | `run` + `dashboard` in-process, ghi trực tiếp `logs/` | Dev lab, demo luận văn |
-| **Microservices** | `docker compose up` — storage + analysis + dashboard; collector native trên VM | Tách scale, kiểm soát từng service |
+Quy ước bất biến: phần **[mở rộng]** chỉ thêm điểm và evidence cho chuỗi **đã qua** quy tắc của paper, không bao giờ biến một chuỗi bị loại thành finding.
 
-Wire format giữa các service là `contracts/events.py` (`TelemetryEnvelope`) — dataclass JSON-serializable tương thích JSONL session.
+### 3.1.3. Cấu trúc thư mục
 
-### 3.1.3. Luồng runtime monolith (`noirlycan-telemetry run`)
-
-1. `cli.py` là composition root, khởi tạo `Correlator`, `JsonlWriter`, `SysmonPoller`, `FridaInjectionMonitor`, `FileDropWatcher`.
-2. Vòng lặp: Sysmon batch → correlator; file watcher → triage → correlator; drain queue Frida xử lý primitive bộ nhớ.
-3. Mỗi `Finding` ghi vào `logs/session-*.jsonl`; dashboard tail cùng volume.
-
-### 3.1.4. Module map
-
-**Bảng 3.2.** Ánh xạ module — trách nhiệm
-
-| Thành phần | Đường dẫn trong repo | Vai trò |
-|------------|----------------------|---------|
-| CLI | `cli.py` | Composition root, subcommand |
-| Correlator | `services/analysis/domain/correlation.py` | 2-of-3, scoring, network watch |
-| Primitives | `kernel/analysis/primitives.py` | `operational_kind_count`, `analyze_execution` |
-| Classifier | `kernel/classification/technique_classifier.py` | Rule → `InjectionTechnique` |
-| API manifest | `kernel/classification/api_manifest.py` | `PAPER_API_CLASSES` [4] |
-| Models | `kernel/entities/models.py` | `Finding`, `MemoryPrimitive`, … |
-| Collector loop | `services/collector/application/collector_runtime.py` | JsonlWriter, drain |
-| Frida | `services/collector/infrastructure/frida_manager.py` | Attach/spawn, bridge |
-| Hooks | `frida_hooks/windows_injection_hooks.js` | Interceptor user-mode |
-| Sysmon | `services/collector/infrastructure/sysmon.py` | Kernel event poll |
-| File watch | `services/collector/infrastructure/file_watch.py` | Drop scanner |
-| Triage | `services/collector/infrastructure/triage.py` | Static analysis |
-| Log store | `services/storage/infrastructure/log_store.py` | JSONL I/O |
-| Analysis DB | `services/storage/infrastructure/analysis_db.py` | SQLite cache |
-| Dashboard | `services/dashboard/` | Django + Daphne + WebSocket |
-| Evasion log | `kernel/analysis/evasion.py` | Ghi signal E5/E6 (không patch) |
-
-Package tập trung tại `src/noirlycan_telemetry/`, cài qua `pip install -e .[dev]`.
+```
+src/
+  noirlycan_core/        models · trace/ · detection/ · classification/ · extensions/
+                         analysis/ (replay, corpus) · storage/ (JSONL, SQLite) · runtime/
+  noirlycan_agent/       cli.py · sensors/ · runtime/ · lab/ (batch, so sánh AV) · frida_hooks/
+  noirlycan_backend/     api/routes/ · domain/ · infrastructure/console_db.py
+  noirlycan_dashboard/   server tĩnh cho dashboard-ui/dist
+dashboard-ui/            React + Vite
+```
 
 ---
 
-## 3.2. Giao diện dòng lệnh (`cli.py`)
+## 3.2. Agent: giao diện dòng lệnh và vòng lặp
 
 ### 3.2.1. Subcommand
 
 | Lệnh | Mục đích |
 |------|----------|
-| `run` | Vòng lặp collector đầy đủ (Sysmon + file watch + Frida) |
-| `spawn` | Spawn mẫu dưới Frida từ entry (giảm miss E6/E4 attach trễ) |
-| `triage` | Static triage một file |
-| `dashboard` | Khởi Django server |
-| `batch` | Chạy nhiều mẫu tuần tự, báo cáo JSON |
-| `compare` | So sánh với VirusTotal (tùy chọn API key) |
-| `corpus` | Thống kê aggregate trên nhiều session JSONL |
-| `reclassify` | Chạy lại classifier trên log cũ |
+| `noirlycan-agent run` | Vòng lặp collector (Sysmon + file watch + Frida), tùy chọn nối console |
+| `noirlycan-agent spawn -- <cmd>` | Spawn mẫu dưới Frida từ lệnh đầu tiên (không lỡ primitive trong `DllMain`) |
+| `noirlycan-agent triage <file>` | Triage tĩnh một file |
+| `noirlycan-agent batch` / `compare` | Chạy cả thư mục mẫu; so sánh với Defender/VirusTotal |
+| `noirlycan-backend corpus` / `reclassify` | Thống kê corpus; replay session qua detector hiện tại |
 
-Tách `spawn` riêng vì nhiều mẫu inject ngay trong `DllMain`, attach sau Sysmon E1 là quá muộn.
+Tách `spawn` riêng vì nhiều mẫu inject ngay trong `DllMain`; attach sau Sysmon EID 1 là quá muộn.
 
-### 3.2.2. `command_run` — orchestration
+### 3.2.2. Vòng lặp collector (`runtime/collector.py`)
 
-Tham số chính: `--watch-sysmon`, `--watch-path`, `--attach-pid`/`--auto-attach-new-processes`, `--minimum-score` (mặc định 50), `--jsonl`.
+Mỗi tick:
 
-Luồng file mới: `FileDropWatcher.drain()` → `FileEvent` → `_TRIAGE_EXECUTOR` chạy `triage_file` (SHA256, layout PE, entropy, chữ ký) → `correlator.add_file`. Nếu là PE, `enqueue_analysis` đẩy vào hàng đợi spawn Frida.
+1. `read_tick()` đọc policy (console/`.agent_policy.json`) và runtime config **một lần**, đóng gói thành `Tick` (bật file watch, auto API analysis, auto attach, thư mục theo dõi).
+2. `apply()` đẩy policy vào `Correlator` và script Frida (hot reload khi version đổi).
+3. File watcher → `FileIntake.on_file`; hàng đợi phân tích → `SampleRunner.process_queue`.
+4. `poll_sensors()`: Sysmon batch, drain Frida, TCP/WFP cho PID đang được network watch; nhận và dispatch lệnh console.
+5. Heartbeat; ngủ `poll_interval` (0,2 s khi đang network watch).
 
-Heartbeat ghi `logs/.runtime.json` (PID, last-tick) để dashboard biết trạng thái online.
+Correlator đơn luồng để không có race trên bucket; triage tĩnh chạy trong `ThreadPoolExecutor` riêng (hash, Authenticode chậm) và ghi qua `JsonlWriter` có khóa.
 
-### 3.2.3. Tích hợp classifier config
+### 3.2.3. Ghi sự kiện (`runtime/event_sink.py`)
 
-`ensure_classifier_config()` tạo `.classifier_rules.json` nếu chưa có. Khi file thay đổi, `Correlator.reload_rules_config()` hot-reload — FP tuning chỉ là chỉnh JSON.
-
----
-
-## 3.3. Vòng lặp collector (`collector_runtime.py`)
-
-### 3.3.1. JsonlWriter
-
-`JsonlWriter` ghi mỗi sự kiện dạng `{"type": event_type, "value": ...}`, `type` ∈ {`file`, `sysmon`, `primitive`, `finding`, `network`, `frida_raw`, `evasion`}. Flush mỗi 32 dòng. Dashboard tail và `reclassify` dùng chung format.
-
-### 3.3.2. Xử lý Sysmon batch
-
-`process_sysmon_batch()` điều phối: `FileEvent` → `correlator.add_file`; `ProcessEvent` → `correlator.add_process`, nếu `auto_attach` và `should_auto_attach()` true thì gọi `safe_attach`; `NetworkConnectionEvent` → `handle_network_event` chỉ lưu khi PID trong network watch window; `TelemetryEvent` (E8/E10 raw) ghi xuống JSONL.
-
-`should_auto_attach` áp dụng heuristic: bỏ qua binary trong `system32` không có parent lạ, chấp nhận `.exe/.dll/.scr/.com` từ thư mục bị triage nghi vấn.
-
-### 3.3.3. Drain Frida
-
-`drain_frida()` xử lý queue non-blocking: tín hiệu `evasion` chỉ in cảnh báo, **không** correlate; `frida_process` → `add_process`; `memory_primitive` → `add_primitive` chạy 2-of-3.
-
-`print_finding()` xuất severity, kỹ thuật, `execution_confirmed`, chuỗi đệ quy và network watch.
+`JsonlWriter` ghi mỗi sự kiện `{"type", "value"}` vào `logs/session-*.jsonl` — định dạng chung cho dashboard, `reclassify` và import. Khi nối console, `MirroredWriter` ghi cục bộ trước rồi đẩy sự kiện vào `BatchUploader`: một thread nền gom tối đa 200 sự kiện hoặc 0,5 s rồi `POST /api/ingest/batch`. Vòng lặp thu thập không bao giờ chờ mạng; console mất kết nối thì log cục bộ vẫn đầy đủ.
 
 ---
 
-## 3.4. Lớp Frida (`frida_manager.py` + hooks)
+## 3.3. Pipeline sensor → detector (`runtime/pipeline.py`)
+
+`process_sysmon_batch()` điều phối Sysmon: `FileEvent` → `FileIntake`; `ProcessEvent` → `add_process` (và auto-attach Frida khi bật); `NetworkConnectionEvent` chỉ giữ khi PID đang network watch; EID 8 → `primitive_from_remote_thread` → `feed_primitive`; EID 10 → `access_from_process_access` → `add_process_access`.
+
+`drain_frida()` xử lý queue Frida không chặn: `process_create` → gợi ý lineage; tín hiệu evasion chỉ in cảnh báo; `memory_primitive`/`api_observation` → `feed_primitive`.
+
+`feed_primitive()` là điểm vào chung cho mọi sensor: ghi primitive, gọi `Correlator.add_primitive`, ghi và in finding.
+
+---
+
+## 3.4. Sensor Frida (`sensors/frida_monitor.py` + `frida_hooks/`)
 
 ### 3.4.1. FridaInjectionMonitor
 
-`FridaInjectionMonitor` quản lý vòng đời session: `load_default_hook_script()` đọc `windows_injection_hooks.js` qua `importlib.resources`; `attach(pid)` gọi `frida.attach` → `create_script` → `script.load`, mỗi PID một session riêng để tránh leak handler; `_on_message` parse payload và đẩy `FridaRuntimeEvent` vào `queue.Queue`.
-
-Bộ chuyển đổi: `runtime_event_to_primitive()` map `allocate|write|execute|context_read` sang `MemoryPrimitive`; `runtime_event_to_process()` xử lý spawn notification; quan sát observation-only (`remote_read`, gợi ý TXF) phát ra dạng `api_observation` không tham gia 2-of-3.
+Mỗi PID một session Frida riêng (`frida.attach` → `create_script` → `load`) để tránh leak handler. Script ghép từ `runtime.js` (helper, resolve PID, emit) và `handlers.js` (handler theo API) — tổng khoảng 2.270 dòng — kèm cấu hình hook sinh từ policy (`frida_hook_catalog.build_runtime_config`). Khi bật auto-attach, child gating gắn hook vào tiến trình con trước khi resume. `_on_message` đẩy `FridaRuntimeEvent` vào queue; `trace/frida.py` chuyển thành `MemoryPrimitive(source="frida")`.
 
 ### 3.4.2. Thiết kế hook JavaScript
 
-`windows_injection_hooks.js` (~1900 dòng) gồm bốn tầng:
+1. **Helper:** chuẩn hoá con trỏ, NTSTATUS, cờ `PAGE_*`.
+2. **Dynamic resolve:** hook `GetProcAddress`/`LdrGetProcedureAddress`; khi tên rơi vào tập API injection, gắn hook lười tại địa chỉ vừa resolve để bắt binding muộn. Tập `hookedAddresses` tránh hook trùng.
+3. **Handler theo API:** trích `BaseAddress`, `RegionSize`, `lpStartAddress`, `lpParameter` (→ `thread_parameter`), con trỏ `CONTEXT` (→ `context_pointer`, `Rip`).
+4. **Emit:** `send({type: "memory_primitive" | "api_observation", …})`.
 
-1. **Helper:** `ptrToNumber`, `ntSuccess`, `readAnsiString`, `protectionToString` chuẩn hoá địa chỉ, NTSTATUS, bit-flag `PAGE_*`.
-2. **Dynamic resolve:** hook `GetProcAddress`/`LdrGetProcedureAddress`; khi target rơi vào `DYNAMIC_INJECTION_APIS`, một lazy hook được attach tại địa chỉ vừa resolve để bắt binding muộn.
-3. **Per-API handler:** trích args/retval lấy `baseAddress`, `NumberOfBytes`, `lpStartAddress`, `CONTEXT.Rip`.
-4. **Emit:** `send({type: "memory_primitive", kind, api, actor_pid, target_pid, address, size, details})`.
+**Fix D1:** `readInstructionPointerFromContext` gán `address = Rip` cho `SetThreadContext`/`NtSetContextThread`, giữ được memory congruence cho thread hijack. Stub `Zw*` được chuẩn hoá về tên `Nt*` để không đếm trùng primitive. `test_hook_manifest_coverage.py` và `test_api_coverage.py` đối chiếu manifest với hook.
 
-**Fix D1:** `readInstructionPointerFromContext` áp dụng cho `SetThreadContext` và `NtSetContextThread` để gán `address = Rip`, sửa sai sót nêu trong audit Chương 4.
+### 3.4.3. Hạn chế
 
-**Alias Zw\*:** manifest và hook dùng tên canonical Nt-prefix; stub Zw chuyển tiếp tới Nt để tránh đếm trùng primitive.
-
-Coverage test `test_hook_manifest_coverage.py` và `test_api_coverage.py` đối chiếu manifest với hook JS, phát hiện sớm API bị bỏ quên.
-
-### 3.4.3. Hạn chế hiện thực
-
-Frida vận hành **user-mode** trong target process, nên E4/E6 dạng direct/indirect syscall có thể né hoàn toàn. Luận văn bù bằng kênh Sysmon kernel (5.6) và khuyến nghị `spawn` mode. Không có anti-Frida countermeasure — mẫu chủ động dò Frida có thể terminate; trade-off chấp nhận.
+Frida đặt điểm quan sát trong tiến trình được gắn công cụ, nên độ đầy đủ của trace phụ thuộc vào vị trí hook và việc mẫu có tiếp tục thực thi như bình thường hay không. Một lời gọi hệ thống trực tiếp hoặc việc thay đổi mã ở `ntdll` có thể bỏ qua những điểm hook đang dùng. Sysmon cung cấp thêm loại sự kiện ở mức hệ điều hành, song không khôi phục được toàn bộ đối số API còn thiếu. Hướng bổ sung nguồn telemetry khác, chẳng hạn ETW Threat Intelligence, mới là đề xuất thiết kế và chưa được đánh giá trong hiện thực này.
 
 ---
 
-## 3.5. Correlation engine (`correlation.py`)
+## 3.5. Analysis module: detector (`noirlycan_core/detection/`)
 
-### 3.5.1. Cấu trúc trạng thái
+### 3.5.1. Ba quy tắc của paper (`rules.py`)
 
-| Trường | Kiểu | Mục đích |
-|--------|------|----------|
-| `files_by_path` | `dict[str, FileEvent]` | Provenance E3 |
-| `processes_by_pid` | `dict[int, ProcessEvent]` | Lineage, CREATE_SUSPENDED |
-| `primitives` | `deque[MemoryPrimitive]` | Expiration FIFO |
-| `_chain_buckets` | `dict[(actor, target), list]` | Nhóm primitive theo chuỗi |
-| `_reported_chain_scores` | `dict` | Chỉ báo cáo khi score tăng |
-| `_network_watch_until` | `dict[pid, datetime]` | Hậu injection 300s |
-| `_injection_graph` | `InjectionGraph` | Recursive chain |
+| Hàm | Quy tắc [7] §3.2 | Hiện thực |
+|-----|------------------|-----------|
+| `has_minimal_core_operations` | ≥2 trong 3 primitive khác loại | Đếm ALLOCATE/WRITE/EXECUTE; CONTEXT_READ không tính |
+| `has_temporal_consistency` | allocate → write → execute | Loại ALLOCATE/WRITE xuất hiện sau bước muộn hơn; **đổi quyền vùng nhớ** (`VirtualProtect(Ex)`, `NtProtectVirtualMemory`) được miễn |
+| `has_memory_congruence` | Các bước thao tác trên vùng nhớ đồng quy | Hai primitive khác loại có khoảng địa chỉ giao nhau; `thread_parameter`/`context_pointer` cũng là liên kết |
 
-Cửa sổ trượt mặc định **300 giây** đồng bộ với batch window [4] và độ dài network watch — một hằng số thời gian thống nhất cho toàn pipeline.
+Miễn trừ đổi quyền là bản sửa phát hiện khi viết test cho từng quy tắc: chuỗi shellcode kinh điển `VirtualAllocEx(RW) → WriteProcessMemory → VirtualProtectEx(RX) → CreateRemoteThread` trước đó chỉ dừng ở finding "staging" vì bước RW→RX bị coi là đảo thứ tự. Đổi quyền một vùng đã cấp phát không tạo buffer mới nên không thuộc ràng buộc *allocate trước write*.
 
-### 3.5.2. State machine đánh giá chuỗi
+### 3.5.2. Correlator (`correlator.py`)
 
 ```
-                    add_primitive
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │  enrich + bucket    │
-              └──────────┬──────────┘
-                         │
-                         ▼
-              ┌─────────────────────┐
-     no ──────│ |K| ≥ 2 operational?│──────► (idle)
-              └──────────┬──────────┘
-                         │ yes
-                         ▼
-              ┌─────────────────────┐
-     no ──────│  temporal OK?       │──────► discard
-              └──────────┬──────────┘
-                         │ yes
-                         ▼
-              ┌─────────────────────┐
-     no ──────│  congruence OK?     │──────► discard
-              └──────────┬──────────┘
-                         │ yes
-                         ▼
-              ┌─────────────────────┐
-     no ──────│  score ≥ min?       │──────► discard
-              └──────────┬──────────┘
-                         │ yes
-                         ▼
-              ┌─────────────────────┐
-     no ──────│  score > previous?  │──────► discard (duplicate)
-              └──────────┬──────────┘
-                         │ yes
-                         ▼
-              apply_classification
-              injection_graph.add_finding
-              emit Finding
-              [score≥70 → network_watch]
+add_primitive ─► provenance.enrich ─► bucket (actor, victim) trong cửa sổ 300 s
+     │
+     ▼
+ rules: 2/3 ─► temporal ─► congruence ─► (trượt → bỏ)
+     │
+     ▼
+ scope gate (tùy chọn: bỏ self-inject / chỉ cross-process)
+     │
+     ▼
+ score_chain + kernel_evidence ─► score ≥ ngưỡng?
+     │
+     ▼
+ chuỗi có tiến triển so với lần báo trước?  (điểm tăng HOẶC thêm loại primitive
+     │                                       HOẶC execute vừa được xác nhận)
+     ▼
+ apply_classification ─► injection_graph ─► Finding  [score ≥ 70 → network watch]
 ```
 
-Vượt 2-of-3 chưa đủ phát finding: còn cần ràng buộc thời gian, đồng quy địa chỉ, ngưỡng điểm, `score > previous` để tránh phát lặp.
+Điều kiện "tiến triển" thay cho điều kiện cũ "điểm tăng": điểm bị chặn ở 100 nên một chuỗi có thể chạm trần trước khi bước cuối (thường là bước cho phép phân loại chính xác nhất) xuất hiện, và finding đó từng bị nuốt.
 
-### 3.5.3. Execution analysis
+Console có thể nâng ngưỡng 2/3 lên 3/3 hoặc tắt temporal/congruence qua policy — dùng cho ablation từng quy tắc.
 
-`analyze_execution` (trong `primitives.py`) tách **execution transfer** (`ResumeThread`, `CreateRemoteThread`, `NtQueueApcThread`…) khỏi **context read** (`GetThreadContext`). `GetThreadContext` chỉ đọc state. Khi finding có W+A nhưng thiếu API transfer: title *"Probable injection staging chain"*, `execution_confirmed = false`, score giới hạn 75 qua nhãn `missing_execution_transfer`.
+### 3.5.3. Execution analysis và scoring
 
-### 3.5.4. Injection graph
+`primitives.analyze_execution` tách **execution transfer** (`ResumeThread`, `CreateRemoteThread`, `NtQueueApcThread`…) khỏi **context read** (`GetThreadContext`). Thiếu execution transfer: finding có tiêu đề *"Probable injection staging chain"*, `execution_confirmed = false`, điểm chặn ở 75.
 
-`injection_graph.py` cài `InjectionGraph`: `add_finding()` nối actor→target, cờ `is_recursive` khi A→B→C, tăng `chain_depth`. Chưa tính metric prevalence 2% như [4] do corpus chưa đủ; đồ thị phục vụ trực quan hoá.
+`scoring.score_chain` cộng điểm cho W+E đã xác nhận, đủ ba primitive, cross-process, section mapping, quyền thực thi, `CREATE_SUSPENDED`, file thả xuống chưa ký/entropy cao; giảm điểm chuỗi chỉ có `ResumeThread` vào `Program Files` (installer). Severity theo ngưỡng của policy.
 
----
+### 3.5.4. Provenance và injection graph
 
-## 3.6. Sysmon, file watch, triage
-
-### 3.6.1. `sysmon.py`
-
-Bộ poll đọc channel `Microsoft-Windows-Sysmon/Operational` qua `win32evtlog`. Parser XML chuyển E1, E3, E11, E15 sang model nghiệp vụ; E8/E10 giữ dạng `TelemetryEvent` raw. Lab dùng `configs/sysmon-noirlycan.xml`. Khi Sysmon không khả dụng, CLI chạy Frida-only.
-
-### 3.6.2. `file_watch.py`
-
-`FileDropWatcher` poll không đệ quy: bootstrap snapshot mtime; `drain()` so sánh để phát `FileEvent(creator_image="file-scanner")`; `is_interesting_path` lọc suffix `.exe`, `.dll`, `.ps1`, `.js`…
-
-Bổ sung cho Sysmon E11 ở các kịch bản không có tiến trình Windows nào ghi file (copy qua RDP clipboard, mount ổ ảo).
-
-### 3.6.3. `triage.py`
-
-`FileTriage` dataclass và `triage_file()` thực hiện:
-
-- Hash SHA256 streaming 1 MB/chunk.
-- Entropy Shannon toàn file (chỉ báo packing).
-- Phát hiện PE qua magic `MZ`/`PE`; nếu có `pefile` thì liệt kê import.
-- Xác minh Authenticode qua `signtool`/`Get-AuthenticodeSignature`.
-- Rule heuristic: unsigned + `%TEMP%` + entropy cao → `suspicious_reasons`.
-
-Kết quả merge vào `FileEvent` trước `add_file`, đóng góp vào scoring provenance với trọng số +10/+5/+10/+5.
+`provenance.ProvenanceTracker` giữ file thả xuống, bảng tiến trình, cache PID→image và gợi ý spawn chưa biết PID; resolver hệ điều hành được tiêm vào nên test không phụ thuộc Windows. `injection_graph.InjectionGraph` nối actor→victim, đánh dấu `is_recursive` cho A→B→C.
 
 ---
 
-## 3.7. Technique classifier (`technique_classifier.py`)
+## 3.6. Sensor Sysmon và bằng chứng kernel
 
-### 3.7.1. Enum và pipeline
+### 3.6.1. Ánh xạ Event ID
 
-`InjectionTechnique` định nghĩa hơn 21 giá trị, từ `section_mapping_injection` tới `poolparty`, `mockingjay`, `process_ghosting`. Enum tập trung giúp dashboard và export Word/PDF dùng chung danh mục.
+**Bảng 3.2.** Sysmon trong Noirlycan
 
-`classify_finding()` bốn bước: nạp `ClassifierRulesConfig`; gọi `evaluate_custom_rules` ở phase `before_builtin`; chuỗi if-rule theo specificity giảm dần (instrumentation callback, ghosting, doppelgänging trước classic DLL injection); `_confidence_from_kinds` gán HIGH khi đủ ba primitive operational và `execution_confirmed = true`, MEDIUM/LOW các trường hợp khác.
+| EID | Tên | Model | Vai trò |
+|-----|-----|-------|---------|
+| 1 | ProcessCreate | `ProcessEvent` | Lineage, `CREATE_SUSPENDED` |
+| 3 | NetworkConnect | `NetworkConnectionEvent` | Network watch sau finding |
+| 7 | ImageLoad | `TelemetryEvent` | Ngữ cảnh module |
+| 8 | CreateRemoteThread | `MemoryPrimitive(EXECUTE, source="sysmon")` | Bằng chứng về tạo luồng từ xa khi Sysmon ghi nhận được sự kiện |
+| 10 | ProcessAccess | `ProcessAccessEvent` | Quyền handle + call stack |
+| 11 / 15 | FileCreate / StreamHash | `FileEvent` | Provenance |
 
-`apply_classification()` gắn `technique`, `technique_confidence`, `technique_rationale` lên `Finding`.
+EID 8 dùng `StartAddress` làm địa chỉ cho congruence **chỉ khi** thread bắt đầu ở vùng nhớ không thuộc module nào (`StartModule` rỗng): khi đó nó trỏ vào buffer bị inject. Thread bắt đầu tại `kernel32!LoadLibraryW` không mang địa chỉ buffer nên không được dùng để so khoảng.
 
-### 3.7.2. Custom rules
+### 3.6.2. Bằng chứng kernel (`extensions/kernel_evidence.py`)
 
-Dashboard và `.classifier_rules.json` cho phép thêm rule JSON; `custom_rule_engine.py` parse điều kiện API, kind, evidence với AND/OR phẳng — hữu ích khi gắn nhãn nhanh cho biến thể mới chưa vào codebase chính.
+[7] lọc call theo return address và tự nhận rủi ro gadget, gợi ý *"verifying the legitimacy of the return address"* (§3.3). Call stack của EID 10 do kernel chụp cho phép kiểm đúng điều đó:
+
+- frame trong cùng không phải `ntdll.dll`/`win32u.dll` → **direct syscall**;
+- frame `UNKNOWN` → caller chạy từ **vùng nhớ unbacked** (shellcode, image nạp reflective);
+- kernel thấy remote thread nhưng Frida — đang gắn vào actor — không thấy → **hook bypass**.
+
+**Observer effect:** trampoline của Frida Interceptor nằm ở vùng nhớ unbacked, nên khi Frida gắn vào actor, chính Frida xuất hiện như frame `UNKNOWN` (quan sát trên log thật: loader → `msedge.exe`, call stack `ntdll.dll+161a74|UNKNOWN(00007FFF8B23372F)`). Vì vậy dấu hiệu unbacked chỉ được tính điểm khi actor **không** bị Frida instrument — đúng kịch bản hook bị né. Kiểm tra frame trong cùng không bị ảnh hưởng.
+
+Các bằng chứng này chỉ cộng điểm (+10 mỗi loại) cho chuỗi đã qua quy tắc của paper.
+
+### 3.6.3. File watch và triage
+
+`FileDropWatcher` poll thư mục (bootstrap snapshot mtime), bổ sung cho EID 11 khi không có tiến trình Windows nào ghi file (copy qua clipboard RDP, mount ổ ảo). `runtime/triage.py`: SHA-256 theo khối 1 MB, entropy Shannon, nhận diện PE và import (`pefile`), Authenticode, lý do nghi vấn. `FileIntake` triage mỗi nội dung một lần mỗi phiên, rồi tùy policy đưa vào hàng đợi chạy dưới Frida hoặc chỉ triage.
 
 ---
 
-## 3.8. Dashboard analyst (`services/dashboard/`)
+## 3.7. Phân loại kỹ thuật (`noirlycan_core/classification/`)
 
-### 3.8.1. Kiến trúc Django
+`InjectionTechnique` gồm 36 kỹ thuật, từ `section_mapping_injection` tới `poolparty`, `process_ghosting`. `classify_finding()`: nạp `ClassifierRulesConfig`; chạy custom rule pha `before_builtin`; chuỗi rule built-in theo độ đặc hiệu giảm dần; gán confidence (HIGH khi đủ ba primitive và execution đã xác nhận). Analyst sửa rule qua `/api/classifier` (bật/tắt, ngưỡng từng rule, custom rule JSON); logic kiểm hợp lệ nằm ở `classification/config.py`, route chỉ là lớp mỏng.
 
-Django + Channels: `server.py`/`run_dashboard` khởi ASGI; `views.py` cung cấp endpoint REST cho sessions, uploads, classifier config, collector start/stop; `consumers.py` + `live_hub.py` quản WebSocket, `ws_broadcast` đẩy finding tới client; `jet_dashboard.py` tích hợp Django Jet (tuỳ chọn).
+---
 
-Static: `dashboard.js`, `dashboard.css`, `i18n.js` (Vi/En) — đa ngôn ngữ ở client.
+## 3.8. Console (`noirlycan_backend` + `dashboard-ui`)
 
-### 3.8.2. Tính năng chính
+### 3.8.1. Kênh agent
 
-| Tab / chức năng | Mô tả |
-|-----------------|-------|
-| Overview | Số finding, severity, session metadata |
-| Findings | Bảng finding, filter score/technique, drill-down primitive |
-| Network | Kết nối Sysmon E3 trong network watch window |
-| Primitives | Timeline API theo PID |
-| Sessions | Chọn JSONL, export, reclassify |
-| Uploads | Upload sample → queue → spawn Frida → báo cáo |
-| Classifier rules | Sửa JSON rules live |
-| Collector control | Start/stop `run` subprocess, heartbeat |
+| Route | Chức năng |
+|-------|-----------|
+| `POST /api/ingest/hello · heartbeat · goodbye` | Vòng đời agent; phản hồi kèm policy, lệnh chờ, public key ký lệnh |
+| `POST /api/ingest/batch` | Nhận lô sự kiện, ghi vào session của **chính agent** (agent không chọn tên file) |
+| `GET /api/agents/{id}/commands` | Lấy lệnh đã ký |
+| `GET /api/agents/{id}/samples/{n}` | Tải sample — chỉ khi lệnh `sample.run` cho sample đó đã gửi tới đúng agent |
+| `POST /api/agents/{id}/samples/{n}/status` | Báo spawned/failed kèm đường dẫn phía agent |
 
-`AnalysisDatabase` (SQLite) lưu metadata upload và liên kết session report; SQLite được chọn để giữ artifact dạng file đơn, thuận lợi đóng gói VM lab.
+Mọi call agent bắt buộc token enrollment riêng + `X-Agent-Id`; token dùng chung toàn server không còn được chấp nhận.
 
-### 3.8.3. Live sync
+### 3.8.2. Kênh analyst
 
-Khi collector ghi finding, `live_sync` tail JSONL hoặc nhận signal và gọi `broadcast_refresh` tới WebSocket. Độ trễ chỉ phụ thuộc flush JSONL (32 dòng) cộng chi phí WebSocket.
+| Route | Chức năng |
+|-------|-----------|
+| `/api/findings`, `/api/sessions`, `/api/overview` | Finding gom theo victim, session, KPI |
+| `/api/samples` | Upload `.exe/.dll` (lưu theo SHA-256), gửi tới agent, báo cáo; `.jsonl` được import để phân tích offline |
+| `/api/rules`, `/api/classifier` | Ruleset phát hiện (policy agent) và rule phân loại |
+| `/api/analysis/corpus`, `/api/analysis/reclassify/{session}` | Thống kê corpus, replay |
+| `/api/agents`, `/api/users`, `/api/auth` | Đăng ký agent, RBAC (Admin/Analyst/Viewer) |
+
+React console có các tab Overview, Findings, Activity, Network, Rules, Samples, Agents, Account, Access; WebSocket đẩy refresh khi có sự kiện mới.
+
+### 3.8.3. Luồng sample
+
+```
+Analyst upload EXE ─► backend lưu, tính SHA-256 ─► Run (chọn agent)
+  ─► lệnh sample.run (ký Ed25519: upload_id, sha256, tên, argv)
+  ─► agent verify chữ ký ─► tải sample ─► so SHA-256 ─► hàng đợi ─► spawn dưới Frida
+  ─► báo spawned/failed ─► finding về session của agent ─► báo cáo theo sample
+```
+
+Host analyst không bao giờ thực thi mẫu; mẫu chỉ chạy trên VM.
 
 ---
 
 ## 3.9. Mô hình dữ liệu (`models.py`)
 
-Các dataclass nghiệp vụ đều `frozen=True` để thread-safe:
-
-- `MemoryPrimitive`: `kind`, PID/image actor & target, địa chỉ, kích thước, API, dict `details`.
-- `FileEvent`, `ProcessEvent`, `NetworkConnectionEvent` cho ba kênh thu thập.
-- `Finding`: tuple primitive, score, evidence, trường technique, liên kết file gốc, chuỗi injection.
-
-`PrimitiveKind` ∈ {`ALLOCATE`, `WRITE`, `EXECUTE`, `CONTEXT_READ`}. Serialize qua `collector_runtime.jsonable()`, chuẩn hoá datetime ISO8601, đệ quy dataclass lồng.
+Dataclass nghiệp vụ đều `frozen=True`: `MemoryPrimitive` (kind, PID/image actor & victim, địa chỉ, kích thước, API, `details`, `source` = sensor), `ProcessAccessEvent`, `FileEvent`, `ProcessEvent`, `NetworkConnectionEvent`, `Finding` (primitive, score, evidence, kỹ thuật, file gốc, chuỗi injection). `PrimitiveKind` ∈ {`ALLOCATE`, `WRITE`, `EXECUTE`, `CONTEXT_READ`}.
 
 ---
 
 ## 3.10. Tái lập thí nghiệm
 
-### 3.10.1. Artifact công bố
+### 3.10.1. Cài đặt
 
-Theo Phụ lục C, sáu bước: (1) Clone repo; (2) VM Windows 10/11, Python 3.11+, `uv sync` hoặc `pip install -e .`; (3) Cài Sysmon kèm `configs/sysmon-noirlycan.xml`; (4) `pip install frida frida-tools`; (5) `noirlycan-telemetry run --watch-sysmon --auto-attach-new-processes`; (6) `noirlycan-telemetry dashboard` ở terminal thứ hai.
+1. Máy analyst: `pip install -e ".[backend]"`, `noirlycan-backend api`; build `dashboard-ui` (hoặc `docker compose up backend-api dashboard-ui`).
+2. VM Windows 10/11: `pip install -e ".[agent]"`, cài Sysmon với `configs/sysmon-noirlycan.xml`.
+3. Console → Agents → Register → tải file config (chứa endpoint, agent id, token và `command_key`).
+4. VM: `noirlycan-agent run --config noirlycan-agent.toml --watch-sysmon`.
 
-### 3.10.2. Microservices (Docker Compose)
-
-`docker-compose.yml` khởi ba container `storage-api` (:8780), `analysis-api` (:8781), `dashboard-api` (:8765) chia sẻ volume `./logs`. Collector **vẫn chạy native trên Windows VM** vì phụ thuộc kernel hook và Frida runtime.
-
-```bash
-docker compose up --build
-# Dashboard: http://127.0.0.1:8765
-```
-
-`NOIRLYCAN_STORAGE_URL` và `NOIRLYCAN_ANALYSIS_URL` cho phép dashboard proxy sang storage/analysis ở host khác.
-
-### 3.10.3. Test tự động
+### 3.10.2. Test tự động
 
 ```bash
-uv run pytest tests/test_correlation.py tests/test_ired_team_classifier.py
+uv run --extra full pytest
 ```
 
-31 test xác nhận methodology và classifier. Suite `tests/` mở rộng tới ~80 test gồm dashboard view, parser Sysmon, log_store.
+127 test, chạy không cần Windows/Frida, gồm: từng quy tắc của paper (`test_paper_rules.py`), correlator và các case của [7] (`test_correlation.py`), sensor Sysmon và call stack (`test_kernel_sensors.py`), classifier, kênh agent (batch upload, lệnh ký, sample) và an toàn đường dẫn. Ngoài ra, mỗi lần refactor được kiểm bằng replay 20 session thật trong `logs/` qua code cũ và mới.
 
-### 3.10.4. Deviation đã biết (audit)
+### 3.10.3. Deviation đã biết (audit)
 
-| ID | Mô tả | Trạng thái repo |
-|----|-------|-----------------|
-| D1 | Execute address | Đã fix SetThreadContext Rip; ResumeThread vẫn thiếu |
-| D2 | Read ∈ write | Đã tách `remote_read` |
-| D3 | Temporal | Đã fix write-after-execute |
-| D4 | Anti-evasion E5 | **Chưa** — `evasion.py` log only |
-| D5 | Ghosting enum | Đã thêm, phụ thuộc hook precursor |
+| ID | Mô tả | Trạng thái |
+|----|-------|-----------|
+| D1 | Execute mang địa chỉ | `SetThreadContext` → Rip; CRT → `thread_parameter`; Sysmon EID 8 → start address nếu unbacked; `ResumeThread` vẫn không có |
+| D2 | Read ∉ write | Đã tách `remote_read` |
+| D3 | Temporal | Đã sửa write-after-execute; miễn đổi quyền vùng nhớ |
+| D4 | Anti-evasion E5 | **Chưa** — chỉ ghi tín hiệu |
+| D5 | Ghosting/Herpaderping | Có enum, phụ thuộc hook precursor |
+
+### 3.10.4. Giới hạn hiện thực
+
+- Không có anti-evasion (E5); kết quả không so trực tiếp với prevalence của [7].
+- Sysmon không có sự kiện allocate/write; khi Frida bị né hoàn toàn, chuỗi chỉ còn EXECUTE từ kernel — chưa đủ 2/3. Cần sensor ETW-TI (yêu cầu PPL/ELAM) để phục hồi.
+- Đối thủ kernel-mode nằm ngoài phạm vi, như [7].
 
 ---
 
-## 3.11. Hàng đợi phân tích và batch
+## 3.11. Bảo mật triển khai
 
-### 3.11.1. Analysis queue
+Agent chạy trên chính máy đang nhiễm mẫu, nên thiết kế coi agent và dữ liệu của nó là **không tin cậy**:
 
-Khi file drop được triage là PE, `enqueue_analysis(logs_dir, path)` thêm entry vào `analysis_queue.json` bằng atomic write của `atomic_io.py`. `drain_analysis_queue()`: pop entry pending; `FridaInjectionMonitor` `spawn` + `resume` thay vì attach muộn; ghi session riêng hoặc merge JSONL.
+- **Dữ liệu agent:** giới hạn kích thước lô/sự kiện; tên file session do backend quyết định; đường dẫn session từ request bị giới hạn trong `logs/` và đuôi `.jsonl`.
+- **Lệnh console → agent:** ký Ed25519, kèm `agent_id`, hạn 10 phút, nonce chống replay; agent pin public key từ file config và từ chối mọi lệnh khác. Allowlist chỉ có `kill` và `sample.run`; `kill` từ chối PID hệ thống/của agent và kiểm image hiện tại của PID (chống PID reuse); `sample.run` chỉ nhận `.exe/.dll`, SHA-256 hợp lệ, argv là PID.
+- **Bí mật:** JWT secret và mật khẩu admin sinh ngẫu nhiên lần chạy đầu (tài khoản demo chỉ khi bật `NOIRLYCAN_DEMO_USERS=1`); token agent mã hóa DPAPI trên Windows.
+- **Lab:** mẫu chỉ thực thi trong VM cô lập; PoC loader (Phụ lục D) không weaponized; JSONL có thể chứa đường dẫn nhạy cảm, cần redact khi chia sẻ.
 
-Cơ chế spawn-from-entry giảm **miss primitive đầu** (E6) — điểm yếu cố hữu khi chỉ dùng `--auto-attach` sau Sysmon E1.
+## 3.12. Tóm tắt chương
 
-### 3.11.2. Batch runner
-
-`noirlycan-telemetry batch --manifest samples.jsonl`: đọc danh sách mẫu + expected technique; mỗi mẫu spawn Frida với timeout, thu JSONL riêng; `write_batch_report()` tổng hợp finding count, max score, technique — phục vụ PoC-Bench tương lai.
-
-## 3.12. Chi tiết hook Frida theo nhóm API
-
-**Bảng 3.3.** Hook handler — trích `windows_injection_hooks.js`
-
-| Nhóm API | Handler chính | Trường extract |
-|----------|---------------|----------------|
-| VirtualAlloc(Ex) | onEnter/onLeave | baseAddress, regionSize, flProtect |
-| NtAllocateVirtualMemory | onLeave NT success | *BaseAddress, RegionSize |
-| WriteProcessMemory | onEnter | lpBaseAddress, nSize |
-| NtMapViewOfSection | onEnter | BaseAddress, ViewSize, InheritDisposition |
-| CreateRemoteThread(Ex) | onEnter | lpStartAddress, lpParameter |
-| NtCreateThreadEx | onEnter | StartRoutine, Argument |
-| SetThreadContext | onEnter | lpContext → Rip |
-| GetThreadContext | onEnter | lpContext pointer → details |
-| QueueUserAPC / NtQueueApcThread* | onEnter | ApcRoutine, ApcArgument |
-| ResumeThread / NtResumeThread | onEnter | hThread → target PID resolve |
-| LoadLibrary* / LdrLoadDll | onEnter | lpLibFileName |
-| OpenProcess / NtOpenProcess | observation | access mask flags |
-| NtCreateSection | onLeave | SectionHandle |
-| Dynamic GetProcAddress | onLeave | attach lazy hook |
-
-Mỗi handler gọi `emitObservation` cho API phụ trợ hoặc `emitPrimitive` cho operational kind. Set `hookedAddresses` tránh double-hook khi cùng symbol resolve nhiều lần.
-
-### 3.12.1. Resolve PID victim
-
-Sai `target_pid` làm primitive rơi vào bucket sai và phá vỡ 2-of-3. Hook áp dụng fallback: có `hProcess`/`ProcessHandle` → `GetProcessId`; chỉ có thread handle → `GetProcessIdOfThread`; self-injection → `Process.id` của Frida (pseudo-handle).
-
-Test `test_resolves_target_image_from_child_process` kiểm chứng enrich image từ `ProcessEvent` khi hook thiếu module path.
-
-## 3.13. Sysmon — ánh xạ Event ID
-
-**Bảng 3.4.** Event ID dùng trong Noirlycan
-
-| EID | Tên | Model output | Vai trò E3/E4 |
-|-----|-----|--------------|---------------|
-| 1 | ProcessCreate | ProcessEvent | Lineage, CREATE_SUSPENDED flags |
-| 3 | NetworkConnect | NetworkConnectionEvent | Network watch post-finding |
-| 7 | ImageLoad | TelemetryEvent | Module stomping context (raw) |
-| 8 | CreateRemoteThread | TelemetryEvent | E4 fallback — thread create kernel |
-| 10 | ProcessAccess | TelemetryEvent | E4 — OpenProcess cross-process |
-| 11 | FileCreate | FileEvent | Provenance E3 |
-| 15 | FileCreateStreamHash | FileEvent | Alternate data stream drop |
-
-`parse_sysmon_xml` xử lý namespace XML Sysmon, tách `Data Name="..."` thành dict. Test `test_sysmon_files.py` dùng fixture XML nên chạy được trên CI Linux.
-
-## 3.14. Dashboard — endpoint và luồng upload
-
-### 3.14.1. API chính (`views.py`)
-
-| Route | Method | Chức năng |
-|-------|--------|-----------|
-| `/` | GET | SPA index.html |
-| `/api/sessions` | GET | Liệt kê JSONL sessions |
-| `/api/sessions/<id>` | GET | Chi tiết finding + primitive |
-| `/api/uploads` | GET/POST | Quản lý upload sample |
-| `/api/collector/start` | POST | Spawn `noirlycan-telemetry run` |
-| `/api/collector/status` | GET | Heartbeat `.runtime.json` |
-| `/api/classifier/rules` | GET/PUT | CRUD `.classifier_rules.json` |
-| `/api/corpus` | GET | `analyze_corpus()` aggregate |
-| `/ws/live` | WebSocket | Push refresh |
-
-### 3.14.2. Luồng upload mẫu
-
-```
-Analyst upload EXE → SHA256 dedupe (AnalysisDatabase)
-  → stored_path → enqueue_analysis
-  → collector spawn Frida
-  → JSONL findings
-  → build_upload_report → dashboard "done — view report"
-```
-
-Dashboard chỉ lưu trữ payload; thực thi diễn ra trên VM lab cô lập. Host analyst không bao giờ chạy mẫu.
-
-## 3.15. Lưu trữ và tái phân loại
-
-`log_store.py` cung cấp `new_session_log_path()`, `aggregate_logs()`, `session_detail()` chuẩn hoá I/O JSONL theo phiên. `reclassify.py` mở session cũ, chạy lại `apply_classification` với scoring đã cập nhật — hữu ích khi tinh chỉnh classifier mà không cần chạy lại mẫu. `analysis_db.py` quản SQLite gồm `uploads` và `sessions`.
-
-## 3.16. Cấu hình và phụ thuộc
-
-| Thành phần | Phụ thuộc | Ghi chú |
-|------------|-----------|---------|
-| Core | Python 3.11+, stdlib | |
-| Frida | `frida`, `frida-tools` | Windows lab |
-| Sysmon | pywin32, Sysmon driver | Optional graceful degrade |
-| Triage PE | `pefile` optional | Import API scan |
-| Dashboard | Django 4+, channels | ASGI WebSocket |
-| Test | pytest | 31+ methodology tests |
-
-`pyproject.toml` khai báo entry point `noirlycan-telemetry = noirlycan_telemetry.cli:main`.
-
-## 3.17. Sequence: một vòng poll collector
-
-```
-CLI run loop:
-  1. file_watcher.drain() → triage async → correlator.add_file
-  2. process_sysmon_batch() → add_process / add_file / network
-  3. drain_frida() → add_primitive → findings → jsonl
-  4. drain_analysis_queue() → spawn pending samples
-  5. touch_collector_heartbeat()
-  6. sleep(poll_interval)
-```
-
-Correlator single-threaded để loại race condition trên bucket; triage tách `ThreadPoolExecutor` riêng tránh block poll Sysmon trong I/O nặng (hash, Authenticode).
-
-## 3.19. Module phụ trợ
-
-| Module | Vai trò |
-|--------|---------|
-| `process_resolve.py` | Windows API PID → image path khi Sysmon/Frida thiếu |
-| `injection_graph.py` | Đồ thị finding actor→target, recursive chain |
-| `payload_classifier.py` | Shellcode vs PE trong buffer (entropy, MZ header) |
-| `kernel/analysis/evasion.py` | **Chỉ log** signal E5/E6 — không bypass |
-| `sandbox_compare.py` | So sánh VT (optional) — ngoài core |
-| `session_analytics.py` | Corpus stats trên nhiều JSONL |
-| `classifier_config.py` | Load/save `.classifier_rules.json` |
-| `custom_rule_engine.py` | DSL rule tùy chỉnh dashboard |
-| `collector_launcher.py` | PID file, start/stop subprocess từ dashboard |
-
-Các module phụ trợ không can thiệp 2-of-3; chỉ làm giàu finding và điều phối vận hành lab.
-
-## 3.20. Bảo mật và đạo đức triển khai
-
-- Mẫu **chỉ** thực thi trong VM cô lập, không có route mạng tới hạ tầng SSI.
-- Dashboard upload lưu SQLite local, không sync cloud mặc định.
-- PoC loader (Phụ lục D) chỉ gọi `MessageBox`, không weaponized.
-- JSONL có thể chứa đường dẫn nhạy cảm; analyst tự redact khi chia sẻ.
-
-## 3.21. Tóm tắt chương
-
-Chương 3 đã trình bày hiện thực Noirlycan: hook Frida user-mode và kênh Sysmon kernel ở tầng thu thập; correlator 2-of-3 cùng scoring và classifier ở tầng phân tích; CLI và collector runtime điều phối pipeline thời gian thực. File watch và triage mở rộng chiều provenance cho các kịch bản E3 mà Sysmon bỏ sót; dashboard Django phục vụ điều tra trực quan. Giới hạn được tuyên bố: **không** tích hợp anti-sandbox theo nghĩa [4] (E5), chỉ ghi nhận tín hiệu. Chương 6 chuyển sang đánh giá định lượng và case study section-mapping.
+Chương 3 trình bày Noirlycan theo hai module của [7]: monitoring module gồm sensor Frida (user-mode, giàu đối số) và Sysmon (kernel, còn tín hiệu khi hook bị né), analysis module giữ nguyên ba quy tắc của paper trong `detection/rules.py`. Phần mở rộng — provenance từ file thả xuống, bằng chứng call stack kernel với xử lý observer effect của Frida, console và kênh agent có ký lệnh — được tách rõ khỏi lõi paper. Giới hạn: không có anti-evasion E5, chưa có sensor ETW-TI. Chương 6 chuyển sang đánh giá định lượng và case study section-mapping.

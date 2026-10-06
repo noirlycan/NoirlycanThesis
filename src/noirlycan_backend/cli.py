@@ -4,14 +4,12 @@ import argparse
 import json
 from pathlib import Path
 
-from noirlycan_core.analysis.domain.batch_runner import run_batch, write_batch_report
-from noirlycan_core.analysis.domain.reclassify import reclassify_session, write_reclassified_report
-from noirlycan_core.analysis.domain.sandbox_compare import default_vt_api_key, run_compare_batch
-from noirlycan_core.analysis.domain.session_analytics import analyze_corpus
+from noirlycan_core.analysis.reclassify import reclassify_session, write_reclassified_report
+from noirlycan_core.analysis.session_analytics import analyze_corpus
 from noirlycan_backend.infrastructure.console_db import ConsoleDatabase
 from noirlycan_backend.domain.demo_session import import_jsonl_session, write_demo_session
 from noirlycan_backend.server import run_api
-from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir, resolve_logs_dir
+from noirlycan_core.storage.log_store import ensure_logs_dir
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -19,10 +17,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "api":
         return command_api(args)
-    if args.command == "batch":
-        return command_batch(args)
-    if args.command == "compare":
-        return command_compare(args)
     if args.command == "corpus":
         return command_corpus(args)
     if args.command == "reclassify":
@@ -36,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="noirlycan-backend",
-        description="Noirlycan lab API server (FastAPI ingest, auth, rules, agents).",
+        description="Noirlycan lab backend: API server and offline session analysis.",
     )
     subparsers = parser.add_subparsers(dest="command")
 
@@ -51,25 +45,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     api.add_argument("--ui-dist", type=Path, help="Path to dashboard-ui/dist when using --with-ui")
 
-    batch = subparsers.add_parser("batch", help="Batch analysis over a folder of EXEs")
-    batch.add_argument("--input", type=Path, required=True)
-    batch.add_argument("--output", type=Path, required=True)
-    batch.add_argument("--timeout", type=int, default=120)
-    batch.add_argument("--limit", type=int, default=None)
-    batch.add_argument("--minimum-score", type=int, default=50)
-    batch.add_argument("--watch-sysmon", action="store_true")
-    batch.add_argument("--sysmon-only", action="store_true")
-    batch.add_argument("--logs-dir", type=Path)
-
-    compare = subparsers.add_parser("compare", help="Compare detection with Defender / VT")
-    compare.add_argument("--input", type=Path, required=True)
-    compare.add_argument("--output", type=Path, required=True)
-    compare.add_argument("--timeout", type=int, default=120)
-    compare.add_argument("--limit", type=int, default=None)
-    compare.add_argument("--defender", action="store_true")
-    compare.add_argument("--virustotal", action="store_true")
-    compare.add_argument("--vt-delay", type=float, default=15.0)
-    compare.add_argument("--logs-dir", type=Path)
 
     corpus = subparsers.add_parser("corpus", help="Aggregate metrics across JSONL sessions")
     corpus.add_argument("--logs-dir", type=Path)
@@ -117,21 +92,6 @@ def command_api(args: argparse.Namespace) -> int:
     return 0
 
 
-def command_batch(args: argparse.Namespace) -> int:
-    report = run_batch(
-        args.input,
-        timeout_seconds=args.timeout,
-        watch_sysmon=args.watch_sysmon,
-        minimum_score=args.minimum_score,
-        logs_dir=args.logs_dir,
-        use_frida=not args.sysmon_only,
-        limit=args.limit,
-    )
-    write_batch_report(report, args.output)
-    print(json.dumps(report, indent=2, sort_keys=True))
-    print(f"[+] Batch report written to {args.output}")
-    return 0
-
 
 def command_reclassify(args: argparse.Namespace) -> int:
     report = reclassify_session(
@@ -150,7 +110,7 @@ def command_reclassify(args: argparse.Namespace) -> int:
 
 
 def command_corpus(args: argparse.Namespace) -> int:
-    from noirlycan_core.storage.infrastructure.analysis_db import AnalysisDatabase
+    from noirlycan_core.storage.analysis_db import AnalysisDatabase
 
     database = AnalysisDatabase(args.logs_dir) if args.logs_dir else AnalysisDatabase()
     report = analyze_corpus(args.logs_dir, limit=args.limit, database=database)
@@ -215,22 +175,6 @@ def command_seed_demo(args: argparse.Namespace) -> int:
     print(f"[+] Open dashboard with ?agent_id={agent_id}")
     return 0
 
-
-def command_compare(args: argparse.Namespace) -> int:
-    report = run_compare_batch(
-        args.input,
-        timeout_seconds=args.timeout,
-        use_defender=args.defender,
-        use_virustotal=args.virustotal,
-        vt_api_key=default_vt_api_key(),
-        logs_dir=args.logs_dir,
-        limit=args.limit,
-        vt_delay_seconds=args.vt_delay,
-    )
-    write_batch_report(report, args.output)
-    print(json.dumps(report, indent=2, sort_keys=True))
-    print(f"[+] Comparison report written to {args.output}")
-    return 0
 
 
 if __name__ == "__main__":

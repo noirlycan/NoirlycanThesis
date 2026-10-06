@@ -1,124 +1,13 @@
 # KẾT LUẬN
 
-## 1. Khái quát công trình
+Luận văn nghiên cứu việc phát hiện chuỗi tiêm mã vào tiến trình Windows khi mã độc thay đổi lời gọi API, gộp bước thao tác hoặc che giấu quan hệ giữa tệp nguồn và tiến trình đích. Cơ sở phương pháp là công trình của Di Pietro và cộng sự [7], trong đó hành vi tiêm mã được biểu diễn bằng các thao tác chuẩn bị vùng nhớ, ghi mã và chuyển luồng thực thi. Trên cơ sở đó, luận văn xây dựng Noirlycan để thu nhận sự kiện từ Frida và Sysmon, chuẩn hóa chúng thành mô hình chung, áp dụng phép tương quan và lưu bằng chứng để có thể kiểm tra lại từng cảnh báo. Các thành phần quản lý Agent và giao diện phục vụ vận hành hệ thống thử nghiệm; chúng không phải đối tượng của phép đo hiệu quả phát hiện.
 
-Luận văn đã thiết kế, hiện thực và đánh giá **Noirlycan Telemetry** trên Windows 10/11 lab cô lập. Căn cứ trung tâm là **Di Pietro, D'Elia, Querzoni (ASIA CCS 2025) [4]** — chứng minh trên **56.340 mẫu** malware Windows (2017–2023) rằng process injection (T1055 [9]) còn phổ biến (**~16,5 %**), sandbox thiếu anti-evasion bỏ sót **21,2 %** mẫu; đề xuất phát hiện chịu biến thể nhờ *operational primitive*, *equivalence class* API, **2-of-3**, *memory range congruence*, *temporal ordering*.
+Đối với câu hỏi liệu phép ánh xạ API và quy tắc hai trong ba thao tác có thể xử lý một số biến thể đã đặc tả hay không, kết quả kiểm thử đưa ra bằng chứng ở mức hiện thực phần mềm. Trong lần chạy kiểm tra ngày 02/10/2026, 59 kiểm thử thuộc năm tệp đánh giá quy tắc, tương quan, phân biệt bước thực thi, sự kiện Sysmon và phân loại kỹ thuật đều hoàn thành. Các trường hợp kiểm thử bao gồm chuỗi dùng Native API, section-mapping, vùng nhớ không liên quan và thứ tự thao tác không hợp lệ. Chúng cho thấy các điều kiện chấp nhận và loại bỏ đang hoạt động theo đặc tả đối với dữ liệu đầu vào được kiểm soát. Kết quả này không cho phép suy ra precision, recall hoặc khả năng khái quát trên tập mã độc độc lập.
 
-Luận văn **không tái lập** quy mô thống kê [4] mà trả lời: *triển khai phương pháp đó trên endpoint lab thế nào khi malware né E1–E4 (biến thể API, gộp bước, che attribution, né hook user-mode)?* E5 **ngoài phạm vi** vì cần sandbox sửa đổi vượt khuôn khổ thạc sĩ.
+Với kịch bản section-mapping tổng hợp, bộ tương quan tạo cảnh báo khi quan sát được thao tác ghi và chuyển luồng thực thi có quan hệ với cùng tiến trình đích, trong khi baseline yêu cầu đúng chuỗi `VirtualAllocEx`–`WriteProcessMemory`–`CreateRemoteThread` không nhận diện kịch bản này. Sự khác biệt minh họa lợi ích của cách biểu diễn theo thao tác trong phạm vi kịch bản được xây dựng. Baseline đó chỉ là quy tắc đối chứng đơn giản do luận văn định nghĩa; không thể dùng kết quả này để kết luận rằng Noirlycan có hiệu quả cao hơn các sản phẩm EDR hay sandbox thương mại.
 
----
+Luận văn cũng xây dựng đường liên kết giữa tệp được ghi xuống máy, sự kiện tạo tiến trình và cảnh báo tiêm mã. Các kiểm thử và giao diện cho phép truy ngược một số quan hệ này trong phiên thử nghiệm, song chưa có tập nhãn độc lập để xác định tỷ lệ liên kết đúng khi có nhiều tiến trình và tệp đồng thời. Tương tự, việc kết hợp Sysmon với Frida tạo thêm nguồn bằng chứng khi thiếu một số quan sát ở chế độ người dùng, nhưng chưa có phép thử đối chứng đủ để lượng hóa mức giảm bỏ sót đối với direct syscall hoặc unhooking. Các phát biểu về hai nội dung này vì vậy được giữ ở mức khả năng của thiết kế và hiện thực hiện có.
 
-## 2. Các kết quả đạt được
+Giới hạn đáng chú ý nhất nằm ở nguồn quan sát. Frida có thể làm thay đổi thời điểm thực thi hoặc bị mẫu phát hiện; Sysmon cung cấp sự kiện hệ điều hành nhưng không luôn có địa chỉ và kích thước vùng nhớ cần thiết cho phép đối chiếu vùng nhớ. Nếu mẫu nhận ra máy ảo và không thực hiện tiêm mã, cả hai nguồn sự kiện đều không cung cấp chuỗi hành vi để bộ tương quan đánh giá. Công trình [7] có cơ chế đối phó né tránh môi trường phân tích, còn Noirlycan chưa hiện thực cơ chế tương đương. Bởi vậy, tỷ lệ 16,5 % mẫu có tiêm mã, mức bỏ sót trung bình 21,2 % của công cụ đối chiếu và các tỷ lệ 6,2 %–11,8 % trong [7] chỉ được dùng làm bối cảnh khoa học, không được xem là kết quả của luận văn.
 
-### 2.1. Mục tiêu nghiên cứu RO1–RO5
-
-**Bảng K.1.** Tóm tắt đạt mục tiêu nghiên cứu
-
-| Mục tiêu | Nội dung | Kết quả | Evidence |
-|----------|----------|---------|----------|
-| **RO1** | Lõi [4] trên Frida + correlator | **Đạt** | `correlation.py`, `api_manifest.py`, 11 test |
-| **RO2** | Telemetry kép Sysmon ∪ Frida (E4) | **Một phần** | E8/E10; Bảng 3.9; thiếu benchmark syscall |
-| **RO3** | Pipeline provenance (E3) | **Một phần** | `file_watch.py`, triage, test `related_file` |
-| **RO4** | Đánh giá biến thể injection | **Một phần** | 31 test; PoC-Bench chưa xong |
-| **RO5** | Threat model + ranh giới claim | **Đạt** | Chương 3; `audit-and-threat-model.md` |
-
-RO1, RO5 đạt; RO2–RO4 một phần do thiếu phép đo định lượng cuối.
-
-### 2.2. Kiểm chứng giả thuyết H1–H5
-
-| Giả thuyết | Kết luận |
-|------------|----------|
-| H1 (E1) | **Chấp nhận** |
-| H2 (E2) | **Chấp nhận** |
-| H3 (E3) | **Chấp nhận một phần** |
-| H4 (E4) | **Chưa đủ số liệu** |
-| H5 (Frida) | **Chưa kiểm chứng** |
-
-H1, H2 chấp nhận trên test case và case study *neurevt*. H3 một phần vì chưa kiểm chứng trên malware né attribution thật. H4, H5 cần thêm benchmark.
-
-### 2.3. Về phương pháp và hiện thực
-
-Đã hiện thực đầy đủ phương pháp [4] trong `correlation.py`, `api_manifest.py`, `primitives.py`, `windows_injection_hooks.js`:
-
-- Ba primitive *allocate*/*write*/*execute* với **equivalence class** API — chống **E1**. Quy `VirtualAllocEx`/`NtAllocateVirtualMemory`/`NtMapViewOfSection` về *allocate*; `WriteProcessMemory`/`NtWriteVirtualMemory` về *write*; `CreateRemoteThread`/`NtCreateThreadEx`/`QueueUserAPC`/`SetThreadContext`+`ResumeThread` về *execute*.
-- Quy tắc **≥ 2/3 primitive** khác loại trên cùng `(actor_pid, target_pid)` — chống **E2** (section-mapping, Mockingjay gộp bước).
-- **Memory range congruence** và **temporal ordering** [4], [12]; fix D1/D3 có test regression. **Technique classifier** 21+ kỹ thuật, beyond §4 (PoolParty, Mockingjay, Ghosting).
-
-**31 test pass** (correlation 11; classifier 20). Section-mapping (*neurevt*) score ≥ 70 — khớp pattern dominant [4]. Audit sửa D1, D2, D3 tại `docs/audit-and-threat-model.md`.
-
-### 2.4. Về tăng cường chống né tránh
-
-**Bảng K.2.** Kết quả theo nhóm né tránh E1–E6
-
-| Nhóm | Mô tả | Kết quả | Ghi chú |
-|------|-------|---------|---------|
-| **E1** | Biến thể API | **Đạt** | Correlator phát hiện NT API; vượt baseline signature |
-| **E2** | Gộp/ẩn bước | **Đạt** | Section-mapping ≥70; 20 test classifier |
-| **E3** | Né attribution | **Một phần** | Provenance E11→E1→Finding |
-| **E4** | Né hook user-mode | **Một phần** | Sysmon fallback; chưa benchmark |
-| **E5** | Né sandbox/VM | **Chưa** | `evasion.py` signal only; 21,2 % thuộc [4] |
-| **E6** | Anti-Frida | **Hạn chế** | `spawn` mode; không countermeasure |
-
-Với E5/E6, "signal only" nghĩa ghi nhận truy vấn `IsDebuggerPresent`, `ProcessDebugPort`, artifact VM nhưng không ngụy trang môi trường — phù hợp lab cô lập.
-
-### 2.5. Về công cụ và tài liệu
-
-- CLI `noirlycan-telemetry` (run, spawn, triage, dashboard, batch, corpus, reclassify); session **JSONL**, SQLite cache, dashboard Flask/Django.
-- API reclassify offline; **threat model formal** E1–E6, C1–C7, O1–O7, M1–M6, T1–T9 (Chương 3); hướng dẫn tái lập (Phụ lục C); manifest API (A); config Sysmon (B).
-
-Reclassify offline cho phép áp rule cải tiến lên JSONL cũ không cần chạy lại malware.
-
----
-
-## 3. Những hạn chế của luận văn
-
-1. **E5 — Anti-sandbox/VM:** Không có module anti-evasion tương đương [4] §6. Số liệu **21,2 %** thuộc [4], không phải Noirlycan.
-2. **Quy mô đánh giá:** Không đo prevalence **16,5 %** hay miss **21,2 %** trên dataset riêng. Định lượng dựa trên 31 test synthetic; PoC-Bench và Paper-Subset (100 mẫu Sap4Sec [11]) **chưa xong**.
-3. **E4 — Direct syscall:** Thiếu benchmark loader syscall thuần. Hell's Gate/Halo's Gate bỏ qua `ntdll.dll` — Frida user-mode mất tầm nhìn, chỉ ETW kernel chứng kiến.
-4. **Frida fidelity (M5):** drop-rate VM Windows **chưa điền** — claim phụ thuộc Frida là *conditional*.
-5. **Deviation còn lại:** `ResumeThread` không kèm CONTEXT có thể suy yếu congruence; `SetThreadContext`+`ResumeThread` cách hàng trăm ms vượt cửa sổ temporal.
-6. **Classifier precision/recall:** **không có** ground truth corpus đo precision. Hollowing/Doppelgänging/Herpaderping có thể nhầm khi telemetry không đủ.
-
-Chi tiết tại §3.11, §3.13, §6.9–6.13 và Chương 7.
-
----
-
-## 4. Kiến nghị
-
-### 4.1. Cho tác giả trước bảo vệ
-
-- Chạy **Frida fidelity benchmark** trên VM Windows (Phụ lục E); điền drop-rate.
-- Hoàn thiện **PoC-Bench** (5 loader) và chạy ≥ **20 mẫu** Sap4Sec [11].
-- Xây loader direct-syscall đo recall degradation E4; rà soát claim đối chiếu Bảng 3.11.
-
-### 4.2. Cho hướng nghiên cứu tiếp theo
-
-| Hướng | Mục tiêu | Đối phó |
-|-------|----------|---------|
-| Port anti-evasion từ [11] | Recall lab gần paper | **E5** |
-| ETW-TI thay/bổ sung Frida | Syscall args kernel | **E4**, **E6** |
-| ML classifier chuỗi primitive | Giảm rule maintenance | E1 edge |
-| Recursive injection (~2 % [4]) | Multi-stage A→B→C | `injection_graph.py` |
-| Cross-host correlation | Enterprise scale | E3 |
-
-ETW-TI (`Microsoft-Windows-Threat-Intelligence`) giải quyết cả E4 và E6; chỉ phát cho driver có ELAM — rào cản hành chính, không kỹ thuật.
-
----
-
-## 5. So sánh và ý nghĩa
-
-**So với [4]:** Xác nhận 2-of-3 trên endpoint (H1, H2) nhưng **không vượt** quy mô thống kê hay module E5. Bổ sung: real-time, dashboard, extension E3, audit replication có test. [4] hậu phân tích batch trên Cuckoo-like; Noirlycan phát hiện chủ động trên endpoint, delay tính bằng giây.
-
-**So với Klein [7], Starink [12]:** Cụ thể hóa primitive và congruence thành artifact chạy được, không dừng ở lý thuyết.
-
-**So với sandbox/EDR:** Không cạnh tranh recall 56k; cung cấp **công cụ lab mở** cho giảng dạy và tái lập [4] tại Việt Nam [13].
-
-**Ý nghĩa:** Kỹ sư DFIR dùng Noirlycan hiểu *tại sao* rule API fail và *khi nào* cần telemetry kernel. Hạn chế E5 nhắc rằng phát hiện injection không đủ nếu malware phát hiện môi trường phân tích — bài học 21,2 % của [4], quan trọng cho nhóm Việt Nam còn dùng sandbox tự dựng.
-
-## 6. Kết luận chung
-
-Process injection là hành vi then chốt mà malware Windows dùng để **né signature** và **né attribution**. [4] cung cấp nền tảng chống biến thể (**E1**, **E2**) và bằng chứng quy mô về né sandbox (**E5** — **21,2 %** miss). *Operational primitive* và *2-of-3 rule* phù hợp endpoint vì không phụ thuộc tên hàm mà quan tâm hành vi semantic.
-
-Luận văn đã **tăng cường phát hiện E1–E4** bằng: (1) hiện thực có kiểm chứng phương pháp [4] trên Windows 10/11 lab (Frida + correlator, 31 test pass); (2) bổ sung telemetry kernel (Sysmon Event 1, 7, 8, 10, 11) với *graceful degradation* khi hook user-mode bị né (**E4**); (3) mở rộng pipeline file provenance liên kết file-drop với chuỗi injection (**E3**); (4) formal hóa threat model và ranh giới claim — tách replication [4], extension lab, và những gì **cấm** tuyên bố (prevalence 56k, anti-E5, thay EDR production).
-
-Đề tài hoàn thành mục tiêu thạc sĩ format UET: **căn cứ lý luận** [4], [7], [12]; **hiện thực** artifact mã nguồn mở; **đánh giá** methodology; **thừa nhận hạn chế** trung thực — đặc biệt khoảng cách **E5**. Hướng mở rộng (anti-evasion, benchmark E4/M5, PoC-Bench quy mô) sẽ cho phép công trình tiếp theo claim *tăng cường* gần đúng nghĩa rộng của tên đề tài, với **21,2 %** của [4] là mốc đích đến có căn cứ thực nghiệm.
+Để trả lời đầy đủ hơn câu hỏi về hiệu quả trên máy thật, bước tiếp theo là hoàn thiện bộ mẫu có nhãn độc lập gồm cả mã tiêm và phần mềm hợp pháp, chạy lặp lại trên máy ảo đã cố định cấu hình, rồi công bố số mẫu, số lần chạy, trường hợp bỏ sót và báo nhầm. Cần đo riêng độ trung thực của hook Frida và thực hiện ablation giữa Frida, Sysmon và cấu hình kết hợp. Chỉ sau các phép đo đó mới có cơ sở ước lượng precision, recall, độ trễ và chi phí vận hành, đồng thời xác định chính xác trường hợp nào việc bổ sung nguồn sự kiện đem lại lợi ích. Phạm vi đóng góp đã được kiểm chứng ở thời điểm hoàn thành bản thảo là một hiện thực có thể kiểm tra của phương pháp tương quan theo thao tác, cùng mô hình lưu bằng chứng và quy trình đánh giá có thể tiếp tục mở rộng.

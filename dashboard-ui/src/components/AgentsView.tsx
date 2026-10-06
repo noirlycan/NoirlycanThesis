@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api } from "../api/client";
+import { api, apiUrl } from "../api/client";
 import { agentLabel } from "./AgentBadge";
 
 type AgentRow = Record<string, unknown>;
@@ -8,9 +8,10 @@ type Props = {
   data: {
     server: { host: string; port: number; token: string };
     agents: AgentRow[];
-    commands: { run: string; spawn: string };
-    toml: string;
     auto_kill_min_severity?: string;
+    desktop_available?: boolean;
+    installer_available?: boolean;
+    can_publish_release?: boolean;
   };
   onReload: () => void;
   onToast: (message: string) => void;
@@ -29,6 +30,21 @@ export function AgentsView({ data, onReload, onToast }: Props) {
   const [draftName, setDraftName] = useState("");
   const [newAgentId, setNewAgentId] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
+  const [uploadingRelease, setUploadingRelease] = useState<"portable" | "installer" | null>(null);
+
+  async function uploadRelease(file: File, kind: "portable" | "installer") {
+    if (!window.confirm(`Publish ${file.name} as the ${kind} release for clients to download? This will replace the current release.`)) return;
+    setUploadingRelease(kind);
+    try {
+      const result = await api.uploadAgentRelease(file, kind);
+      onToast(`Published ${result.filename} (${(result.size_bytes / 1024 / 1024).toFixed(1)} MB)`);
+      onReload();
+    } catch (error: unknown) {
+      onToast(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setUploadingRelease(null);
+    }
+  }
 
   async function copy(text: string, label: string) {
     await navigator.clipboard.writeText(text);
@@ -122,12 +138,58 @@ export function AgentsView({ data, onReload, onToast }: Props) {
       </div>
 
       <div className="card">
+        <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Desktop Agent (Windows)</div>
+        <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6, marginBottom: 14 }}>
+          Download <span className="mono">NoirlycanAgentSetup.exe</span>, accept the UAC prompt, and complete installation.
+          Open Noirlycan Agent from the Start Menu, enter the server address and your workstation&apos;s token
+          from the table below, then click Connect and start. The portable version runs directly without installation.
+          Python is not required on the Agent machine. Install Sysmon separately to collect Sysmon events.
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+        <button type="button" className="btn-brand" disabled={!data.installer_available}
+          onClick={() => api.downloadAgentInstaller().catch((error: unknown) => onToast(error instanceof Error ? error.message : "Download failed"))}>
+          Download Windows installer
+        </button>
+        <button type="button" className="btn-ghost" disabled={!data.desktop_available}
+          onClick={() => api.downloadDesktopAgent().catch((error: unknown) => onToast(error instanceof Error ? error.message : "Download failed"))}>
+          Download portable .exe
+        </button>
+        <button type="button" className="btn-ghost"
+          onClick={() => copy(new URL(apiUrl("/api"), window.location.href).origin, "server")}>
+          Copy server
+        </button>
+        </div>
+        {!data.desktop_available && !data.installer_available ? (
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 12 }}>No Agent release is available on this server yet.</div>
+        ) : null}
+        {data.can_publish_release ? (
+          <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+            {(["installer", "portable"] as const).map((kind) => (
+              <label key={kind} className="btn-ghost" style={{ cursor: uploadingRelease ? "wait" : "pointer" }}>
+                {kind === "installer" ? "Publish installer" : "Publish portable release"}
+                <input type="file" accept=".exe" disabled={uploadingRelease !== null} style={{ display: "none" }}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) void uploadRelease(file, kind);
+                  }} />
+              </label>
+            ))}
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>
+              {uploadingRelease ? "Uploading release to server…" : "Admins can publish verified .exe builds for clients to download here."}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="card">
         <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>VM install (agent only)</div>
         <div style={{ fontSize: 12.5, color: "var(--dim)", lineHeight: 1.6 }}>
-          Windows VM chỉ cần Python +{" "}
-          <span className="mono">pip install -e &quot;.[agent]&quot;</span> — không cài backend, dashboard, npm.
-          Copy <strong>config</strong> từ bảng dưới → lưu <span className="mono">noirlycan-agent.toml</span> → chạy{" "}
-          <span className="mono">noirlycan-agent run --config noirlycan-agent.toml --watch-sysmon</span>.
+          For the source-based install, the VM needs Python 3.10+. Click <strong>Copy install</strong> in the Agent row
+          and paste it into an Administrator PowerShell window on the VM. The command downloads the Agent package,
+          creates a virtual environment, installs Frida/pywin32 and Sysmon with the lab configuration, writes{" "}
+          <span className="mono">C:\Noirlycan\noirlycan-agent.toml</span>, and starts the Agent. For subsequent runs, use{" "}
+          <span className="mono">C:\Noirlycan\run-agent.ps1</span>.
         </div>
       </div>
 
@@ -184,7 +246,7 @@ export function AgentsView({ data, onReload, onToast }: Props) {
         <div
           className="table-row"
           style={{
-            gridTemplateColumns: "1.3fr 1.1fr 0.7fr 0.7fr 0.9fr 64px 64px 56px 150px",
+            gridTemplateColumns: "1.2fr 0.9fr 0.6fr 0.5fr 0.9fr 70px 44px 90px 1.6fr",
             fontSize: 11,
             color: "var(--dim)",
           }}
@@ -209,7 +271,7 @@ export function AgentsView({ data, onReload, onToast }: Props) {
               key={id}
               className="table-row"
               style={{
-                gridTemplateColumns: "1.3fr 1.1fr 0.7fr 0.7fr 0.9fr 64px 64px 56px 150px",
+                gridTemplateColumns: "1.2fr 0.9fr 0.6fr 0.5fr 0.9fr 70px 44px 90px 1.6fr",
                 alignItems: "center",
               }}
             >
@@ -236,29 +298,21 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                 )}
               </span>
               <span>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: 10,
-                    color: "var(--accentText)",
-                    wordBreak: "break-all",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {enrollmentToken || "—"}
-                </div>
                 {enrollmentToken ? (
                   <button
                     type="button"
-                    className="btn-ghost"
-                    style={{ padding: "2px 0", fontSize: 10, marginTop: 4 }}
+                    className="chip chip-accent"
+                    style={{ border: "none", cursor: "pointer" }}
+                    title="Copy enrollment token"
                     onClick={() => copy(enrollmentToken, `token ${id}`)}
                   >
-                    Copy token {copied === `token ${id}` ? "✓" : ""}
+                    {enrollmentToken.slice(0, 4)}…{enrollmentToken.slice(-3)} {copied === `token ${id}` ? "✓" : "⧉"}
                   </button>
-                ) : null}
+                ) : (
+                  "—"
+                )}
               </span>
-              <span style={{ color: agent.status === "online" ? "var(--op-alloc)" : "#ec7b1a", textTransform: "capitalize" }}>
+              <span className={`chip ${agent.status === "online" ? "chip-LOW" : ""}`} style={{ justifySelf: "start", textTransform: "capitalize" }}>
                 {String(agent.status || "offline")}
               </span>
               <span className="mono">{String(agent.mode || "-")}</span>
@@ -274,7 +328,18 @@ export function AgentsView({ data, onReload, onToast }: Props) {
               <span className="mono" style={{ fontSize: 10, color: "var(--dim)" }}>
                 {String(agent.ip_address || "—")}
               </span>
-              <span style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+              <span style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "flex-end" }}>
+                {agent.install_command ? (
+                  <button
+                    type="button"
+                    className="btn-brand"
+                    style={{ padding: "4px 8px", fontSize: 10 }}
+                    title="Install the Agent package, Python dependencies and Sysmon, write configuration, and start the Agent"
+                    onClick={() => copy(String(agent.install_command), `install ${id}`)}
+                  >
+                    Copy install {copied === `install ${id}` ? "✓" : ""}
+                  </button>
+                ) : null}
                 {runCommand ? (
                   <button
                     type="button"
@@ -305,7 +370,7 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                     </button>
                   </span>
                 ) : (
-                  <span style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <>
                     <button type="button" className="btn-ghost" style={{ padding: "4px 8px", fontSize: 10 }} onClick={() => startRename(agent)}>
                       Rename
                     </button>
@@ -320,12 +385,12 @@ export function AgentsView({ data, onReload, onToast }: Props) {
                     <button
                       type="button"
                       className="btn-ghost"
-                      style={{ padding: "4px 8px", fontSize: 10, color: "#e5484d" }}
+                      style={{ padding: "4px 8px", fontSize: 10, color: "var(--sev-critical)" }}
                       onClick={() => removeAgent(agent)}
                     >
                       Delete
                     </button>
-                  </span>
+                  </>
                 )}
               </span>
             </div>

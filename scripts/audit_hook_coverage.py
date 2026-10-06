@@ -1,12 +1,12 @@
 """Compare injection_api_manifest vs Frida hook catalog coverage."""
 from __future__ import annotations
 
-from noirlycan_agent.collector.infrastructure.frida_hook_catalog import (
+from noirlycan_agent.sensors.frida_hook_catalog import (
     NT_HANDLER_EXPORTS,
     build_runtime_config,
     hook_exports_in_config,
 )
-from noirlycan_core.kernel.classification.api_manifest import REPO_REQUIRED_APIS
+from noirlycan_core.detection.api_classes import REPO_REQUIRED_APIS
 
 config = build_runtime_config(None)
 hooked = hook_exports_in_config(config)

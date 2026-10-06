@@ -1,1 +1,0 @@
-"""Noirlycan package."""

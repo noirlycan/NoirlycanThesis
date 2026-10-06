@@ -21,7 +21,7 @@ flowchart LR
   subgraph P [PAPER — ASIA CCS 2025]
     direction TB
     P_IN["56k malware<br/>+ anti-evasion"]
-    P_SB["QEMU sandbox"]
+    P_SB["BluePill / Pin"]
     P_TR["Custom API tracer"]
     P_CORE["2/3 · congruence · temporal"]
     P_OUT["Dataset · prevalence · sandbox cmp"]
@@ -67,7 +67,7 @@ Vẽ **3 cột** trên canvas 1440px. Mỗi cột một màu sticky.
 │                      │                      │                                          │
 │  [Malware corpus]    │   ┌─ ALLOCATE ─┐     │  ┌─ SENSORS ─────────────────────┐       │
 │        ↓             │   │  WRITE    │     │  │ Sysmon (kernel) E1·3·7·8·10·11│       │
-│  [QEMU + tracer]     │   │  EXECUTE  │     │  │ Frida (user) 121 API hooks   │       │
+│  [BluePill / Pin]    │   │  EXECUTE  │     │  │ Frida (user) 121 API hooks   │       │
 │        ↓             │   └─────┬─────┘     │  │ FileDropWatcher              │       │
 │  [API trace logs]    │         ↓           │  └──────────────┬───────────────┘       │
 │        ↓             │  [2-of-3 rule]      │                 ↓                       │
@@ -141,7 +141,7 @@ flowchart LR
 
 ## Speaker notes (30 giây)
 
-> Paper ASIA CCS 2025 trả lời *injection phổ biến thế nào* bằng sandbox batch và custom tracer.  
+> Paper ASIA CCS 2025 trả lời *injection phổ biến thế nào* bằng phân tích batch trên BluePill/Pin (DBI).  
 > Noirlycan không thay thế paper — nó **kế thừa lõi 2-of-3 primitive** và **mở rộng** sang lab Windows thực: quan sát từ lúc file xuất hiện, kết hợp Sysmon kernel và Frida user-mode, xuất session JSONL và dashboard cho thí nghiệm thesis.
 
 ---

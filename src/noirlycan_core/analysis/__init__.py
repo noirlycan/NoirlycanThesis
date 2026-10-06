@@ -1,1 +1,1 @@
-"""Analysis microservice — correlation, classification, batch."""
+"""Offline analysis over stored sessions: corpus statistics and replay."""

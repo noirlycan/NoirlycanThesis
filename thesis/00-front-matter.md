@@ -16,7 +16,7 @@
 
 # LỜI CAM ĐOAN
 
-Tôi xin cam đoan luận văn thạc sĩ *Tăng cường phát hiện mã độc trước các kĩ thuật né tránh* là công trình nghiên cứu của riêng tôi dưới sự hướng dẫn của **……………………………………** *(Chức danh, họ tên GVHD)*. Các kết quả, ý tưởng và tài liệu trích dẫn đã được nêu rõ nguồn gốc theo quy định trích dẫn [n] trong ngoặc vuông. Phương pháp phát hiện process injection căn cứ chính vào công trình Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [4]; phần hiện thực tham chiếu repository `NoirlycanThesis` [13].
+Tôi xin cam đoan luận văn thạc sĩ *Tăng cường phát hiện mã độc trước các kĩ thuật né tránh* là công trình nghiên cứu của riêng tôi dưới sự hướng dẫn của **……………………………………** *(Chức danh, họ tên GVHD)*. Các kết quả, ý tưởng và tài liệu trích dẫn đã được nêu rõ nguồn gốc theo quy định trích dẫn [n] trong ngoặc vuông. Phương pháp phát hiện process injection căn cứ chính vào công trình Di Pietro, D'Elia và Querzoni (ASIA CCS 2025) [7]; phần hiện thực tham chiếu repository `NoirlycanThesis` [13].
 
 Tôi xin cam đoan không sao chép, trích dẫn sai hoặc sử dụng tài liệu của người khác mà không ghi nguồn. Mọi sai sót là trách nhiệm của tôi.
 

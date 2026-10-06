@@ -1,10 +1,13 @@
 const SEV_COLORS: Record<string, string> = {
-  CRITICAL: "#e5484d",
-  HIGH: "#ec7b1a",
-  MEDIUM: "#e8c020",
-  LOW: "#46c26a",
-  INFO: "#5b9df0",
+  CRITICAL: "var(--sev-critical)",
+  HIGH: "var(--sev-high)",
+  MEDIUM: "var(--sev-medium)",
+  LOW: "var(--sev-low)",
+  INFO: "var(--sev-info)",
 };
+
+const PAPER_KINDS = new Set(["allocate", "write", "execute"]);
+const KERNEL_FLAGS = ["direct_syscall", "unbacked_caller", "hook_bypass_suspected", "unbacked_thread_start"];
 
 const OP_COLORS: Record<string, string> = {
   alloc: "var(--op-alloc)",
@@ -24,7 +27,7 @@ export function opColor(kind: string): string {
 
 export function eventKindColor(kind: string): string {
   const upper = kind.toUpperCase();
-  if (upper.includes("EXEC")) return "#e5484d";
+  if (upper.includes("EXEC")) return "var(--sev-critical)";
   if (upper.includes("WRITE")) return "var(--op-write)";
   if (upper.includes("ALLOC")) return "var(--op-alloc)";
   if (upper.includes("PROC") || upper.includes("FILE")) return "var(--sev-info)";
@@ -35,31 +38,33 @@ export function collectTags(finding: Record<string, unknown> | undefined): strin
   if (!finding) return [];
   const tags = new Set<string>();
   const evidence = (finding.evidence as Record<string, unknown> | undefined) || {};
-  if (finding.section_mapping || evidence.section_mapping) tags.add("section_mapping=true");
-  if (finding.cross_process || evidence.cross_process) tags.add("cross_process=true");
   const primitives = (finding.primitives as Record<string, unknown>[] | undefined) || [];
-  const kinds = new Set(
-    primitives.map((item) => String(item.kind || "").toLowerCase()).filter(Boolean),
-  );
-  if (kinds.size >= 2) tags.add(`${kinds.size} / 3 primitives`);
-  if (kinds.size >= 3) tags.add("3 / 3 primitives");
+  const kinds = new Set(primitives.map((item) => String(item.kind || "").toLowerCase()).filter((kind) => PAPER_KINDS.has(kind)));
+  if (kinds.size >= 2) tags.add(`${kinds.size}/3 primitives`);
   for (const [key, value] of Object.entries(evidence)) {
     if (value === true) tags.add(`${key}=true`);
   }
   return [...tags];
 }
 
-export function tagStyle(tag: string): { background: string; color: string; border: string } {
-  if (tag.includes("section_mapping")) {
-    return { background: "rgba(70,194,106,.12)", color: "#46c26a", border: "rgba(70,194,106,.35)" };
-  }
-  if (tag.includes("cross_process")) {
-    return { background: "rgba(236,123,26,.12)", color: "#ec7b1a", border: "rgba(236,123,26,.35)" };
-  }
-  if (tag.includes("primitive")) {
-    return { background: "var(--panel2)", color: "var(--text)", border: "var(--border)" };
-  }
-  return { background: "var(--panel2)", color: "var(--muted)", border: "var(--border)" };
+/** Only flags that are on, as readable labels: "cross_process=true" → "cross process". */
+export function visibleTags(tags: string[]): string[] {
+  return tags
+    .filter((tag) => !tag.endsWith("=false"))
+    .map((tag) => tag.replace(/=true$/, "").replace(/_/g, " "));
+}
+
+export function tagClass(label: string): string {
+  const key = label.replace(/ /g, "_");
+  if (KERNEL_FLAGS.includes(key)) return "chip chip-CRITICAL";
+  if (key === "cross_process") return "chip chip-exec";
+  if (key === "section_mapping") return "chip chip-alloc";
+  if (key.includes("primitives") || key === "execution_confirmed") return "chip chip-accent";
+  return "chip";
+}
+
+export function baseName(path: string): string {
+  return path.split(/[/\\]/).pop() || path;
 }
 
 export function groupTargetLabel(victim: string, vpid: number | string | null | undefined): string {

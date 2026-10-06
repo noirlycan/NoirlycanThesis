@@ -6,11 +6,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from noirlycan_agent.collector.infrastructure.frida_hook_catalog import (
+from noirlycan_agent.sensors.frida_hook_catalog import (
     build_runtime_config,
     hook_exports_in_config,
 )
-from noirlycan_core.kernel.classification.api_manifest import REPO_REQUIRED_APIS
+from noirlycan_core.detection.api_classes import REPO_REQUIRED_APIS
 
 ROOT = Path(__file__).resolve().parents[1]
 

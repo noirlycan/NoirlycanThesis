@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from noirlycan_core.kernel.classification.api_manifest import PAPER_API_CLASSES
+from noirlycan_core.detection.api_classes import PAPER_API_CLASSES
 
 
 def _paper_apis(class_name: str, *, fallback: tuple[str, ...]) -> list[str]:

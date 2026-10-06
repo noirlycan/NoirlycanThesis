@@ -24,11 +24,11 @@
 10. **Cán bộ hướng dẫn khoa học:** …………………………………… *(Chức danh, họ tên)*  
 
 11. **Tóm tắt các kết quả của luận văn:**  
-Luận văn hiện thực phương pháp phát hiện process injection dựa trên operational primitive và quy tắc 2-of-3 của Di Pietro et al. (ASIA CCS 2025) [4] trên hệ thống Noirlycan Telemetry (Windows 10/11, Frida + Sysmon). Kết quả chính: 31 unit test pass; giả thuyết H1 (né biến thể API — E1) và H2 (gộp bước — E2) được chấp nhận; pipeline file provenance (E3) đạt một phần; telemetry kép chống né hook (E4) đã thiết kế nhưng thiếu benchmark syscall. Module anti-sandbox (E5) chưa triển khai — không claim số liệu 21,2 % của paper.
+Luận văn hiện thực phương pháp phát hiện process injection dựa trên operational primitive và quy tắc 2-of-3 của Di Pietro et al. (ASIA CCS 2025) [7] trên hệ thống Noirlycan Telemetry (Windows 10/11, Frida + Sysmon). Kết quả chính: 59 test methodology pass (tổng 129 test); giả thuyết H1 (né biến thể API — E1) và H2 (gộp bước — E2) được chấp nhận; pipeline file provenance (E3) đạt một phần; telemetry kép chống né hook (E4) đã thiết kế nhưng thiếu benchmark syscall. Module anti-sandbox (E5) chưa triển khai — không claim các số liệu prevalence/bỏ sót của paper.
 
 12. **Khả năng ứng dụng trong thực tiễn:** Phòng lab malware, điều tra số, giảng dạy MITRE T1055 và phân tích né tránh trên endpoint Windows.
 
-13. **Những hướng nghiên cứu tiếp theo:** Tích hợp anti-evasion E5 theo [4]; benchmark Frida fidelity; ETW kernel thay Frida; PoC-Bench quy mô.
+13. **Những hướng nghiên cứu tiếp theo:** Tích hợp anti-evasion E5 theo [7]; benchmark Frida fidelity; ETW kernel thay Frida; PoC-Bench quy mô.
 
 14. **Các công trình đã công bố có liên quan đến luận văn:** Chưa có công trình công bố tại thời điểm nộp.
 
@@ -61,7 +61,7 @@ Independence – Freedom – Happiness
 9. **Code:** *(fill in)*  
 10. **Supervisors:** *(Full name, academic title and degree)*  
 
-11. **Summary of the findings:** Validated lab deployment of Di Pietro et al. [4] 2-of-3 primitive detection in Noirlycan (Frida + Sysmon); 31 tests pass; H1/H2 accepted; E3 provenance partial; E4 design without syscall benchmark; E5 out-of-scope.
+11. **Summary of the findings:** Validated lab deployment of Di Pietro et al. [7] 2-of-3 primitive detection in Noirlycan (Frida + Sysmon); 59 methodology tests pass; H1/H2 accepted; E3 provenance partial; E4 design without syscall benchmark; E5 out-of-scope.
 
 12. **Practical applicability:** Malware lab, DFIR training, MITRE T1055 education.
 

@@ -36,7 +36,7 @@ export class AuthError extends Error {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  if (!(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
@@ -66,6 +66,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  downloadDesktopAgent() {
+    return downloadBlob("/api/agents/desktop.exe", "NoirlycanAgent.exe");
+  },
+  downloadAgentInstaller() {
+    return downloadBlob("/api/agents/setup.exe", "NoirlycanAgentSetup.exe");
+  },
+  uploadAgentRelease(file: File, kind: "portable" | "installer") {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ ok: boolean; filename: string; sha256: string; size_bytes: number }>(
+      `/api/agents/desktop/releases/${kind}`, { method: "POST", body: form },
+    );
+  },
   async login(email: string, password: string) {
     const result = await request<{ ok: boolean; token?: string; user?: unknown; permissions?: Record<string, boolean>; error?: string }>(
       "/api/auth/login",
@@ -129,16 +142,14 @@ export const api = {
     return request<{
       server: { host: string; port: number; token: string };
       agents: Record<string, unknown>[];
-      commands: { run: string; spawn: string };
-      toml: string;
       auto_kill_min_severity?: string;
+      desktop_available?: boolean;
+      installer_available?: boolean;
+      can_publish_release?: boolean;
     }>("/api/agents");
   },
   saveServer(host: string, port: number) {
     return request("/api/agents/server", { method: "PUT", body: JSON.stringify({ host, port }) });
-  },
-  regenerateToken() {
-    return request<{ token: string }>("/api/agents/server/regenerate-token", { method: "POST" });
   },
   kill(agentId: string, pid: number, image?: string, extraPid?: number) {
     return request<{ ok: boolean; message: string }>(`/api/agents/${encodeURIComponent(agentId)}/kill`, {
@@ -213,7 +224,54 @@ export const api = {
       body: JSON.stringify({ role }),
     });
   },
+  samples() {
+    return request<{ samples: Sample[] }>("/api/samples");
+  },
+  async uploadSample(file: File) {
+    const body = new FormData();
+    body.append("file", file);
+    const token = getToken();
+    const response = await fetch(apiUrl("/api/samples"), {
+      method: "POST",
+      body,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new Error((await response.text()) || response.statusText);
+    return response.json() as Promise<{ ok: boolean; kind: string; upload_id: number }>;
+  },
+  runSample(uploadId: number, agentId: string, targetPid?: number) {
+    return request<{ ok: boolean }>(`/api/samples/${uploadId}/run`, {
+      method: "POST",
+      body: JSON.stringify({ agent_id: agentId, target_pid: targetPid || null }),
+    });
+  },
+  deleteSample(uploadId: number) {
+    return request<{ ok: boolean }>(`/api/samples/${uploadId}`, { method: "DELETE" });
+  },
+  sampleReport(uploadId: number) {
+    return request<{ ok: boolean; pending?: boolean; report?: SampleReport }>(`/api/samples/${uploadId}/report`);
+  },
 };
+
+export interface Sample {
+  id: number;
+  original_name: string;
+  content_kind: "executable" | "jsonl";
+  size_bytes: number;
+  sha256: string;
+  status: string;
+  error_message: string | null;
+  uploaded_at: string;
+  session_name: string | null;
+  agent_id: string | null;
+}
+
+export interface SampleReport {
+  event_count: number;
+  finding_count: number;
+  primitive_count: number;
+  findings: Record<string, unknown>[];
+}
 
 async function downloadBlob(path: string, filename: string) {
   const token = getToken();

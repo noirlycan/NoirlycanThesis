@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from noirlycan_core.kernel.entities.models import FileEvent
-from noirlycan_agent.collector.infrastructure.sysmon import SysmonUnavailable, _evt_query_error, parse_sysmon_xml
+from noirlycan_core.models import FileEvent
+from noirlycan_agent.sensors.sysmon import SysmonUnavailable, _evt_query_error, parse_sysmon_xml
 
 
 class _AccessDeniedError(Exception):

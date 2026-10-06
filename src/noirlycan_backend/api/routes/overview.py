@@ -9,13 +9,13 @@ from noirlycan_backend.api.deps import get_database, get_logs_dir
 from noirlycan_backend.domain.agent_sessions import resolve_console_session
 from noirlycan_backend.domain.findings_groups import overview_payload
 from noirlycan_backend.infrastructure.console_db import effective_agent_status
-from noirlycan_core.analysis.domain.classifier_config import load_classifier_config
+from noirlycan_core.classification.config import load_classifier_config
 from noirlycan_core.runtime.agent_policy import load_agent_policy
 from noirlycan_core.runtime.config import (
     is_collector_online,
     load_runtime_config,
 )
-from noirlycan_core.storage.infrastructure.log_store import list_log_files
+from noirlycan_core.storage.log_store import list_log_files
 
 router = APIRouter(prefix="/overview", tags=["overview"])
 

@@ -174,8 +174,8 @@ export function AccountView({
           }}
         >
           {savedFlash ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#46c26a" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#46c26a" }} />
+            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--sev-low)" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sev-low)" }} />
               Profile saved
             </span>
           ) : null}

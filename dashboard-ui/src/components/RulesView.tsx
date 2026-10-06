@@ -14,12 +14,6 @@ const TECHNIQUES = [
   "Custom",
 ];
 
-const OP_COLORS: Record<string, string> = {
-  alloc: "var(--op-alloc)",
-  write: "var(--op-write)",
-  exec: "var(--op-exec)",
-};
-
 type ChainStep = { op: string; api: string };
 
 function stepOptions(rules: Ruleset) {
@@ -146,9 +140,9 @@ export function RulesView({ rules, onChange, onSave, onReset }: Props) {
             <div style={{ fontFamily: "Space Grotesk", fontWeight: 600, color, marginBottom: 12 }}>{label}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
               {rules[key].map((api) => (
-                <span key={api} className="mono badge" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                <span key={api} className="chip">
                   {api}
-                  <button type="button" className="btn-ghost" style={{ padding: "0 6px" }} onClick={() => removeApi(key, api)}>
+                  <button type="button" className="chip-x" onClick={() => removeApi(key, api)}>
                     ×
                   </button>
                 </span>
@@ -233,25 +227,12 @@ export function RulesView({ rules, onChange, onSave, onReset }: Props) {
                   />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                     {steps.map((step, stepIndex) => (
-                      <span
-                        key={`${step.op}-${step.api}-${stepIndex}`}
-                        className="mono"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                          fontSize: 11,
-                          padding: "3px 8px",
-                          borderRadius: 6,
-                          color: "#fff",
-                          background: OP_COLORS[step.op] || "var(--muted)",
-                        }}
-                      >
+                      <span key={`${step.op}-${step.api}-${stepIndex}`} className={`chip chip-${step.op}`}>
                         {step.op} · {step.api}
                         <button
                           type="button"
                           className="btn-ghost"
-                          style={{ padding: 0, minWidth: 0, color: "#fff", opacity: 0.75, fontSize: 13 }}
+                          style={{ padding: 0, minWidth: 0, border: "none", color: "inherit", opacity: 0.6, fontSize: 13 }}
                           onClick={() => {
                             const nextSteps = steps.filter((_, i) => i !== stepIndex);
                             onChange({ ...rules, chains: updateChain(rules, index, { steps: nextSteps }) });
@@ -462,7 +443,7 @@ export function RulesView({ rules, onChange, onSave, onReset }: Props) {
           <div style={{ fontWeight: 600, marginBottom: 12 }}>Watched folders</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             {rules.folders.map((folder) => (
-              <span key={folder} className="mono badge" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+              <span key={folder} className="chip">
                 {folder}
                 <button
                   type="button"
@@ -496,7 +477,7 @@ export function RulesView({ rules, onChange, onSave, onReset }: Props) {
           </label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             {rules.allowlist.map((cidr) => (
-              <span key={cidr} className="mono badge" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+              <span key={cidr} className="chip">
                 {cidr}
                 <button
                   type="button"

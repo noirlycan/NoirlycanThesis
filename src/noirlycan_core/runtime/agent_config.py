@@ -9,6 +9,7 @@ class AgentConfig:
     server: str = ""
     agent_id: str = ""
     token: str = ""
+    command_key: str = ""
     watch_sysmon: bool = True
     auto_attach_new_processes: bool = True
 
@@ -53,6 +54,7 @@ def load_agent_config(path: Path | str) -> AgentConfig:
         server=endpoint,
         agent_id=str(server.get("agent_id") or server.get("id") or "").strip(),
         token=str(server.get("token") or "").strip(),
+        command_key=str(server.get("command_key") or "").strip(),
         watch_sysmon=_parse_bool(run.get("watch_sysmon", "true"), True),
         auto_attach_new_processes=_parse_bool(
             run.get("auto_attach_new_processes", run.get("auto_attach", "true")),
@@ -68,6 +70,8 @@ def apply_agent_config(args, config: AgentConfig) -> None:
         args.agent_id = config.agent_id
     if config.token and not str(getattr(args, "token", "") or "").strip():
         args.token = config.token
+    if config.command_key:
+        args.command_key = config.command_key
     if config.watch_sysmon and not getattr(args, "watch_sysmon", False):
         args.watch_sysmon = True
     if config.auto_attach_new_processes and not getattr(args, "auto_attach_new_processes", False):

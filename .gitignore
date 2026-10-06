@@ -2,6 +2,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+.venv-agent-build/
+build/
+dist/
+deploy/agent-artifacts/*.exe
+deploy/agent-artifacts/*.upload
 venv/
 *.jsonl
 lab-output/
@@ -13,7 +18,12 @@ logs/.agent_policy.json
 logs/.agent_identity.json
 logs/.collector_launch.json
 logs/.runtime.json
-src/noirlycan_telemetry.egg-info/
+*.egg-info/
+logs/.jwt_secret
+logs/.command_signing_key
+logs/uploads/
+logs/samples/
+logs/agents/
 .DS_Store
 dashboard-ui/node_modules/
 dashboard-ui/dist/
@@ -23,3 +33,5 @@ dashboard-ui/tsconfig.tsbuildinfo
 thesis/*.docx
 thesis/~$*
 *.sqlite3
+logs/.analysis_queue.json
+logs/.collector.pid

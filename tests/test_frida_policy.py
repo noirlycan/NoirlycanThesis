@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-from noirlycan_agent.collector.infrastructure.frida_hook_catalog import build_runtime_config
-from noirlycan_agent.collector.infrastructure.frida_manager import build_hook_script
+from noirlycan_agent.sensors.frida_hook_catalog import build_runtime_config
+from noirlycan_agent.sensors.frida_monitor import build_hook_script
 from noirlycan_core.runtime.agent_policy import AgentPolicy
 
 

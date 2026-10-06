@@ -7,13 +7,15 @@ import { AgentsView } from "./components/AgentsView";
 import { AgentBadge, agentLabel } from "./components/AgentBadge";
 import { ApiChainList, TagChips } from "./components/FindingBits";
 import { FindingModal } from "./components/FindingModal";
+import { KillControl } from "./components/KillControl";
 import { NetworkView } from "./components/NetworkView";
 import { RulesView } from "./components/RulesView";
+import { SamplesView } from "./components/SamplesView";
 import { useLiveSocket } from "./hooks/useLiveSocket";
-import { collectTags, flowLabel, groupTargetLabel, primitiveBarHeight, severityDonut } from "./lib/finding-ui";
+import { baseName, collectTags, flowLabel, groupTargetLabel, primitiveBarHeight, severityDonut } from "./lib/finding-ui";
 import { filterFindingGroups, filterRecords, matchesSearch, normalizeSearch } from "./lib/search";
 import { applyTheme, readStoredTheme, type Theme } from "./lib/theme";
-import type { FindingGroup, FindingMember, OverviewData, Permissions, Ruleset, TabId, User } from "./types";
+import type { FindingGroup, FindingMember, KillState, OverviewData, Permissions, Ruleset, TabId, User } from "./types";
 
 const TAB_META: Record<TabId, { title: string; sub: string; perm?: string }> = {
   overview: { title: "Overview", sub: "Fleet KPIs across all connected agents" },
@@ -21,6 +23,7 @@ const TAB_META: Record<TabId, { title: string; sub: string; perm?: string }> = {
   activity: { title: "Activity", sub: "Live event stream and file drops" },
   network: { title: "Network", sub: "Post-finding network observations and connection states" },
   rules: { title: "Rules", sub: "Detection primitives, chains, and scoring", perm: "rules" },
+  samples: { title: "Samples", sub: "Upload a sample and run it on a lab agent", perm: "triage" },
   agents: { title: "Agents", sub: "Deploy commands and connected workstations", perm: "access" },
   account: { title: "Account", sub: "Profile and password" },
   access: { title: "Access", sub: "Team members and role permissions", perm: "access" },
@@ -32,27 +35,12 @@ function can(perms: Permissions, key?: string) {
 
 function SevBadge({ severity }: { severity: string }) {
   const sev = severity.toUpperCase();
-  return (
-    <span
-      className={`mono sev-${sev}`}
-      style={{
-        fontSize: 11,
-        fontWeight: 600,
-        background: sev === "CRITICAL" ? "#e5484d" : "var(--panel2)",
-        color: sev === "CRITICAL" ? "#fff" : undefined,
-        padding: "4px 11px",
-        borderRadius: 8,
-        border: "1px solid var(--border)",
-      }}
-    >
-      {sev}
-    </span>
-  );
+  return <span className={`chip chip-${sev}`}>{sev}</span>;
 }
 
 function LoginScreen({ onLogin }: { onLogin: (user: User, perms: Permissions, token: string) => void }) {
   const [email, setEmail] = useState("admin@lab");
-  const [password, setPassword] = useState("admin");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function submit(event: FormEvent) {
@@ -120,7 +108,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: User, perms: Permissions, to
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {error ? <div style={{ color: "#e5484d", fontSize: 12, marginBottom: 8 }}>{error}</div> : null}
+        {error ? <div style={{ color: "var(--sev-critical)", fontSize: 12, marginBottom: 8 }}>{error}</div> : null}
         <button type="submit" className="btn-brand" style={{ width: "100%", marginTop: 6 }}>
           Sign in
         </button>
@@ -156,14 +144,13 @@ function OverviewView({
   onOpenFinding: (member: FindingMember) => void;
   canKill: boolean;
   onKill: (pid: number, image?: string, killAgentId?: string, actorPid?: number) => void;
-  killed: Set<number>;
+  killed: Map<number, KillState>;
 }) {
   const kpis = data.kpis || { findings: 0, critical: 0, injection_chains: 0, file_drops: 0, beacons: 0, agents: 0 };
   const critical = data.critical_finding as Record<string, unknown> | null | undefined;
   const showCritical = !normalizeSearch(searchQuery) || matchesSearch(searchQuery, critical);
   const pid = critical?.target_pid as number | undefined;
   const criticalActorPid = Number(critical?.actor_pid || 0) || undefined;
-  const isKilled = pid ? killed.has(pid) : false;
   const criticalAgentId = String(critical?.agent_id || "");
   const criticalHostname = agentLabel(critical);
   const severityCounts = data.severity_counts || {};
@@ -201,8 +188,8 @@ function OverviewView({
             className={`card kpi-card ${crit ? "crit-banner" : ""}`}
             onClick={() => onNavigate(tab as TabId)}
           >
-            <div style={{ fontSize: 12, color: crit ? "#e5484d" : "var(--muted)" }}>{label}</div>
-            <div className="kpi-num" style={{ color: crit ? "#e5484d" : undefined }}>
+            <div style={{ fontSize: 12, color: crit ? "var(--sev-critical)" : "var(--muted)" }}>{label}</div>
+            <div className="kpi-num" style={{ color: crit ? "var(--sev-critical)" : undefined }}>
               {value as number}
             </div>
           </div>
@@ -226,20 +213,12 @@ function OverviewView({
                   <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
                     {String(critical.timestamp || "").slice(11, 19)}
                   </span>
-                  {isKilled ? (
-                    <span className="mono" style={{ fontSize: 11, color: "#e5484d", border: "1px solid #e5484d55", borderRadius: 8, padding: "5px 10px" }}>
-                      TERMINATED
-                    </span>
-                  ) : null}
-                  {canKill && pid && !isKilled ? (
-                    <button
-                      type="button"
-                      className="btn-brand"
-                      style={{ background: "#e5484d", boxShadow: "none", padding: "6px 14px", fontSize: 12 }}
-                      onClick={() => onKill(pid, String(critical.target_image || ""), criticalAgentId || undefined, criticalActorPid)}
-                    >
-                      Kill process
-                    </button>
+                  {pid ? (
+                    <KillControl
+                      state={killed.get(pid)}
+                      canKill={canKill}
+                      onKill={() => onKill(pid, String(critical.target_image || ""), criticalAgentId || undefined, criticalActorPid)}
+                    />
                   ) : null}
                 </div>
               </div>
@@ -325,7 +304,8 @@ function OverviewView({
                         width: "100%",
                         height: primitiveBarHeight(row.count, maxPrimitive),
                         borderRadius: "9px 9px 4px 4px",
-                        background: `linear-gradient(180deg, ${row.color}, transparent)`,
+                        background: row.color.replace(/\)$/, "-bg)"),
+                        borderTop: `2px solid ${row.color}`,
                       }}
                     />
                   </div>
@@ -370,8 +350,8 @@ function OverviewView({
                         height: "100%",
                         borderRadius: 999,
                         background: row.critical > 0
-                          ? "linear-gradient(90deg, #e5484d, var(--accent))"
-                          : "linear-gradient(90deg, var(--accent), var(--accent2))",
+                          ? "linear-gradient(90deg, var(--sev-critical-bg), var(--sev-critical))"
+                          : "linear-gradient(90deg, var(--accentSoft), var(--accent))",
                       }}
                     />
                   </div>
@@ -397,16 +377,17 @@ function OverviewView({
                   <div
                     key={member.key}
                     className="finding-row"
-                    style={{ gridTemplateColumns: "auto auto 1fr auto auto", cursor: "pointer" }}
+                    style={{ gridTemplateColumns: "auto auto minmax(0, 1fr) auto", cursor: "pointer" }}
                     onClick={() => onOpenFinding(member)}
                   >
                     <AgentBadge agentId={member.agent_id || group.agent_id} hostname={member.hostname || group.hostname} />
                     <SevBadge severity={member.severity} />
-                    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {member.title}
-                    </span>
-                    <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
-                      {group.source} → {group.victim}
+                    <span
+                      className="mono"
+                      style={{ fontSize: 12, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      title={`${member.title}: ${group.source} → ${group.victim}`}
+                    >
+                      {baseName(group.source)} <span style={{ color: "var(--dim)" }}>→</span> {baseName(group.victim)}
                     </span>
                     <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>
                       {String(member.time || "").slice(11, 19)}
@@ -441,7 +422,7 @@ function FindingsView({
   canDel: boolean;
   canReport: boolean;
   canKill: boolean;
-  killed: Set<number>;
+  killed: Map<number, KillState>;
   agentScope?: { id: string; hostname: string } | null;
   onOpen: (member: FindingMember) => void;
   onDelete: (key: string) => void;
@@ -466,7 +447,6 @@ function FindingsView({
       </div>
       {groups.map((group) => {
         const groupPid = group.vpid != null ? Number(group.vpid) : 0;
-        const groupKilled = groupPid > 0 && killed.has(groupPid);
         const groupActorPid = Number(group.members?.[0]?.finding?.actor_pid || 0) || undefined;
         return (
         <div key={group.key} className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -475,26 +455,23 @@ function FindingsView({
               <SevBadge severity={group.top_severity} />
               <div className="group-header-body">
                 <div className="mono" style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.45 }}>
-                  <span style={{ color: "var(--muted)" }}>{group.source}</span> ──▶{" "}
-                  <span style={{ color: "#ec7b1a" }}>{groupTargetLabel(group.victim, group.vpid)}</span>
+                  <span style={{ color: "var(--muted)" }} title={group.source}>{baseName(group.source)}</span>
+                  <span style={{ color: "var(--dim)", margin: "0 8px" }}>→</span>
+                  <span style={{ color: "var(--accentText)" }} title={group.victim}>
+                    {groupTargetLabel(baseName(group.victim), group.vpid)}
+                  </span>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--dim)", marginTop: 4, lineHeight: 1.45 }}>{group.summary}</div>
+                {group.members.some((member) => member.title !== group.summary) ? (
+                  <div style={{ fontSize: 12, color: "var(--dim)", marginTop: 4, lineHeight: 1.45 }}>{group.summary}</div>
+                ) : null}
               </div>
               <div className="group-header-actions">
-                {groupKilled ? (
-                  <span className="mono" style={{ fontSize: 11, color: "#e5484d", whiteSpace: "nowrap" }}>
-                    TERMINATED
-                  </span>
-                ) : null}
-                {canKill && groupPid > 0 && !groupKilled ? (
-                  <button
-                    type="button"
-                    className="btn-brand"
-                    style={{ background: "#e5484d", boxShadow: "none", padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-                    onClick={() => onKill(groupPid, group.victim, group.agent_id, groupActorPid)}
-                  >
-                    Kill process
-                  </button>
+                {groupPid > 0 ? (
+                  <KillControl
+                    state={killed.get(groupPid)}
+                    canKill={canKill}
+                    onKill={() => onKill(groupPid, group.victim, group.agent_id, groupActorPid)}
+                  />
                 ) : null}
                 <span className="badge">{group.count}</span>
               </div>
@@ -563,7 +540,7 @@ export default function App() {
   const [agentsData, setAgentsData] = useState<Awaited<ReturnType<typeof api.agents>> | null>(null);
   const [modal, setModal] = useState<FindingMember | null>(null);
   const [toast, setToast] = useState("");
-  const [killed, setKilled] = useState<Set<number>>(new Set());
+  const [killed, setKilled] = useState<Map<number, KillState>>(new Map());
   const [searchQuery, setSearchQuery] = useState("");
   const [agentId, setAgentId] = useState("");
   const [authReady, setAuthReady] = useState(() => !getToken());
@@ -612,6 +589,7 @@ export default function App() {
         setAgentId(String(globalOv.agents[0].id));
       }
       setOverview(globalOv);
+      setKilled(new Map((globalOv.killed || []).map((row) => [Number(row.pid), { status: row.status, detail: row.detail }])));
       setAgentOverview(agentOv);
       setGroups(fd.groups || []);
       if (can(permsRef.current, "access")) {
@@ -626,6 +604,13 @@ export default function App() {
   }, [agentId]);
 
   const live = useLiveSocket(refresh, Boolean(user));
+
+  const killPending = [...killed.values()].some((state) => state.status === "pending");
+  useEffect(() => {
+    if (!killPending) return;
+    const timer = window.setInterval(refresh, 2000);
+    return () => window.clearInterval(timer);
+  }, [killPending, refresh]);
 
   useEffect(() => {
     applyTheme(theme);
@@ -706,8 +691,9 @@ export default function App() {
       const selectedAgent = killAgentId || agentId || String(agentsData?.agents?.[0]?.id || "local-agent");
       const result = await api.kill(selectedAgent, pid, image, actorPid);
       setKilled((prev) => {
-        const next = new Set(prev).add(pid);
-        if (actorPid) next.add(actorPid);
+        // Pending until the agent confirms; the next refresh shows the real outcome.
+        const next = new Map(prev).set(pid, { status: "pending" as const });
+        if (actorPid) next.set(actorPid, { status: "pending" as const });
         return next;
       });
       setToast(result.message);
@@ -1000,6 +986,17 @@ export default function App() {
                 }}
               />
             ) : null}
+            {tab === "samples" ? (
+              <SamplesView
+                agents={(overview?.agents || agentsData?.agents || []).map((agent) => ({
+                  id: String(agent.id),
+                  label: agentLabel(agent, String(agent.id)),
+                }))}
+                canRun={can(perms, "triage")}
+                canDelete={can(perms, "del")}
+                onToast={setToast}
+              />
+            ) : null}
             {tab === "agents" && agentsData ? (
               <AgentsView
                 data={{ ...agentsData, auto_kill_min_severity: agentsData.auto_kill_min_severity }}
@@ -1025,7 +1022,7 @@ export default function App() {
           canReport={can(perms, "report")}
           canDel={can(perms, "del")}
           canKill={can(perms, "kill")}
-          killed={Boolean(modal.finding?.target_pid && killed.has(Number(modal.finding.target_pid)))}
+          killState={modal.finding?.target_pid ? killed.get(Number(modal.finding.target_pid)) : undefined}
           onClose={() => setModal(null)}
           onDelete={async () => {
             await api.deleteFinding(modal.key);

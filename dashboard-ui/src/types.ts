@@ -4,6 +4,7 @@ export type TabId =
   | "activity"
   | "network"
   | "rules"
+  | "samples"
   | "agents"
   | "account"
   | "access";
@@ -59,7 +60,15 @@ export interface AgentStat {
   beacons: number;
 }
 
+export type KillStatus = "pending" | "terminated" | "failed" | "expired";
+
+export interface KillState {
+  status: KillStatus;
+  detail?: string | null;
+}
+
 export interface OverviewData {
+  killed?: { pid: number; agent_id: string; status: KillStatus; detail?: string | null }[];
   session?: string;
   scope?: string;
   kpis?: {

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from noirlycan_core.analysis.domain.correlation import Correlator, NETWORK_WATCH_MIN_SCORE
-from noirlycan_core.kernel.entities.models import MemoryPrimitive, NetworkConnectionEvent, PrimitiveKind
-from noirlycan_core.kernel.analysis.network_policy import is_external_beacon_candidate
+from noirlycan_core.detection.correlator import Correlator, NETWORK_WATCH_MIN_SCORE
+from noirlycan_core.models import MemoryPrimitive, NetworkConnectionEvent, PrimitiveKind
+from noirlycan_core.extensions.network_policy import is_external_beacon_candidate
 
 
 def _primitive(kind: PrimitiveKind, api: str, offset_ms: int, address: int | None = 0x200000) -> MemoryPrimitive:
@@ -51,7 +51,7 @@ def test_network_watch_collects_connections_for_target_pid() -> None:
     assert findings
     assert findings[0].target_pid == 200
 
-    ignored = correlator.add_network_connection(
+    ignored, _ = correlator.add_network_connection(
         NetworkConnectionEvent(
             timestamp=datetime.now(timezone.utc),
             pid=999,
@@ -64,7 +64,7 @@ def test_network_watch_collects_connections_for_target_pid() -> None:
     )
     assert ignored is None
 
-    watched = correlator.add_network_connection(
+    watched, finding = correlator.add_network_connection(
         NetworkConnectionEvent(
             timestamp=datetime.now(timezone.utc),
             pid=200,
@@ -77,4 +77,5 @@ def test_network_watch_collects_connections_for_target_pid() -> None:
     )
     assert watched is not None
     assert is_external_beacon_candidate(watched.destination_ip, watched.destination_hostname)
+    assert finding is not None and len(finding.network_connections) == 1
     assert len(correlator.network_connections[200]) == 1

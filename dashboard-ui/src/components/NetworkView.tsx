@@ -3,10 +3,10 @@ import { useState } from "react";
 function SourceBadge({ source }: { source: string | undefined }) {
   const label = (source || "unknown").toUpperCase();
   const colors: Record<string, { bg: string; fg: string; border: string }> = {
-    WFP: { bg: "rgba(91,157,240,.12)", fg: "#5b9df0", border: "rgba(91,157,240,.35)" },
-    SYSMON: { bg: "rgba(70,194,106,.12)", fg: "#46c26a", border: "rgba(70,194,106,.35)" },
-    TCP_TABLE: { bg: "rgba(232,192,32,.12)", fg: "#e8c020", border: "rgba(232,192,32,.35)" },
-    FRIDA: { bg: "rgba(167,139,255,.12)", fg: "#a78bff", border: "rgba(167,139,255,.35)" },
+    WFP: { bg: "var(--sev-info-bg)", fg: "var(--sev-info)", border: "transparent" },
+    SYSMON: { bg: "var(--sev-low-bg)", fg: "var(--sev-low)", border: "transparent" },
+    TCP_TABLE: { bg: "var(--sev-medium-bg)", fg: "var(--sev-medium)", border: "transparent" },
+    FRIDA: { bg: "var(--accentSoft)", fg: "var(--accentText)", border: "transparent" },
   };
   const c = colors[label] || { bg: "var(--panel2)", fg: "var(--dim)", border: "var(--border)" };
   return (
@@ -38,7 +38,7 @@ function ResultBadge({
 }) {
   if (succeeded === true) {
     return (
-      <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "#46c26a" }}>
+      <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "var(--sev-low)" }}>
         OK
       </span>
     );
@@ -46,7 +46,7 @@ function ResultBadge({
   if (succeeded === false) {
     const pendingHandshake = String(protocol || "").toUpperCase().includes("SYN_SENT");
     return (
-      <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "#e5484d" }}>
+      <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "var(--sev-critical)" }}>
         {pendingHandshake ? "NOT EST." : "FAILED"}
       </span>
     );
@@ -134,9 +134,9 @@ export function NetworkView({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
         {[
           ["Connections", network.length, "var(--text)"],
-          ["Unique PIDs", pids.size, "#ec7b1a"],
-          ["Succeeded", totalOk, "#46c26a"],
-          ["Not established", totalFail, "#e5484d"],
+          ["Unique PIDs", pids.size, "var(--sev-high)"],
+          ["Succeeded", totalOk, "var(--sev-low)"],
+          ["Not established", totalFail, "var(--sev-critical)"],
           ["Pending", totalPending, "var(--dim)"],
         ].map(([label, value, color]) => (
           <div key={String(label)} className="card" style={{ padding: "14px 16px" }}>
@@ -172,8 +172,8 @@ export function NetworkView({
                 key={pid}
                 className="card"
                 style={{
-                  borderColor: "rgba(236,123,26,.35)",
-                  background: "rgba(236,123,26,.06)",
+                  borderColor: "var(--border)",
+                  background: "var(--panel)",
                   padding: "14px 18px",
                 }}
               >
@@ -185,9 +185,9 @@ export function NetworkView({
                       fontWeight: 700,
                       padding: "3px 9px",
                       borderRadius: 7,
-                      color: "#ec7b1a",
-                      border: "1px solid rgba(236,123,26,.4)",
-                      background: "rgba(236,123,26,.12)",
+                      color: "var(--sev-high)",
+                      border: "1px solid transparent",
+                      background: "var(--sev-high-bg)",
                     }}
                   >
                     POST-INJECTION
@@ -196,8 +196,8 @@ export function NetworkView({
                   <span className="mono" style={{ fontSize: 11, color: "var(--dim)" }}>PID {pid}</span>
                   <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "var(--dim)" }}>
                     <span>{conns.length} observation{conns.length !== 1 ? "s" : ""}</span>
-                    {okCount > 0 ? <span style={{ color: "#46c26a" }}>{okCount} established</span> : null}
-                    {failCount > 0 ? <span style={{ color: "#e5484d" }}>{failCount} not established</span> : null}
+                    {okCount > 0 ? <span style={{ color: "var(--sev-low)" }}>{okCount} established</span> : null}
+                    {failCount > 0 ? <span style={{ color: "var(--sev-critical)" }}>{failCount} not established</span> : null}
                   </span>
                 </div>
                 <div className="mono" style={{ fontSize: 11, color: "var(--dim)", marginBottom: 8 }}>
