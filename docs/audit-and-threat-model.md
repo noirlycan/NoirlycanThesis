@@ -167,11 +167,11 @@ chain bằng cách *re-trace* khi victim được resume.
 ghi chuỗi và set `is_recursive`. Frida `--auto-attach-new-processes` cố attach
 vào victim mới. ⚠️ **Một phần** — chưa có metric/báo cáo prevalence như paper.
 
-### 2.8. Anti-evasion (Paper §6)
+### 2.8. Anti-evasion (Paper §3.3, §5.1)
 
-**Paper:** Có module anti-evasion tích hợp (bypass timing checks, env checks)
-để tránh malware skip injection trong sandbox. Ablation: +21.2% mẫu phát hiện
-được nhờ anti-evasion.
+**Paper:** Dùng anti-evasion có sẵn của BluePill để malware không bỏ qua
+injection khi nhận ra môi trường phân tích. Ablation trên tập 2019: bản Detours
+không anti-evasion chỉ thấy injection ở 6,2 % mẫu, so với 11,8 % của BluePill.
 
 **Repo:** [`evasion.py`](../src/noirlycan_telemetry/evasion.py) ghi signal nhưng
 không bypass. ❌ **Lệch lớn** với paper — cần khai báo rõ là **out of scope**

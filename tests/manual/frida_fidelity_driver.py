@@ -3,7 +3,7 @@ collector when the target process issues a known number of API calls.
 
 Used to validate assumption **M5** in `docs/audit-and-threat-model.md`
 ("Frida user-mode hooks are accurate in argument and ordering"). Run this
-**on the Windows lab VM** under the noirlycan-telemetry collector.
+**on the Windows lab VM** under the noirlycan-agent collector.
 
 Protocol
 --------
@@ -13,7 +13,7 @@ Protocol
 
     .. code-block:: powershell
 
-       noirlycan-telemetry spawn -- python -m tests.manual.frida_fidelity_driver
+       noirlycan-agent spawn -- python -m tests.manual.frida_fidelity_driver
 
 2.  This driver calls a fixed number `N` (default 1000) of `VirtualAlloc` +
     `WriteProcessMemory(self)` + `VirtualFree` triples in the **current**

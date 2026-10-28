@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from noirlycan_backend.api.auth import get_current_user, require_permission
 from noirlycan_backend.api.deps import get_logs_dir
-from noirlycan_core.storage.infrastructure.log_store import (
+from noirlycan_core.storage.log_store import (
     aggregate_logs,
     resolve_log_path,
     session_detail,

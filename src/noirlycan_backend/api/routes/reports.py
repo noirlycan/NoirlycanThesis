@@ -40,7 +40,6 @@ def export_one_finding(
     session: str | None = Query(default=None),
     user: dict[str, Any] = Depends(require_permission("report")),
 ) -> PlainTextResponse:
-    database = get_database()
     bundle = load_console_findings(get_logs_dir(), session=session, removed=set())
     for finding in bundle.get("findings") or []:
         key = str(finding.get("timestamp") or finding.get("id") or "")

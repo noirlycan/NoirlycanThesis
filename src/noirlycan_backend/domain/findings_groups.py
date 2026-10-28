@@ -4,7 +4,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from noirlycan_core.storage.infrastructure.log_store import (
+from noirlycan_core.runtime.noise import is_noise_path
+
+from noirlycan_core.storage.log_store import (
     aggregate_events,
     aggregate_logs,
     read_jsonl,
@@ -101,7 +103,7 @@ def _file_drops_for_display(
             continue
         path = str(item.get("path") or "")
         key = file_drop_key(path)
-        if not path or key in hidden or key in seen:
+        if not path or key in hidden or key in seen or is_noise_path(path):
             continue
         row = dict(item)
         row["drop_key"] = key
@@ -112,7 +114,7 @@ def _file_drops_for_display(
             continue
         path = str(pending.get("path") or "")
         key = file_drop_key(path)
-        if not path or key in hidden or key in seen:
+        if not path or key in hidden or key in seen or is_noise_path(path):
             continue
         rows.append(
             {
@@ -250,10 +252,8 @@ def _collect_tags(findings: list[dict[str, Any]]) -> list[str]:
         evidence = finding.get("evidence") or {}
         if isinstance(evidence, dict):
             for key, value in evidence.items():
-                if value is True:
+                if value is True:  # Only flags that are on; "x=false" is noise in the UI.
                     tags.add(f"{key}=true")
-                elif value is False:
-                    tags.add(f"{key}=false")
         if finding.get("section_mapping"):
             tags.add("section_mapping=true")
         if finding.get("cross_process"):

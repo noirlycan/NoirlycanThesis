@@ -1,58 +1,91 @@
+/* Pastel palette. Severity/op colours come in pairs: a soft background and a
+   readable foreground, so chips never need white text on a saturated fill. */
 :root,
 [data-theme="light"] {
-  --bg: #f6f7f9;
+  --bg: #f7f6fb;
   --panel: #ffffff;
-  --panel2: #f2f4f6;
-  --border: #e8eaee;
-  --hole: #f6f7f9;
-  --text: #1c2230;
-  --muted: #8a93a2;
-  --dim: #a8afba;
+  --panel2: #f5f3fa;
+  --border: #ebe7f3;
+  --hole: #faf9fd;
+  --text: #2f2a40;
+  --muted: #7d7690;
+  --dim: #a9a3b8;
   --solid: #ffffff;
-  --accent: #6b46ff;
-  --accent2: #6b46ff;
-  --accentText: #4a2fd6;
-  --navActive: #f0edff;
-  --navBorder: #d9d0ff;
-  --brand: linear-gradient(140deg, #a78bff, #6b46ff);
-  --brandShadow: 0 6px 16px -6px rgba(107, 70, 255, 0.45);
-  --cardShadow: 0 1px 3px rgba(20, 25, 34, 0.05);
-  --critBg: #fef4f4;
-  --critBorder: #f6cccd;
+  --accent: #9d8cec;
+  --accent2: #b9adf3;
+  --accentText: #6553c4;
+  --accentSoft: #efebfd;
+  --navActive: #f1edfd;
+  --navBorder: #e0d9fa;
+  --brand: linear-gradient(140deg, #c6bbf6, #a596ee);
+  --brandShadow: none;
+  --cardShadow: 0 1px 2px rgba(47, 42, 64, 0.04);
+  --critBg: #fff6f7;
+  --critBorder: #f6dade;
+  --focus: 0 0 0 3px rgba(157, 140, 236, 0.22);
 }
 
 [data-theme="dark"] {
-  --bg: radial-gradient(900px 500px at 78% -8%, #241a4a 0%, #0e0b1e 55%),
-    linear-gradient(180deg, #0e0b1e, #0b0917);
-  --panel: rgba(255, 255, 255, 0.045);
-  --panel2: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.09);
-  --hole: rgba(0, 0, 0, 0.28);
-  --text: #d7d3ec;
-  --muted: #948dbb;
-  --dim: #6b6390;
-  --solid: #12102a;
-  --accent: #a78bff;
-  --accent2: #6b46ff;
-  --accentText: #c4b6ff;
-  --navActive: linear-gradient(120deg, rgba(139, 124, 255, 0.22), rgba(139, 124, 255, 0.06));
-  --navBorder: rgba(167, 139, 255, 0.35);
-  --brand: linear-gradient(140deg, #a78bff, #6b46ff);
-  --brandShadow: 0 8px 22px -6px rgba(139, 124, 255, 0.6);
+  --bg: #17151f;
+  --panel: #1f1c2a;
+  --panel2: #262233;
+  --border: #322d42;
+  --hole: #1b1925;
+  --text: #e6e2f3;
+  --muted: #a39cba;
+  --dim: #6f6886;
+  --solid: #1f1c2a;
+  --accent: #b6a8f5;
+  --accent2: #8f7fe0;
+  --accentText: #cfc5fb;
+  --accentSoft: #2c2742;
+  --navActive: #2c2742;
+  --navBorder: #3d3560;
+  --brand: linear-gradient(140deg, #b6a8f5, #8f7fe0);
+  --brandShadow: none;
   --cardShadow: none;
-  --critBg: linear-gradient(160deg, rgba(229, 72, 77, 0.18), rgba(255, 255, 255, 0.03));
-  --critBorder: rgba(229, 72, 77, 0.4);
+  --critBg: #2a1f27;
+  --critBorder: #4a2f3a;
+  --focus: 0 0 0 3px rgba(182, 168, 245, 0.25);
 }
 
-:root {
-  --sev-critical: #e5484d;
-  --sev-high: #ec7b1a;
-  --sev-medium: #e8c020;
-  --sev-low: #46c26a;
-  --sev-info: #5b9df0;
-  --op-alloc: #46c26a;
-  --op-write: #e8c020;
-  --op-exec: #ec7b1a;
+:root,
+[data-theme="light"] {
+  --sev-critical: #d1495b;
+  --sev-critical-bg: #fde4e7;
+  --sev-high: #c7701f;
+  --sev-high-bg: #fdebd9;
+  --sev-medium: #9a7b0c;
+  --sev-medium-bg: #fbf2cc;
+  --sev-low: #3d8a5a;
+  --sev-low-bg: #ddf3e5;
+  --sev-info: #4f7cc0;
+  --sev-info-bg: #e2ecfb;
+  --op-alloc: #3d8a5a;
+  --op-alloc-bg: #ddf3e5;
+  --op-write: #9a7b0c;
+  --op-write-bg: #fbf2cc;
+  --op-exec: #c7701f;
+  --op-exec-bg: #fdebd9;
+}
+
+[data-theme="dark"] {
+  --sev-critical: #f2a0ab;
+  --sev-critical-bg: #3b2229;
+  --sev-high: #f3c08e;
+  --sev-high-bg: #3a2a1e;
+  --sev-medium: #ecd78a;
+  --sev-medium-bg: #35301c;
+  --sev-low: #9fd9b4;
+  --sev-low-bg: #1f3328;
+  --sev-info: #a9c6f2;
+  --sev-info-bg: #1f2a3d;
+  --op-alloc: #9fd9b4;
+  --op-alloc-bg: #1f3328;
+  --op-write: #ecd78a;
+  --op-write-bg: #35301c;
+  --op-exec: #f3c08e;
+  --op-exec-bg: #3a2a1e;
 }
 
 * {
@@ -120,9 +153,9 @@ select {
 .shell {
   display: flex;
   flex: 1;
-  min-height: 840px;
 }
 
+/* Sidebar and topbar stay in place while the page scrolls. */
 .sidebar {
   width: 246px;
   flex: none;
@@ -130,6 +163,12 @@ select {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  align-self: flex-start;
+  background: var(--bg);
 }
 
 .main {
@@ -145,6 +184,11 @@ select {
   gap: 16px;
   padding: 20px 28px;
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
 }
 
 .page-title {
@@ -174,14 +218,119 @@ select {
 }
 
 .btn-brand {
-  background: var(--brand);
-  color: #fff;
-  border: none;
-  border-radius: 11px;
-  padding: 10px 16px;
+  background: var(--accentSoft);
+  color: var(--accentText);
+  border: 1px solid var(--navBorder);
+  border-radius: 10px;
+  padding: 9px 16px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--brandShadow);
+  transition: filter 0.15s ease;
+}
+
+.btn-brand:hover {
+  border-color: var(--accent);
+}
+
+.btn-danger {
+  background: var(--sev-critical-bg);
+  color: var(--sev-critical);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-danger:hover {
+  border-color: var(--sev-critical);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 7px;
+  background: var(--panel2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.chip-CRITICAL { background: var(--sev-critical-bg); color: var(--sev-critical); }
+.chip-HIGH { background: var(--sev-high-bg); color: var(--sev-high); }
+.chip-MEDIUM { background: var(--sev-medium-bg); color: var(--sev-medium); }
+.chip-LOW { background: var(--sev-low-bg); color: var(--sev-low); }
+.chip-INFO { background: var(--sev-info-bg); color: var(--sev-info); }
+.chip-alloc { background: var(--op-alloc-bg); color: var(--op-alloc); }
+.chip-write { background: var(--op-write-bg); color: var(--op-write); }
+.chip-exec { background: var(--op-exec-bg); color: var(--op-exec); }
+.chip-accent { background: var(--accentSoft); color: var(--accentText); }
+
+/* Native controls, styled to match the panels */
+select,
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input:not([type]) {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  padding: 6px 10px;
+  outline: none;
+}
+
+select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+select:focus,
+input:focus,
+.field-input:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus);
+}
+
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: var(--accent);
+}
+
+input[type="file"] {
+  color: var(--muted);
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--accentSoft);
+  color: var(--accentText);
+  border: none;
+  border-radius: 8px;
+  padding: 7px 12px;
+  margin-right: 10px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .btn-ghost {
@@ -218,9 +367,12 @@ select {
   background: var(--dim);
 }
 
+.nav-item:hover {
+  color: var(--text);
+}
+
 .nav-item.active .nav-dot {
   background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
 }
 
 .badge {
@@ -338,15 +490,15 @@ select {
   left: 0;
   width: 40%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #e5484d, transparent);
+  background: linear-gradient(90deg, transparent, var(--sev-critical), transparent);
   animation: nlSweep 3.2s infinite;
 }
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(4, 3, 14, 0.55);
-  backdrop-filter: blur(6px);
+  background: rgba(47, 42, 64, 0.28);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,9 +585,9 @@ select {
 }
 
 .segmented-btn.active {
-  background: var(--brand);
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: var(--panel);
+  color: var(--accentText);
+  box-shadow: 0 1px 2px rgba(47, 42, 64, 0.08);
 }
 
 .toggle-row {
@@ -481,8 +633,8 @@ select {
 }
 
 .toggle-switch.on {
-  background: rgba(70, 194, 106, 0.22);
-  border-color: rgba(70, 194, 106, 0.45);
+  background: var(--accent2);
+  border-color: var(--accent);
 }
 
 .toggle-knob {
@@ -524,7 +676,49 @@ select {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #46c26a;
-  box-shadow: 0 0 8px #46c26a;
+  background: var(--sev-low);
   animation: nlPulse 1.8s infinite;
+}
+
+.chip-x {
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.55;
+  padding: 0 0 0 2px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.chip-x:hover {
+  opacity: 1;
+}
+
+input[type="range"] {
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  margin: 10px 0 6px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  cursor: pointer;
 }

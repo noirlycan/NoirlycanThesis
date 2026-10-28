@@ -106,7 +106,7 @@ sang artifact trong repo cho từng chương.
 | Behaviour graph | Starink et al. (TIFS 2023) | API graph + memory congruence | Cứng theo API; paper 2025 nới |
 | Methodology paper | **Di Pietro, D'Elia, Querzoni (ASIA CCS 2025)** | 2/3 rule + equivalence class | Đối tượng replication |
 | EDR practice | Microsoft Defender, Elastic, CrowdStrike | rule-based + ML | Đóng (close-source) |
-| Sandbox | Cuckoo, CAPE, Hatching Triage | dynamic trace | Paper 2025 so sánh: 21.2 % miss |
+| Sandbox | Cuckoo, CAPE, Hatching Triage | dynamic trace | Paper 2025: công cụ công khai bỏ sót 21.2 % |
 | Anti-evasion | Korkin (2022), Hosseini & Antoniou (2023) | kỹ thuật bypass | Paper tích hợp; luận văn out-of-scope |
 
 (~25 cite tổng cộng, đủ cho master thesis.)

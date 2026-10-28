@@ -1,6 +1,6 @@
 # Phân tích paper ASIA CCS 2025 và repo Noirlycan: cơ sở cho luận văn thạc sĩ
 
-**Tác giả phân tích:** Phan Van Co (copv@ssi.com.vn)
+**Tác giả phân tích:** Phan Van Co
 **Mục tiêu:** Bài viết hợp nhất phục vụ chương *Background — Related Work — Methodology Positioning* của luận văn thạc sĩ. Trình bày (a) phương pháp của paper gốc, (b) thiết kế repo Noirlycan, (c) mối quan hệ giữa hai, (d) định vị đóng góp luận văn.
 
 ---
@@ -50,9 +50,9 @@ Tác giả thuộc Sapienza University of Rome, có lịch sử nghiên cứu ph
 
 Paper đặt ra ba câu hỏi:
 
-- **RQ1.** Process injection thực sự phổ biến đến đâu trong malware Windows giai đoạn 2017–2023?
-- **RQ2.** Có phương pháp nào tổng quát hơn signature API mà vẫn đủ rẻ để triển khai trên sandbox quy mô lớn không?
-- **RQ3.** Sandbox công cộng (Cuckoo, Hatching Triage) bỏ sót bao nhiêu mẫu vì anti-evasion?
+- **RQ1.** Kỹ thuật injection nào phổ biến nhất trong malware hiện đại? Việc công bố thông tin về kỹ thuật có ảnh hưởng tới mức độ được dùng không?
+- **RQ2.** Có tương quan giữa family malware và kỹ thuật injection không? Kỹ thuật của mỗi family có thay đổi theo thời gian không?
+- **RQ3.** Phương pháp có dùng được trong các giải pháp bảo mật không, với hiệu năng (vd. false positive) ra sao?
 
 ### 2.3. Phương pháp cốt lõi: ba operational primitive + quy tắc 2/3
 
@@ -103,10 +103,12 @@ Paper **không** cho phép đảo bậc — execute không thể xuất hiện t
 ### 2.4. Đánh giá thực nghiệm của paper
 
 - **Dataset:** Lọc 334 885 mẫu Windows malware từ VirusTotal Academic và VX Underground Bazaar (2017–2023) xuống 56 340 mẫu đại diện thuộc 2 667 family.
-- **Hạ tầng:** Sandbox tùy biến trên QEMU + custom tracer + anti-evasion module.
+- **Hạ tầng:** BluePill trên Intel Pin (DBI), hook ở mức thư viện và system call, kèm anti-evasion có sẵn của BluePill; bản Microsoft Detours (không anti-evasion) dùng cho ablation. Khử trùng lặp bằng vhash VirusTotal, mỗi family ≤5 %/năm (AVClass).
 - **Kết quả chính:**
   - 16,5 % mẫu thể hiện ít nhất một kỹ thuật injection (trung bình giai đoạn 2017–2023, xu hướng tăng theo năm).
-  - 21,2 % các mẫu này bị Cuckoo / sandbox phổ biến bỏ sót do anti-evasion.
+  - Công cụ công khai bỏ sót trung bình 21,2 % mẫu có injection mà phương pháp phát hiện (VirusTotal 24,0 %, CAPE 18,3 %).
+  - Ablation anti-evasion (tập 2019): Detours thấy injection ở 6,2 % mẫu so với 11,8 % của BluePill.
+  - Overhead phân tích 1,35 %.
   - Biến thể *neurevt* (Process Hollowing dùng section mapping) chiếm tỷ trọng lớn nhất trong family đa kỹ thuật.
   - 2 % mẫu thực hiện chain đệ quy A → B → C (multi-stage injection).
 
@@ -126,7 +128,7 @@ Paper **không** cho phép đảo bậc — execute không thể xuất hiện t
 Paper tự công bố các giới hạn:
 
 - **User-space only.** Kernel-mode injection (kernel APC, driver-based) không nằm trong scope. Paper coi đây là vấn đề riêng vì user-mode telemetry không thể quan sát.
-- **Instrumentation có thể bị evade.** Direct syscall stub có thể bỏ qua user-mode hook. Paper khẳng định Cuckoo/Bluepill stack chống được phần lớn nhưng không phải tất cả.
+- **Giả định về instrumentation.** Paper giả định framework instrumentation "trusted and resilient to techniques designed to evade API call logging" và nêu giả định này có thể nới lỏng nếu dùng các biện pháp trực giao, dẫn tới Assaiante et al. (DIMVA 2024) (§3).
 - **Một số kỹ thuật mới hơn dataset:** Process Ghosting (2021), Mockingjay (2023), PoolParty (2023) — dataset paper kết thúc 2023 nên đại diện chưa đầy đủ.
 - **Phụ thuộc API trace chất lượng cao.** Nếu tracer drop event, primitive count sai → 2/3 rule sai theo.
 
@@ -159,11 +161,11 @@ Phạm vi *cố tình hẹp hơn* paper:
                              │ (Windows Event Log)
                              ▼
    ┌─── Frida agent (user-mode, trong target) ───┐
-   │  Hook 121 API: ntdll, kernel32, user32       │   ───► JSONL session log
+   │  Hook 129 API: ntdll, kernel32, user32       │   ───► JSONL session log
    │  Emit primitive {kind, addr, size, target}   │              │
    └──────────────┬───────────────────────────────┘              │
                   │                                              ▼
-                  ▼                                       Flask dashboard
+                  ▼                                       Console web    
        ┌── Correlator (Python) ──┐                       (overview / findings
        │ • 2/3 rule              │                        / primitives / network)
        │ • memory congruence     │
@@ -179,19 +181,19 @@ Hai lớp telemetry trên hai privilege level khác nhau — đây là điểm t
 
 | Thành tố paper | Module trong repo | Vị trí |
 |----------------|-------------------|--------|
-| 3 operational primitive | `PrimitiveKind.ALLOCATE/WRITE/EXECUTE` | `models.py` |
-| API equivalence class | `PAPER_API_CLASSES` (+ `IRED_TEAM_API_CLASSES` mở rộng) | `injection_api_manifest.py` |
-| Quy tắc 2/3 | `operational_kind_count(kinds) >= 2` | `correlation.py`, `execution_analysis.py` |
-| Memory range congruence | `_has_memory_congruence()` + `_ranges_overlap_or_contain()` | `correlation.py` |
-| Temporal ordering | `_has_temporal_consistency()` | `correlation.py` |
-| Phân loại kỹ thuật | `InjectionTechnique` (36 enum) + rule cascade | `technique_classifier.py` |
+| 3 operational primitive | `PrimitiveKind.ALLOCATE/WRITE/EXECUTE` | `noirlycan_core/models.py` |
+| API equivalence class | `PAPER_API_CLASSES` (+ `IRED_TEAM_API_CLASSES` mở rộng) | `detection/api_classes.py` |
+| Quy tắc 2/3 | `operational_kind_count(kinds) >= 2` | `detection/rules.py`, `detection/primitives.py` |
+| Memory range congruence | `has_memory_congruence()` + `memory_ranges()` | `detection/rules.py` |
+| Temporal ordering | `has_temporal_consistency()` | `detection/rules.py` |
+| Phân loại kỹ thuật | `InjectionTechnique` (36 enum) + rule cascade | `classification/technique_classifier.py` |
 
 Lựa chọn instrumentation khác paper:
 
-- **Paper:** custom tracer trong sandbox QEMU.
+- **Paper:** BluePill trên Intel Pin (DBI), hook thư viện + system call.
 - **Repo:** Frida (user-mode) + Sysmon (kernel-mode).
 
-Lý do: paper cần tracer của họ cho quy mô 56k mẫu trên QEMU; repo phục vụ thí nghiệm cá nhân trên VM thật, Frida + Sysmon là combination phổ biến và open-source.
+Lý do: paper cần DBI có anti-evasion cho quy mô 56k mẫu; repo phục vụ thí nghiệm real-time trên VM, Frida + Sysmon là combination phổ biến và open-source. Hệ quả: Frida yếu hơn Pin trước direct syscall (Pin thấy cả lệnh `syscall`), nên repo bù bằng sensor kernel — xem `proposal-kernel-telemetry.md`.
 
 ### 3.4. Đóng góp riêng của repo so với paper
 

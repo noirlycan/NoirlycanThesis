@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
 
 from noirlycan_backend.api.auth import create_access_token, get_current_user
-from noirlycan_backend.api.deps import get_database, get_logs_dir
+from noirlycan_backend.api.deps import get_database
 from noirlycan_backend.domain.email import normalize_lab_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])

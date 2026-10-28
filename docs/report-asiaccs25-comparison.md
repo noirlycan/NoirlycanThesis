@@ -58,7 +58,7 @@ Paper kết hợp hai trực giác:
 |---|----------|
 | C1 | Methodology 2/3 primitive + memory congruence + API classes |
 | C2 | Nghiên cứu thực nghiệm 2017–2023: ~16.5% mẫu có injection; xu hướng theo năm |
-| C3 | So sánh sandbox: **21.2%** mẫu paper phát hiện mà sandbox bỏ sót |
+| C3 | So sánh công cụ công khai: trung bình **21.2%** mẫu paper phát hiện mà VirusTotal/CAPE bỏ sót; ablation anti-evasion 6.2% vs 11.8% |
 | C4 | Tích hợp anti-evasion; ablation cho thấy evasion che injection |
 | C5 | Phát hiện biến thể Process Hollowing dominant (NtCreateSection / NtMapViewOfSection) |
 | C6 | Công khai code, dataset, log tại Sap4Sec/process-injection |

@@ -29,6 +29,7 @@ Biến môi trường:
 |------|--------|
 | `NOIRLYCAN_LOGS_DIR` | Thư mục logs/SQLite |
 | `NOIRLYCAN_CORS_ORIGINS` | Origin dashboard, ví dụ `http://localhost:8080` |
+| `NOIRLYCAN_AGENT_ARTIFACTS_DIR` | Thư mục lưu bộ cài/bản portable được Admin đăng từ dashboard |
 
 ## 2. Dashboard UI (máy chủ hoặc CDN riêng)
 
@@ -59,6 +60,16 @@ VITE_API_BASE_URL=https://api.lab.local npm run build
 
 ## 3. Agent (Windows VM — không container)
 
+Client có thể mở dashboard trên Windows và tải bộ cài tại **Agents → Desktop
+Agent (Windows) → Download Windows installer**. Admin đăng file build một lần bằng **Publish
+installer**; backend giữ file trong `deploy/agent-artifacts/`. Docker Compose đã
+mount thư mục này để bản phát hành được lưu qua các lần restart. Xem
+[build và đăng bản Agent](agent/README.md) để tạo `NoirlycanAgentSetup.exe`.
+
+Bộ cài tạo shortcut và mục gỡ cài đặt; Agent chạy bằng quyền Administrator.
+Sau khi cài, client nhập server và token từ dòng workstation của mình. Các bước
+cài bằng Python dưới đây vẫn dùng được cho môi trường phát triển.
+
 Chỉ cài **agent**, không cài backend/dashboard:
 
 ```powershell
@@ -80,12 +91,9 @@ pip install -e ".[backend]"
 noirlycan-backend api --host 0.0.0.0 --port 8765
 ```
 
-Legacy Django (upload tab cũ):
+Upload sample: tab **Samples** trên React console (backend gửi sample xuống agent qua lệnh có chữ ký, agent verify SHA-256 trước khi chạy).
 
-```bash
-pip install -e ".[dashboard]"
-noirlycan-dashboard legacy --port 8766
-```
+Lần chạy đầu, backend tạo `admin@lab` với mật khẩu từ `NOIRLYCAN_ADMIN_PASSWORD` hoặc in ra một mật khẩu ngẫu nhiên. Demo: `NOIRLYCAN_DEMO_USERS=1`.
 
 ## Docker Compose
 
@@ -94,5 +102,3 @@ docker compose up backend-api dashboard-ui
 # UI: http://localhost:8080
 # API trực tiếp: http://localhost:8765/api/health
 ```
-
-Tương thích cũ: `noirlycan-console console|dashboard` vẫn hoạt động (deprecated).

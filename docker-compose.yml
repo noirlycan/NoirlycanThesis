@@ -4,8 +4,6 @@ version: "3.9"
 #   backend-api   — FastAPI ingest/auth on port 8765
 #   dashboard-ui  — React SPA (nginx) on port 8080, proxies /api → backend
 #   agent         — Windows VM only (not containerized here)
-#
-# Optional core microservices: storage-api, analysis-api
 
 services:
   backend-api:
@@ -16,8 +14,10 @@ services:
       - "8765:8765"
     volumes:
       - ./logs:/app/logs
+      - ./deploy/agent-artifacts:/app/agent-artifacts
     environment:
       - NOIRLYCAN_LOGS_DIR=/app/logs
+      - NOIRLYCAN_AGENT_ARTIFACTS_DIR=/app/agent-artifacts
       - NOIRLYCAN_CORS_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
 
   dashboard-ui:
@@ -28,29 +28,3 @@ services:
       - "8080:80"
     depends_on:
       - backend-api
-
-  storage-api:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    command: python -m noirlycan_core.storage.api --host 0.0.0.0 --port 8780
-    ports:
-      - "8780:8780"
-    volumes:
-      - ./logs:/app/logs
-    environment:
-      - NOIRLYCAN_LOGS_DIR=/app/logs
-
-  analysis-api:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    command: python -m noirlycan_core.analysis.api --host 0.0.0.0 --port 8781
-    ports:
-      - "8781:8781"
-    volumes:
-      - ./logs:/app/logs
-    depends_on:
-      - storage-api
-    environment:
-      - NOIRLYCAN_LOGS_DIR=/app/logs

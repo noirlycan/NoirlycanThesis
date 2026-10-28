@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from noirlycan_backend.infrastructure.console_db import ConsoleDatabase
-from noirlycan_core.storage.infrastructure.log_store import ensure_logs_dir, find_project_root
+from noirlycan_core.storage.log_store import ensure_logs_dir, find_project_root
 
 
 def _resolved_logs_dir() -> Path:

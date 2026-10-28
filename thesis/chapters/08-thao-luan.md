@@ -1,6 +1,6 @@
 # CHƯƠNG 7. THẢO LUẬN
 
-Chương này tổng hợp ý nghĩa khoa học và thực tiễn, đặt kết quả Chương 6 trong bối cảnh Di Pietro et al. (ASIA CCS 2025) [4]. Trọng tâm là **phạm vi tăng cường đạt được** (E1–E4), **khoảng cách có chủ ý** so với paper (E5), và **ranh giới claim**. Luận văn định vị là *Replication + Extension Study*.
+Chương này tổng hợp ý nghĩa khoa học và thực tiễn, đặt kết quả Chương 6 trong bối cảnh Di Pietro et al. (ASIA CCS 2025) [7]. Trọng tâm là **phạm vi tăng cường đạt được** (E1–E4), **khoảng cách có chủ ý** so với paper (E5), và **ranh giới claim**. Luận văn định vị là *Replication + Extension Study*.
 
 ---
 
@@ -8,26 +8,26 @@ Chương này tổng hợp ý nghĩa khoa học và thực tiễn, đặt kết 
 
 ### 7.1.1. Câu hỏi nghiên cứu và câu trả lời
 
-Câu hỏi trung tâm: *Có thể tăng cường phát hiện process injection khi malware né rule cứng, né hook user-mode và che nguồn gốc?* Chương 6 (31 test pass — 11 correlator, 20 classifier) trả lời **có, trong phạm vi E1–E4**, qua ba yếu tố:
+Câu hỏi trung tâm: *Có thể tăng cường phát hiện process injection khi malware né rule cứng, né hook user-mode và che nguồn gốc?* Chương 6 (59 test methodology (quy tắc paper 15, correlator 12, execution 5, sensor kernel 7, classifier 20) trong tổng 129 test) trả lời **có, trong phạm vi E1–E4**, qua ba yếu tố:
 
-1. **Phương pháp [4]** — abstraction *operational primitive* (allocate, write, execute) chịu E1 và E2 nhờ 2-of-3, memory congruence và temporal ordering. Correlator gom API cùng *semantic outcome* vào equivalence class.
+1. **Phương pháp [7]** — abstraction *operational primitive* (allocate, write, execute) chịu E1 và E2 nhờ 2-of-3, memory congruence và temporal ordering. Correlator gom API cùng *semantic outcome* vào equivalence class.
 2. **Telemetry kép** — Frida ∪ Sysmon giảm FN khi hook bị né (E4), *graceful degradation* ở Bảng 3.9.
-3. **Pipeline provenance** — Event 11 → triage → ProcessCreate → Finding, đối trọng E3 mà [4] không mô hình hóa end-to-end.
+3. **Pipeline provenance** — Event 11 → triage → ProcessCreate → Finding, đối trọng E3 mà [7] không mô hình hóa end-to-end.
 
 Đóng góp ở **tăng cường thực nghiệm có kiểm chứng** và **threat model formal** cho E1–E6.
 
-### 7.1.2. Vị trí so với số liệu quy mô lớn của [4]
+### 7.1.2. Vị trí so với số liệu quy mô lớn của [7]
 
-**16,5 %** (prevalence) và **21,2 %** (sandbox miss) thuộc **[4]**, đo trên 56.340 mẫu với sandbox QEMU và anti-evasion. Luận văn **trích dẫn** làm động lực, **không claim** đã tái lập — dataset không công khai toàn bộ, sandbox QEMU patched vượt phạm vi thesis thạc sĩ.
+**16,5 %** (prevalence) và **21,2 %** (tỷ lệ công cụ công khai bỏ sót) thuộc **[7]**, đo trên 56.340 mẫu bằng BluePill/Pin có anti-evasion. Luận văn **trích dẫn** làm động lực, **không claim** đã tái lập — dataset không công khai toàn bộ, và hạ tầng DBI + anti-evasion của paper vượt phạm vi thesis thạc sĩ.
 
-**Bảng 7.1.** Phân tách vai trò số liệu [4] và kết quả luận văn
+**Bảng 7.1.** Phân tách vai trò số liệu [7] và kết quả luận văn
 
 | Chỉ số | Nguồn | Vai trò | Claim |
 |--------|-------|--------|-------|
-| ~16,5% prevalence | [4], RQ1 | Động lực | Trích dẫn |
-| 21,2% sandbox miss | [4], RQ3 | E5 giảm recall | Trích dẫn |
-| 2-of-3 framework | [4], RQ2 | Căn cứ phương pháp | **Replication** có test |
-| Anti-evasion ablation | [4], §6 | Giải thích sandbox miss | **Out-of-scope** |
+| ~16,5% prevalence | [7], RQ1 | Động lực | Trích dẫn |
+| 21,2% công cụ công khai bỏ sót | [7], RQ3 | Phương pháp primitive bổ sung cho sandbox | Trích dẫn |
+| 2-of-3 framework | [7], RQ2 | Căn cứ phương pháp | **Replication** có test |
+| Anti-evasion ablation | [7], §6 | Giải thích sandbox miss | **Out-of-scope** |
 
 Phân tách này là yêu cầu **trung thực khoa học** (§3.11).
 
@@ -37,13 +37,13 @@ Phân tách này là yêu cầu **trung thực khoa học** (§3.11).
 
 | Thành phần | Loại | Căn cứ |
 |------------|------|--------|
-| 2-of-3 + equivalence class + congruence + temporal | Replication [4] | `correlation.py`, 11 test |
+| 2-of-3 + equivalence class + congruence + temporal | Replication [7] | `detection/rules.py`, `detection/correlator.py`, `test_paper_rules.py` + `test_correlation.py` |
 | Section-mapping (*neurevt*-class) | Replication validation | `test_detects_section_mapping_*` |
 | Audit D1/D2/D3 và fix | Methodology validation | `docs/audit-and-threat-model.md` |
 | Sysmon ∪ Frida | Extension (E4) | Bảng 3.9 |
 | File provenance pipeline | Extension (E3) | `file_watch.py` |
-| Taxonomy 21+ enum | Extension | `technique_classifier.py`, 20 test |
-| Dashboard + JSONL | Engineering artifact | `services/dashboard/` |
+| Taxonomy 36 enum | Extension | `technique_classifier.py`, 20 test |
+| Console + JSONL | Engineering artifact | `noirlycan_backend/`, `dashboard-ui/` |
 | Anti-evasion E5 | **Không có** | `evasion.py` ghi signal only |
 
 ---
@@ -54,7 +54,7 @@ Phân tách này là yêu cầu **trung thực khoa học** (§3.11).
 
 E1 phổ biến nhất vì chi phí thấp: thay `CreateRemoteThread` bằng `NtCreateThreadEx` đủ để rule khớp tên hàm thất bại. Test `test_signature_baseline_misses_nt_api_variant`: rule Win32 **miss** biến thể NT trong khi correlator 2-of-3 **detect**. Manifest `PAPER_API_CLASSES` và `IRED_TEAM_API_CLASSES` ánh xạ cả hai họ vào cùng class ALLOCATE/WRITE/EXECUTE.
 
-**Hạn chế:** API hiếm chưa có trong manifest (ví dụ `NtAllocateVirtualMemoryEx`) → FN có thể xảy ra (M3). Cập nhật manifest theo MITRE ATT&CK [9] là nhu cầu vận hành.
+**Hạn chế:** API hiếm chưa có trong manifest (ví dụ `NtAllocateVirtualMemoryEx`) → FN có thể xảy ra (M3). Cập nhật manifest theo MITRE ATT&CK [12] là nhu cầu vận hành.
 
 ### 7.2.2. E2 — Gộp và ẩn bước
 
@@ -66,7 +66,7 @@ Case ***neurevt*** (paper §3.5) — **section-mapping hollowing** — được 
 
 ### 7.2.3. E3 — Né attribution
 
-E3 là đóng góp **độc lập** so với [4]. Paper bắt đầu từ process đã chạy; **file-drop → spawn → inject** không được mô hình hóa end-to-end. Emotet, IcedID, Cobalt Strike thường drop file vào `%APPDATA%`/`%TEMP%`, spawn child, rồi inject từ child.
+E3 là đóng góp **độc lập** so với [7]. Paper bắt đầu từ process đã chạy; **file-drop → spawn → inject** không được mô hình hóa end-to-end. Emotet, IcedID, Cobalt Strike thường drop file vào `%APPDATA%`/`%TEMP%`, spawn child, rồi inject từ child.
 
 Pipeline Noirlycan:
 
@@ -82,7 +82,7 @@ Test `test_detects_section_mapping_write_execute_chain` và `test_resolves_targe
 
 ### 7.2.4. E4 — Né hook user-mode
 
-Bảng 3.9 là điểm tăng cường so với single-layer tracer [4]. Hell's Gate / Halo's Gate / Tartarus Gate tự đọc syscall number, tự assemble `syscall` — hook user-mode bị bypass.
+Bảng 3.9 là điểm tăng cường so với single-layer tracer [7]. Hell's Gate / Halo's Gate / Tartarus Gate tự đọc syscall number, tự assemble `syscall` — hook user-mode bị bypass.
 
 Khi malware **direct syscall** hoặc **unhook** `ntdll.dll` (O1/O2):
 
@@ -97,25 +97,25 @@ Khi malware **direct syscall** hoặc **unhook** `ntdll.dll` (O1/O2):
 
 ### 7.2.5. E5 — Né sandbox (hạn chế lớn nhất)
 
-Paper [4] định lượng **21,2 %** miss khi thiếu anti-evasion — malware phát hiện VM/timing rồi **không thực hiện** injection. Module paper patch ở QEMU TCG: giả timing, giả `CPUID`, ẩn registry VMware/VirtualBox, can thiệp `GetSystemTimeAsFileTime`.
+Paper [7] định lượng ảnh hưởng của E5 bằng ablation: không có anti-evasion (Detours), chỉ **6,2 %** mẫu năm 2019 lộ injection, so với **11,8 %** với BluePill — malware phát hiện môi trường phân tích rồi **không thực hiện** injection.
 
-Luận văn **không triển khai** module tương đương; `kernel/analysis/evasion.py` chỉ **ghi signal**. Hệ quả: malware E5 có thể thoát sớm → zero finding; recall lab **không so sánh được** với paper; tên đề tài **rộng hơn** phạm vi (E1–E4).
+Luận văn **không triển khai** module tương đương; `extensions/evasion.py` chỉ **ghi signal**. Hệ quả: malware E5 có thể thoát sớm → zero finding; recall lab **không so sánh được** với paper; tên đề tài **rộng hơn** phạm vi (E1–E4).
 
-Đề tài tập trung né tránh **ở tầng triển khai injection và instrumentation** (E1–E4), không phải **môi trường phân tích** (E5). Số liệu 21,2 % là **upper bound lý thuyết**, formal hóa ở O7 và §3.11.2.
+Đề tài tập trung né tránh **ở tầng triển khai injection và instrumentation** (E1–E4), không phải **môi trường phân tích** (E5). Kết quả ablation của [7] là căn cứ cho giới hạn này, formal hóa ở O7 và §3.11.2.
 
 ### 7.2.6. E6 — Anti-instrumentation
 
-Frida inject **agent** vào process target — surface lớn hơn tracer QEMU. E6 gồm: scan `frida-agent`, port 27042, timing hook, thread `gum-js-loop`. Luận văn mitigates **một phần** qua `spawn` mode và auto-attach victim; **không** stealth agent (O5 out-of-scope). Recall trên malware anti-analysis thực có thể thấp hơn 31 test synthetic; claim phụ thuộc Frida phải gắn *conditional on Frida not being detected* (M5).
+Frida inject **agent** vào process target — tương tự DBI của [7], nhưng [7] có anti-evasion của BluePill còn Frida thì không. E6 gồm: scan `frida-agent`, port 27042, timing hook, thread `gum-js-loop`. Luận văn mitigates **một phần** qua `spawn` mode và auto-attach victim; **không** stealth agent (O5 out-of-scope). Recall trên malware anti-analysis thực có thể thấp hơn kết quả trên test synthetic; claim phụ thuộc Frida phải gắn *conditional on Frida not being detected* (M5).
 
 **Bảng 7.3.** Tóm tắt thảo luận E1–E6
 
 | Nhóm | Tăng cường | Evidence | Hạn chế |
 |------|------------|----------|---------|
-| E1 | Cao | 31 test; NT API variant | API ngoài manifest |
+| E1 | Cao | 59 test methodology; NT API variant | API ngoài manifest |
 | E2 | Cao | Section-mapping ≥70 | Mockingjay/PoolParty chưa malware thật |
 | E3 | TB–cao | Provenance test; E11→E1 | Memory-only; packed |
 | E4 | TB | Bảng 3.9; Sysmon config | Thiếu benchmark syscall |
-| E5 | **Không** | Trích dẫn [4] 21,2% | Không anti-evasion module |
+| E5 | **Không** | Trích dẫn ablation [7] (6,2 % vs 11,8 %) | Không anti-evasion module |
 | E6 | Thấp | spawn; limitation doc | Anti-Frida (O5) |
 
 ---
@@ -126,28 +126,28 @@ Frida inject **agent** vào process target — surface lớn hơn tracer QEMU. E
 
 **Ưu:** triển khai nhanh, latency thấp. **Nhược:** thua E1 và E2 — thay Win32 sang NT đủ để miss. Noirlycan không thay rule production — phục vụ **nghiên cứu, đào tạo, audit**.
 
-### 7.3.2. Behavior graph (Starink et al. [12])
+### 7.3.2. Behavior graph (Starink et al. [15])
 
-Đồ thị hành vi đầy đủ với ràng buộc *same buffer* chặt hơn; chi phí graph matching cao, khó scale endpoint. [4] đơn giản hóa thành stream rule 2-of-3 — luận văn bám [4] vì cân bằng độ tổng quát và chi phí lab (Bảng 2.2).
+Đồ thị hành vi đầy đủ với ràng buộc *same buffer* chặt hơn; chi phí graph matching cao, khó scale endpoint. [7] đơn giản hóa thành stream rule 2-of-3 — luận văn bám [7] vì cân bằng độ tổng quát và chi phí lab (Bảng 2.2).
 
 ### 7.3.3. EDR thương mại
 
-Defender, Elastic Defend, CrowdStrike Falcon kết hợp kernel driver, ML, cloud correlation — vượt phạm vi luận văn; rule **đóng nguồn**. Noirlycan: mã nguồn mở, threat model minh bạch. Sysmon [10] chọn vì driver ký Microsoft và schema công khai.
+Defender, Elastic Defend, CrowdStrike Falcon kết hợp kernel driver, ML, cloud correlation — vượt phạm vi luận văn; rule **đóng nguồn**. Noirlycan: mã nguồn mở, threat model minh bạch. Sysmon [11] chọn vì driver ký Microsoft và schema công khai.
 
 ### 7.3.4. Sandbox động (Cuckoo, Hatching Triage)
 
-[4] chứng minh **21,2 %** miss khi thiếu anti-evasion. Noirlycan bổ sung **quan sát endpoint real-time** trong lab cô lập — bổ trợ, không cạnh tranh quy mô 56k mẫu.
+[7] chứng minh evasion che giấu injection (ablation 6,2 % vs 11,8 %) và công cụ công khai bỏ sót trung bình **21,2 %**. Noirlycan bổ sung **quan sát endpoint real-time** trong lab cô lập — bổ trợ, không cạnh tranh quy mô 56k mẫu.
 
 **Bảng 7.4.** So sánh tổng hợp hướng tiếp cận
 
-| Tiêu chí | Signature | [4] QEMU | Sandbox | EDR | Noirlycan |
+| Tiêu chí | Signature | [7] BluePill | Sandbox | EDR | Noirlycan |
 |----------|-----------|----------|---------|-----|-----------|
 | E1 | Yếu | Mạnh | Yếu–TB | Khá–Mạnh | Mạnh |
 | E2 | Yếu | Mạnh | Yếu | Khá | Mạnh |
 | E3 provenance | TB | Yếu | TB | Khá | **Extension** |
 | E4 | Yếu | TB | TB | Mạnh | TB (Sysmon) |
-| E5 | TB | **Mạnh** | Yếu (21,2%) | Khá | **Không** |
-| Mở nguồn | Có | Artifact [11] | Một phần | Không | **Có** |
+| E5 | TB | **Mạnh** | Yếu (bỏ sót 18–24 %) | Khá | **Không** |
+| Mở nguồn | Có | Artifact [14] | Một phần | Không | **Có** |
 | Real-time endpoint | Có | Không | Không | Có | **Có (lab)** |
 
 ---
@@ -156,11 +156,11 @@ Defender, Elastic Defend, CrowdStrike Falcon kết hợp kernel driver, ML, clou
 
 ### 7.4.1. Internal validity
 
-Ground truth 31 test do **tác giả gắn nhãn** — phù hợp kiểm chứng *specification* [4] nhưng yếu về đại diện malware thật. Rủi ro bias: người viết test cũng viết correlator. Giảm thiểu: audit code-vs-paper phát hiện D1/D2/D3; Paper-Subset 100 mẫu Sap4Sec [11] và PoC-Bench (§6.10).
+Ground truth của 59 test methodology do **tác giả gắn nhãn** — phù hợp kiểm chứng *specification* [7] nhưng yếu về đại diện malware thật. Rủi ro bias: người viết test cũng viết correlator. Giảm thiểu: audit code-vs-paper phát hiện D1/D2/D3; Paper-Subset 100 mẫu Sap4Sec [14] và PoC-Bench (§6.10).
 
 ### 7.4.2. External validity
 
-Chỉ **Windows 10/11 client x64**, lab VM cô lập. Không Server, ARM, enterprise fleet đa EDR. **Không khái quát hóa** sang production. Dataset [4] giai đoạn 2017–2023 — kỹ thuật 2024+ có rule classifier nhưng **chưa evaluate** trên corpus.
+Chỉ **Windows 10/11 client x64**, lab VM cô lập. Không Server, ARM, enterprise fleet đa EDR. **Không khái quát hóa** sang production. Dataset [7] giai đoạn 2017–2023 — kỹ thuật 2024+ có rule classifier nhưng **chưa evaluate** trên corpus.
 
 ### 7.4.3. Construct validity
 
@@ -172,10 +172,10 @@ Chỉ **Windows 10/11 client x64**, lab VM cô lập. Không Server, ARM, enterp
 
 | Không claim | Có thể claim |
 |-------------|--------------|
-| Prevalence 16,5% / miss 21,2% | 31 test pass; section-mapping ≥70 |
+| Prevalence 16,5% / bỏ sót 21,2% | 59 test methodology pass; section-mapping ≥70 |
 | Precision/recall corpus lớn | Vượt baseline signature E1/E2 (test) |
 | Chống E5 toàn diện | Provenance + telemetry kép (test định tính) |
-| Thay EDR/sandbox production | Replication [4] trên Windows lab |
+| Thay EDR/sandbox production | Replication [7] trên Windows lab |
 
 ---
 
@@ -183,11 +183,11 @@ Chỉ **Windows 10/11 client x64**, lab VM cô lập. Không Server, ARM, enterp
 
 ### 7.5.1. Phòng lab an ninh mạng giáo dục
 
-Hệ thống phù hợp tại khoa CNTT — UET và tương tự: **giảng dạy** MITRE T1055 [9] với loader PoC MessageBox; **điều tra số** correlate file drop với injection; **thesis replication** fork artifact, chạy subset Sap4Sec, mở rộng anti-evasion E5.
+Hệ thống phù hợp tại khoa CNTT — UET và tương tự: **giảng dạy** MITRE T1055 [12] với loader PoC MessageBox; **điều tra số** correlate file drop với injection; **thesis replication** fork artifact, chạy subset Sap4Sec, mở rộng anti-evasion E5.
 
 ### 7.5.2. Giới hạn triển khai production
 
-**Không khuyến nghị** deploy như EDR production: thiếu authentication dashboard, scale multi-host, hardening O4/O5, SLA. Noirlycan là **research prototype** — analyst review bắt buộc. Dashboard Django chưa có RBAC, audit log, TLS bắt buộc.
+**Không khuyến nghị** deploy như EDR production: chưa có TLS/mTLS bắt buộc giữa agent và console, audit log chưa bất biến, chưa có sensor ETW-TI, không scale multi-host, chưa hardening O4/O5, không SLA. Console đã có xác thực, RBAC và lệnh agent ký Ed25519, nhưng Noirlycan vẫn là **research prototype** — analyst review bắt buộc.
 
 ### 7.5.3. Tích hợp workflow SOC (tương lai)
 
@@ -197,13 +197,13 @@ Finding JSONL có thể ingest SIEM (Elasticsearch, Splunk) qua parser tùy ch�
 
 ## 7.6. Đạo đức nghiên cứu
 
-Luận văn tuân thủ nguyên tắc nghiên cứu mã độc có trách nhiệm: (1) **cô lập** VM không kết nối mạng sản xuất, snapshot revert; (2) **PoC an toàn** dùng MessageBox; (3) **không phát tán** hash/mẫu từ [11]; (4) **trích dẫn** [4], [11] đúng license và DOI; (5) **transparency** threat model và limitation E5/E6 công khai.
+Luận văn tuân thủ nguyên tắc nghiên cứu mã độc có trách nhiệm: (1) **cô lập** VM không kết nối mạng sản xuất, snapshot revert; (2) **PoC an toàn** dùng MessageBox; (3) **không phát tán** hash/mẫu từ [14]; (4) **trích dẫn** [7], [14] đúng license và DOI; (5) **transparency** threat model và limitation E5/E6 công khai.
 
 ---
 
 ## 7.7. Giải thích tên đề tài versus phạm vi hiện thực
 
-Tên đề tài rộng (bao gồm E5). Phạm vi hiện thực **cố ý thu hẹp** E1–E4 vì module anti-evasion [4] là engineering riêng (QEMU TCG patch) vượt phạm vi thesis một năm. Replication lõi [4] + extension lab đã đủ đóng góp nếu trung thực về E5. E5 là **hướng phát triển bắt buộc** (Kết luận §4), không phải thất bại im lặng.
+Tên đề tài rộng (bao gồm E5). Phạm vi hiện thực **cố ý thu hẹp** E1–E4 vì anti-evasion của [7] dựa trên BluePill (DBI) — một hệ thống riêng vượt phạm vi thesis một năm. Replication lõi [7] + extension lab đã đủ đóng góp nếu trung thực về E5. E5 là **hướng phát triển bắt buộc** (Kết luận §4), không phải thất bại im lặng.
 
 ---
 
@@ -213,11 +213,11 @@ Tên đề tài rộng (bao gồm E5). Phạm vi hiện thực **cố ý thu h�
 
 | Ưu tiên | Hướng | Đối phó | Nguồn |
 |---------|-------|---------|-------|
-| Cao | Anti-evasion subset | E5 | [11], paper §6 |
+| Cao | Anti-evasion subset | E5 | [14], paper §6 |
 | Cao | Benchmark direct-syscall | E4 | PoC + Frida on/off |
 | Cao | Frida fidelity benchmark (M5) | E6, construct | `frida-fidelity.md` |
 | Trung | ETW TI provider | E4 | Thay Frida args |
-| Trung | PoC-Bench + Paper-Subset 100 | E1, E2 | Sap4Sec [11] |
+| Trung | PoC-Bench + Paper-Subset 100 | E1, E2 | Sap4Sec [14] |
 | Trung | Fix D1/D3 hoàn chỉnh | Congruence/temporal | Hooks + correlator |
 | Thấp | ML classifier primitive sequence | E1 edge | Thay rule |
 | Thấp | Cross-host correlation | Multi-stage | `injection_graph.py` |
@@ -229,11 +229,11 @@ Tên đề tài rộng (bao gồm E5). Phạm vi hiện thực **cố ý thu h�
 ## 7.9. Bài học cho nghiên cứu replication
 
 1. **Audit code-vs-paper trước khi claim** — D1/D2/D3 cho thấy implementation "gần đúng" vẫn có thể sai diễn giải (D1 ban đầu cho EXECUTE đóng góp 2-of-3 mà không có entry address → congruence bypass).
-2. **Tách số liệu paper và thesis** — 16,5 %/21,2 % là của [4], không của Noirlycan.
+2. **Tách số liệu paper và thesis** — 16,5 %/21,2 % là của [7], không của Noirlycan.
 3. **Extension phải map threat model** — provenance và Sysmon fallback có giá trị khi gắn E3/E4 cụ thể.
 
 ---
 
 ## 7.10. Tóm tắt chương
 
-Luận văn **tăng cường có căn cứ** dưới **E1–E4** qua replication [4], kiến trúc Sysmon ∪ Frida, và pipeline provenance; **chưa** tăng cường dưới **E5**. Số liệu 16,5 % và 21,2 % [4] là động lực, không phải kết quả luận văn. So với signature, behavior graph [12], sandbox và EDR, Noirlycan là **công cụ lab mở, audit được, real-time endpoint**. Hạn chế validity đã khai báo; hướng phát triển ưu tiên anti-evasion E5, benchmark E4, và Frida fidelity M5. Luận văn định vị là **Replication + Extension Study** với Di Pietro et al. [4] là xương sống lý luận.
+Luận văn **tăng cường có căn cứ** dưới **E1–E4** qua replication [7], kiến trúc Sysmon ∪ Frida, và pipeline provenance; **chưa** tăng cường dưới **E5**. Số liệu 16,5 % và 21,2 % [7] là động lực, không phải kết quả luận văn. So với signature, behavior graph [15], sandbox và EDR, Noirlycan là **công cụ lab mở, audit được, real-time endpoint**. Hạn chế validity đã khai báo; hướng phát triển ưu tiên anti-evasion E5, benchmark E4, và Frida fidelity M5. Luận văn định vị là **Replication + Extension Study** với Di Pietro et al. [7] là xương sống lý luận.

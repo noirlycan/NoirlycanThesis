@@ -3,6 +3,8 @@ import { api } from "../api/client";
 import { AgentBadge } from "./AgentBadge";
 import { ApiChainList, TagChips, findingTagsFromRecord } from "./FindingBits";
 import { flowLabel } from "../lib/finding-ui";
+import { KillControl } from "./KillControl";
+import type { KillState } from "../types";
 
 function SevBadge({ severity }: { severity: string }) {
   const sev = severity.toUpperCase();
@@ -74,7 +76,7 @@ function EvidenceGrid({ evidence }: { evidence: Record<string, unknown> }) {
         let color = "var(--text)";
         if (typeof val === "boolean") {
           display = val ? "yes" : "no";
-          color = val ? "#46c26a" : "#e5484d";
+          color = val ? "var(--sev-low)" : "var(--sev-critical)";
         } else if (Array.isArray(val)) {
           display = val.join(", ");
         } else {
@@ -102,7 +104,7 @@ function NetworkChain({ finding }: { finding: Record<string, unknown> }) {
       <div
         style={{
           background: "var(--hole)",
-          border: "1px solid rgba(236,123,26,.3)",
+          border: "1px solid var(--border)",
           borderRadius: 12,
           padding: "8px 14px",
         }}
@@ -125,7 +127,7 @@ function NetworkChain({ finding }: { finding: Record<string, unknown> }) {
                 borderBottom: i < conns.length - 1 ? "1px solid var(--border)" : undefined,
               }}
             >
-              <span style={{ color: ok ? "#46c26a" : pendingHandshake ? "#ec7b1a" : "#e5484d", fontWeight: 700, whiteSpace: "nowrap" }}>
+              <span style={{ color: ok ? "var(--sev-low)" : pendingHandshake ? "var(--sev-high)" : "var(--sev-critical)", fontWeight: 700, whiteSpace: "nowrap" }}>
                 {ok ? "OK" : pendingHandshake ? "NOT EST." : "FAILED"}
               </span>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.destination || "?"}</span>
@@ -144,13 +146,13 @@ type Props = {
   canReport: boolean;
   canDel: boolean;
   canKill: boolean;
-  killed: boolean;
+  killState: KillState | undefined;
   onClose: () => void;
   onDelete: () => void;
   onKill: () => void;
 };
 
-export function FindingModal({ member, canReport, canDel, canKill, killed, onClose, onDelete, onKill }: Props) {
+export function FindingModal({ member, canReport, canDel, canKill, killState, onClose, onDelete, onKill }: Props) {
   const finding = member.finding || {};
   const tags = findingTagsFromRecord(finding);
   const evidence = (finding.evidence as Record<string, unknown>) || {};
@@ -212,7 +214,7 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
             label="LOADER (actor)"
             image={finding.actor_image as string}
             pid={finding.actor_pid}
-            badgeColor="#5b9df0"
+            badgeColor="var(--sev-info)"
           />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--dim)", fontSize: 18, paddingTop: 14, flexShrink: 0 }}>
             ▸
@@ -221,7 +223,7 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
             label="TARGET (victim)"
             image={finding.target_image as string}
             pid={finding.target_pid}
-            badgeColor="#e5484d"
+            badgeColor="var(--sev-critical)"
           />
         </div>
 
@@ -241,7 +243,7 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
           }}
         >
           <InfoRow label="Technique" value={technique || "unclassified"} />
-          <InfoRow label="Confidence" value={techniqueConfidence} color={techniqueConfidence === "high" ? "#46c26a" : "#ec7b1a"} />
+          <InfoRow label="Confidence" value={techniqueConfidence} color={techniqueConfidence === "high" ? "var(--sev-low)" : "var(--sev-high)"} />
           <InfoRow label="Payload" value={evidence.payload_kind as string} />
           <InfoRow
             label="Execution confirmed"
@@ -252,10 +254,10 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
                   ? "no"
                   : undefined
             }
-            color={evidence.execution_confirmed ? "#46c26a" : "#e5484d"}
+            color={evidence.execution_confirmed ? "var(--sev-low)" : "var(--sev-critical)"}
           />
           {evidence.missing_execution_transfer ? (
-            <InfoRow label="Missing exec transfer" value="yes" color="#ec7b1a" />
+            <InfoRow label="Missing exec transfer" value="yes" color="var(--sev-high)" />
           ) : null}
           {evidence.context_read_evidence ? (
             <InfoRow label="Context read APIs" value={(evidence.context_read_evidence as string[]).join(", ")} />
@@ -264,7 +266,7 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
             <InfoRow label="Related file" value={relatedFile.path as string} />
           ) : null}
           {isRecursive && injectionChain ? (
-            <InfoRow label="Recursive chain" value={`${chainDepth} hops: ${injectionChain.join(" → ")}`} color="#ec7b1a" />
+            <InfoRow label="Recursive chain" value={`${chainDepth} hops: ${injectionChain.join(" → ")}`} color="var(--sev-high)" />
           ) : null}
         </div>
 
@@ -299,14 +301,9 @@ export function FindingModal({ member, canReport, canDel, canKill, killed, onClo
               Export report (.md)
             </button>
           ) : null}
-          {canKill && !killed ? (
-            <button type="button" className="btn-brand" style={{ background: "#e5484d", boxShadow: "none" }} onClick={onKill}>
-              Kill process
-            </button>
-          ) : null}
-          {killed ? <span className="mono" style={{ color: "#e5484d", padding: "6px 0" }}>TERMINATED</span> : null}
+          <KillControl state={killState} canKill={canKill} onKill={onKill} />
           {canDel ? (
-            <button type="button" className="btn-ghost" style={{ marginLeft: "auto", color: "#e5484d" }} onClick={onDelete}>
+            <button type="button" className="btn-ghost" style={{ marginLeft: "auto", color: "var(--sev-critical)" }} onClick={onDelete}>
               Mark false positive & delete
             </button>
           ) : null}

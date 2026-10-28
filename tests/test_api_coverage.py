@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from noirlycan_agent.collector.infrastructure.frida_hook_catalog import (
+from noirlycan_agent.sensors.frida_hook_catalog import (
     build_runtime_config,
     hook_exports_in_config,
 )
-from noirlycan_core.kernel.classification.api_manifest import PAPER_INJECTION_APIS, REPO_REQUIRED_APIS
+from noirlycan_core.detection.api_classes import PAPER_INJECTION_APIS, REPO_REQUIRED_APIS
 
 
 def test_covers_all_asiaccs_paper_injection_apis() -> None:

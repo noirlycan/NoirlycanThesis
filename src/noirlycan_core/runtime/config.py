@@ -7,8 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from noirlycan_core.storage.infrastructure.atomic_io import atomic_write_text
-from noirlycan_core.storage.infrastructure.log_store import default_logs_dir
+from noirlycan_core.runtime.cached_json import load_json_cached
+from noirlycan_core.storage.atomic_io import atomic_write_text
+from noirlycan_core.storage.log_store import default_logs_dir
 
 CONFIG_NAME = ".runtime.json"
 COLLECTOR_STALE_SECONDS = 8
@@ -35,13 +36,7 @@ def resolve_config_path(logs_dir: Path | str | None = None) -> Path:
 
 
 def load_runtime_config(logs_dir: Path | str | None = None) -> RuntimeConfig:
-    path = resolve_config_path(logs_dir)
-    if not path.exists():
-        return RuntimeConfig()
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return RuntimeConfig()
+    raw = load_json_cached(resolve_config_path(logs_dir))
     if not isinstance(raw, dict):
         return RuntimeConfig()
     return RuntimeConfig(

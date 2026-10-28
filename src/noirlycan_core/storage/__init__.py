@@ -1,1 +1,1 @@
-"""Storage microservice — JSONL + SQLite."""
+"""Session logs (JSONL) and the analysis SQLite database."""

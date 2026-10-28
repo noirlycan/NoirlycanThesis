@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from noirlycan_core.analysis.domain.classifier_config import (
+from noirlycan_core.classification.config import (
     ClassifierRulesConfig,
     RuleSettings,
     classifier_rules_payload,
@@ -12,12 +11,11 @@ from noirlycan_core.analysis.domain.classifier_config import (
     passes_rule_gates,
     save_classifier_config,
 )
-from noirlycan_core.kernel.classification.custom_rule_engine import CustomRule, parse_custom_rules
-from noirlycan_core.kernel.entities.models import MemoryPrimitive, PrimitiveKind, Severity
-from noirlycan_core.kernel.classification.technique_classifier import InjectionTechnique, TechniqueConfidence, classify_finding
-from noirlycan_core.kernel.entities.models import Finding
-from noirlycan_dashboard import make_client
-from noirlycan_core.kernel.classification.technique_classifier import classifier_rule_catalog
+from noirlycan_core.classification.custom_rule_engine import CustomRule, parse_custom_rules
+from noirlycan_core.models import MemoryPrimitive, PrimitiveKind, Severity
+from noirlycan_core.classification.technique_classifier import InjectionTechnique, TechniqueConfidence, classify_finding
+from noirlycan_core.models import Finding
+from noirlycan_core.classification.technique_classifier import classifier_rule_catalog
 
 
 def test_classifier_rules_roundtrip(tmp_path: Path) -> None:
@@ -38,11 +36,10 @@ def test_classifier_rules_roundtrip(tmp_path: Path) -> None:
     assert shellcode["enabled"] is False
 
 
-def test_rules_api_save(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    response = client.post(
-        "/api/rules",
-        data=json.dumps(
+def test_rules_api_save(api, tmp_path: Path) -> None:
+    response = api.put(
+        "/api/classifier",
+        json=(
             {
                 "minimum_score": 40,
                 "classification_enabled": True,
@@ -52,7 +49,6 @@ def test_rules_api_save(tmp_path: Path) -> None:
                 ],
             }
         ),
-        content_type="application/json",
     )
     assert response.status_code == 200
     body = response.json()
@@ -83,11 +79,10 @@ def test_rule_catalog_exposes_api_match_metadata() -> None:
     assert "Cross=yes" in enriched["gate_summary"]
 
 
-def test_rules_api_save_per_rule_settings(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    response = client.post(
-        "/api/rules",
-        data=json.dumps(
+def test_rules_api_save_per_rule_settings(api, tmp_path: Path) -> None:
+    response = api.put(
+        "/api/classifier",
+        json=(
             {
                 "minimum_operational_kinds": 3,
                 "require_cross_process_findings": True,
@@ -104,7 +99,6 @@ def test_rules_api_save_per_rule_settings(tmp_path: Path) -> None:
                 ],
             }
         ),
-        content_type="application/json",
     )
     assert response.status_code == 200
     body = response.json()
@@ -200,11 +194,10 @@ def test_custom_rules_roundtrip(tmp_path: Path) -> None:
     assert payload["techniques"]
 
 
-def test_custom_rule_api_upsert_and_delete(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    create = client.post(
-        "/api/rules/custom/my_lab_rule",
-        data=json.dumps(
+def test_custom_rule_api_upsert_and_delete(api, tmp_path: Path) -> None:
+    create = api.put(
+        "/api/classifier/custom/my_lab_rule",
+        json=(
             {
                 "label": "My lab rule",
                 "technique": "process_hollowing_section",
@@ -214,13 +207,12 @@ def test_custom_rule_api_upsert_and_delete(tmp_path: Path) -> None:
                 "priority": 800,
             }
         ),
-        content_type="application/json",
     )
     assert create.status_code == 200
     body = create.json()
     assert any(item["id"] == "my_lab_rule" for item in body["custom_rules"])
 
-    delete = client.delete("/api/rules/custom/my_lab_rule")
+    delete = api.delete("/api/classifier/custom/my_lab_rule")
     assert delete.status_code == 200
     assert body["custom_rules"]
     assert delete.json()["custom_rules"] == []
@@ -296,9 +288,8 @@ def test_custom_rule_api_groups_match() -> None:
     assert result.technique == InjectionTechnique.PROCESS_HOLLOWING_SECTION
 
 
-def test_rules_detail_api(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    response = client.get("/api/rules/detail/shellcode_trinity")
+def test_rules_detail_api(api) -> None:
+    response = api.get("/api/classifier/rules/shellcode_trinity")
     assert response.status_code == 200
     body = response.json()
     assert body["source"] == "builtin"

@@ -24,7 +24,7 @@ flowchart TB
   end
 
   subgraph sandbox [Môi trường thực thi]
-    QEMU["Sandbox / QEMU"]
+    DBI["BluePill / Intel Pin (DBI)"]
     TR["Custom API Tracer<br/>Sap4Sec/process-injection"]
   end
 
@@ -49,10 +49,10 @@ flowchart TB
 
   subgraph output [Đầu ra khoa học]
     ART["Artifact: code · dataset · logs"]
-    PUB["~16.5% có injection<br/>21.2% sandbox bỏ sót"]
+    PUB["~16.5% có injection<br/>công cụ công khai bỏ sót 21.2%"]
   end
 
-  DS --> AE --> QEMU --> TR --> LOG
+  DS --> AE --> DBI --> TR --> LOG
   LOG --> EC --> PRIM
   PRIM --> R23 --> MEM --> TMP --> MULTI
   MULTI --> TECH --> STAT --> CMP --> ART --> PUB
@@ -62,7 +62,7 @@ flowchart TB
 
 | Lớp | Vai trò |
 |-----|---------|
-| Tracer đơn | Một lớp instrumentation custom trong sandbox QEMU |
+| Tracer đơn | Một lớp instrumentation DBI (BluePill/Pin), hook thư viện + syscall |
 | Batch-first | Chạy hàng chục nghìn mẫu; không UI real-time |
 | Điểm bắt đầu | Process đã thực thi trong sandbox |
 | Đầu ra | Dataset, thống kê prevalence, so sánh sandbox |
@@ -268,7 +268,7 @@ flowchart TB
 | Khía cạnh | Paper ASIA CCS 2025 | Noirlycan |
 |-----------|---------------------|-----------|
 | Mục tiêu | Prevalence injection quy mô lớn | Lab: file → process → injection |
-| Instrumentation | 1 lớp custom tracer (sandbox) | Frida user + Sysmon kernel |
+| Instrumentation | 1 lớp DBI (BluePill/Pin) | Frida user + Sysmon kernel |
 | Điểm bắt đầu | Process trong sandbox | File trên đĩa (E11 + watcher) |
 | Lõi detection | 2/3 + congruence + temporal | **Kế thừa** `services/analysis/domain/correlation.py` |
 | API classes | Equivalence classes đầy đủ | **Kế thừa** `kernel/classification/api_manifest.py` |
@@ -305,7 +305,7 @@ flowchart LR
   end
 
   subgraph paper_only [Paper only]
-    P1["QEMU sandbox 56k mẫu"]
+    P1["BluePill/Pin 56k mẫu"]
     P2["Anti-evasion integration"]
     P3["Prevalence statistics"]
     P4["Sandbox comparison"]

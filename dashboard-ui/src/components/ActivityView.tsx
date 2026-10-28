@@ -1,16 +1,25 @@
 import { eventKindColor } from "../lib/finding-ui";
 
-function dropBadge(drop: Record<string, unknown>): { label: string; color: string } {
+function dropBadge(drop: Record<string, unknown>): { label: string; chip: string } {
   const flags = String(drop.flags || drop.verdict || drop.kind || "").toUpperCase();
-  const unsigned = drop.unsigned === true || flags.includes("UNSIGNED");
-  if (unsigned) return { label: "UNSIGNED", color: "#e5484d" };
-  if (flags.includes("PE") || String(drop.path || drop.filename || "").toLowerCase().endsWith(".exe")) {
-    return { label: "PE", color: "#ec7b1a" };
-  }
-  if (flags.includes("SCRIPT") || /\.(ps1|js|vbs|bat)$/i.test(String(drop.path || drop.filename || ""))) {
-    return { label: "SCRIPT", color: "#e8c020" };
-  }
-  return { label: "FILE", color: "var(--muted)" };
+  const path = String(drop.path || drop.filename || "").toLowerCase();
+  if (drop.unsigned === true || drop.signed === false || flags.includes("UNSIGNED")) return { label: "UNSIGNED", chip: "chip chip-CRITICAL" };
+  if (flags.includes("PE") || path.endsWith(".exe") || path.endsWith(".dll")) return { label: "PE", chip: "chip chip-HIGH" };
+  if (flags.includes("SCRIPT") || /\.(ps1|js|vbs|bat)$/.test(path)) return { label: "SCRIPT", chip: "chip chip-MEDIUM" };
+  return { label: "FILE", chip: "chip" };
+}
+
+function dropDetails(drop: Record<string, unknown>): string {
+  const creator = String(drop.creator || drop.creator_image || "");
+  const parts = [
+    drop.sha256 ? `sha256 ${String(drop.sha256).slice(0, 16)}…` : "",
+    drop.entropy != null ? `entropy ${Number(drop.entropy).toFixed(2)}` : "",
+    drop.authenticode ? String(drop.authenticode) : drop.signed === false ? "unsigned" : "",
+    creator ? `by ${creator.split(/[/\\]/).pop()}` : "",
+    drop.api_status ? `api ${String(drop.api_status)}` : "",
+    !drop.sha256 && drop.status === "pending" ? "triage pending" : "",
+  ];
+  return parts.filter(Boolean).join(" · ");
 }
 
 export function ActivityView({
@@ -44,7 +53,7 @@ export function ActivityView({
                 fontSize: 12,
                 padding: "8px 0",
                 borderBottom: "1px solid var(--border)",
-                color: highlighted ? "#e5484d" : undefined,
+                color: highlighted ? "var(--sev-critical)" : undefined,
               }}
             >
               <span style={{ color: "var(--dim)" }}>{String(event.timestamp || "").slice(11, 19)}</span>
@@ -81,21 +90,8 @@ export function ActivityView({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                <span
-                  className="mono"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "3px 8px",
-                    borderRadius: 6,
-                    color: badge.color,
-                    border: `1px solid ${badge.color}55`,
-                    background: `${badge.color}14`,
-                  }}
-                >
-                  {badge.label}
-                </span>
-                <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{name}</span>
+                <span className={badge.chip}>{badge.label}</span>
+                <span style={{ fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }} title={path}>{name}</span>
                 {canDel && path ? (
                   <button
                     type="button"
@@ -112,13 +108,8 @@ export function ActivityView({
                   </button>
                 ) : null}
               </div>
-              <div className="mono" style={{ fontSize: 11, color: "var(--dim)", lineHeight: 1.6 }}>
-                {drop.sha256 ? `sha256 ${String(drop.sha256).slice(0, 24)}…` : null}
-                {drop.entropy != null ? ` · entropy ${drop.entropy}` : null}
-                {drop.authenticode ? ` · ${drop.authenticode}` : drop.signed === false ? " · unsigned" : null}
-                {drop.creator || drop.creator_image ? ` · creator ${String(drop.creator || drop.creator_image)}` : null}
-                {drop.api_status ? ` · api ${String(drop.api_status)}` : null}
-                {!drop.sha256 && drop.status === "pending" ? " · triage pending" : null}
+              <div className="mono" style={{ fontSize: 11, color: "var(--dim)", lineHeight: 1.6 }} title={path}>
+                {dropDetails(drop)}
               </div>
             </div>
           );

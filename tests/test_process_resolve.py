@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from noirlycan_agent.collector.infrastructure.process_resolve import image_for_pid
+from noirlycan_core.runtime.process_resolve import image_for_pid
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows-only API")

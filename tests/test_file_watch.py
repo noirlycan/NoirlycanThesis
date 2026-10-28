@@ -3,13 +3,13 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from noirlycan_agent.collector.infrastructure.file_watch import FileDropWatcher, default_watch_paths
+from noirlycan_agent.sensors.file_watch import FileDropWatcher, default_watch_paths
 
 
 def test_default_watch_paths_includes_existing_directories(tmp_path: Path, monkeypatch) -> None:
     thesis = tmp_path / "thesis"
     thesis.mkdir()
-    monkeypatch.setattr("noirlycan_agent.collector.infrastructure.file_watch.Path.home", lambda: tmp_path)
+    monkeypatch.setattr("noirlycan_agent.sensors.file_watch.Path.home", lambda: tmp_path)
     paths = default_watch_paths([str(thesis)])
     assert str(thesis.resolve()) in paths
 

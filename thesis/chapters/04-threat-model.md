@@ -1,6 +1,6 @@
 # CHƯƠNG 3. THREAT MODEL THEO HÌNH THỨC NÉ TRÁNH
 
-Chương này xây dựng **mô hình đe dọa formal** cho Noirlycan: tài sản, đối thủ, giả định môi trường/phương pháp, ranh giới tin cậy telemetry, mối đe dọa, **ranh giới claim khoa học**. Căn cứ audit đối chiếu Noirlycan với Di Pietro et al. (ASIA CCS 2025) [4], `docs/audit-and-threat-model.md`, taxonomy E1–E6.
+Chương này xây dựng **mô hình đe dọa formal** cho Noirlycan: tài sản, đối thủ, giả định môi trường/phương pháp, ranh giới tin cậy telemetry, mối đe dọa, **ranh giới claim khoa học**. Căn cứ audit đối chiếu Noirlycan với Di Pietro et al. (ASIA CCS 2025) [7], `docs/audit-and-threat-model.md`, taxonomy E1–E6.
 
 ## 3.1. Phạm vi và hệ thống quan tâm
 
@@ -13,11 +13,11 @@ SUA là **một host Windows 10/11** trong lab cô lập. Phạm vi: *phát hi�
 | Thành phần | Privilege | Cơ chế quan sát | Module repo |
 |------------|-----------|-----------------|-------------|
 | Sysmon driver | **Kernel** | Process/Image/Object callback, Minifilter, ETW Threat Intelligence | `sysmon.py` |
-| Sysmon service | User (LocalSystem) | Thu event từ driver, ghi Event Log | `infrastructure/sysmon.py` |
-| Frida agent | **User (in-target)** | `Interceptor.attach` trên `ntdll`/`kernel32`/`user32` | `frida_manager.py`, `windows_injection_hooks.js` |
-| Python collector | User | Đọc Event Log + Frida bus, correlate | `collector_runtime.py`, `correlation.py` |
+| Sysmon service | User (LocalSystem) | Thu event từ driver, ghi Event Log | `sensors/sysmon.py` |
+| Frida agent | **User (in-target)** | `Interceptor.attach` trên `ntdll`/`kernel32`/`user32` | `sensors/frida_monitor.py`, `frida_hooks/handlers.js` |
+| Python collector | User | Đọc Event Log + Frida bus, correlate | `runtime/pipeline.py`, `detection/correlator.py` |
 | Static triage | User | SHA256, PE header, entropy, Authenticode | `triage.py`, `payload.py` |
-| Dashboard | User | Django REST + WebSocket, JSONL export | `services/dashboard/` |
+| Console | User (máy analyst) | FastAPI + React + WebSocket, JSONL export | `noirlycan_backend/`, `dashboard-ui/` |
 | Target process | User | Loader malware / PoC | — |
 
 Driver kernel ghi sự kiện không che được bởi user-mode adversary; Frida là *granular API tracer* cung cấp tham số (addr, size, prot); collector correlate `(actor_pid, target_pid)` window 300s. Frida mất signal khi direct syscall (E4); Sysmon vẫn ghi Event 8/10 — *defense-in-depth* (mục 3.8).
@@ -41,7 +41,7 @@ Driver kernel ghi sự kiện không che được bởi user-mode adversary; Fri
                     Analyst workstation (TRUSTED)
 ```
 
-\* Sysmon tin cậy nếu O3 không xảy ra; BYOVD vẫn khả thi nhưng khó (xem 3.4.3). Phạm vi chỉ pipeline host → analyst, nhất quán [4].
+\* Sysmon tin cậy nếu O3 không xảy ra; BYOVD vẫn khả thi nhưng khó (xem 3.4.3). Phạm vi chỉ pipeline host → analyst, nhất quán [7].
 
 ## 3.2. Phân loại hình thức né tránh (E1–E6)
 
@@ -51,7 +51,7 @@ Ký hiệu **E1–E6** cho sáu nhóm né tránh process injection (thống nh�
 
 | ID | Hình thức né tránh | Mô tả | Mitigation Noirlycan | Trạng thái |
 |----|-------------------|-------|----------------------|------------|
-| **E1** | Biến thể API | Win32 ↔ NT API, đổi thread/APC | Equivalence + 2-of-3 [4] | **Xử lý** (có test) |
+| **E1** | Biến thể API | Win32 ↔ NT API, đổi thread/APC | Equivalence + 2-of-3 [7] | **Xử lý** (có test) |
 | **E2** | Gộp/ẩn bước | Section mapping, Mockingjay (RWX) | 2-of-3 + classifier section-mapping | **Xử lý** (có test) |
 | **E3** | Né attribution | Inject tiến trình hợp pháp; file-drop loader | Sysmon lineage + provenance + triage | **Mở rộng** |
 | **E4** | Né hook user-mode | Direct syscall, unhook `ntdll` | Sysmon E8/E10 fallback | **Một phần** |
@@ -70,7 +70,7 @@ E1 phản ánh không gian API rộng cho cùng primitive *WRITE-cross-process*.
 | **A2** | Sẵn sàng collector | Collector/Frida không crash; log đủ event | E6 |
 | **A3** | Cô lập lab | Malware không lan ra production | An toàn nghiên cứu |
 
-A1 là tài sản **trung tâm**; không yêu cầu phát hiện khi malware không inject (E5) — đồng bộ [4] (21,2 % miss). Ưu tiên *integrity* hơn *coverage*.
+A1 là tài sản **trung tâm**; không yêu cầu phát hiện khi malware không inject (E5) — đồng bộ [7] (evasion làm giảm injection quan sát được: 11,8 % → 6,2 % khi bỏ anti-evasion). Ưu tiên *integrity* hơn *coverage*.
 
 ## 3.4. Mô hình đối thủ (Adversary Model)
 
@@ -80,7 +80,7 @@ A1 là tài sản **trung tâm**; không yêu cầu phát hiện khi malware kh�
 
 **Mục tiêu đối thủ:** (1) inject thành công; (2) tránh telemetry lab; (3) persistence/beacon (tùy mẫu, ngoài phạm vi).
 
-**Không phải đối thủ:** insider admin tắt Sysmon; APT kernel rootkit (O3); analyst giả mạo log. OS bị khống chế ngoài threat model — kế thừa [4][7][12].
+**Không phải đối thủ:** insider admin tắt Sysmon; APT kernel rootkit (O3); analyst giả mạo log. OS bị khống chế ngoài threat model — kế thừa [7][10][15].
 
 ### 3.4.2. Năng lực giả định CÓ (C1–C7)
 
@@ -125,7 +125,7 @@ Ký hiệu **E1–E6** environmental — khác né tránh E1–E6 (mục 3.2).
 | **E1** | Sysmon config `sysmon-noirlycan.xml` | Event 1,3,7,8,10,11 enabled | Mất lineage/provenance | E4, E3 |
 | **E2** | Frida attach **trước** API inject đầu | Ưu tiên `spawn` | Late attach → FN (T2) | E6 |
 | **E3** | Không pure direct syscall mọi API | Ít nhất một call qua export hook | Pure syscall → Frida trống | E4 |
-| **E4** | Clock monotonic trong window 300s | `correlation.py` | VM rollback → temporal sai | — |
+| **E4** | Clock monotonic trong window 300s | `detection/correlator.py` | VM rollback → temporal sai | — |
 | **E5** | Không collision `(actor_pid, target_pid)` benign | Lab ít noise | Gom nhầm chain → FP (T8) | — |
 | **E6** | VM cô lập, không credential thật | Ethics lab | Rủi ro ngoài phạm vi khoa học | E5 |
 
@@ -133,15 +133,15 @@ E3 thực dụng: malware in-the-wild đến 2023 dùng hỗn hợp direct sysca
 
 ## 3.6. Giả định phương pháp (Methodological Assumptions M1–M6)
 
-**Bảng 3.7.** Giả định khoa học — căn cứ phương pháp [4]
+**Bảng 3.7.** Giả định khoa học — căn cứ phương pháp [7]
 
 | ID | Giả định | Nguồn / justification | Rủi ro nếu sai |
 |----|----------|----------------------|----------------|
-| **M1** | A/W/E trên cùng vùng nhớ **đủ mô tả** injection user-mode | Klein [7]; [4] §3.1 | FN kỹ thuật kernel (O3) |
-| **M2** | ≥ 2/3 primitive khác loại **đủ kết luận** injection | [4] §3.2 | FP từ benign debug tool |
-| **M3** | API cùng equivalence class thay thế được | [4] Table 1 | FN khi API chưa liệt kê |
-| **M4** | Memory overlap là proxy cho *same buffer* | Starink [12]; [4] §3.3 | FP/FN edge case |
-| **M5** | Frida hook **trung thực** về argument/thứ tự | Frida [5]; cần benchmark | Drop event → sai 2-of-3 |
+| **M1** | A/W/E trên cùng vùng nhớ **đủ mô tả** injection user-mode | Klein và Kotler [10]; [7] §3.1 | FN kỹ thuật kernel (O3) |
+| **M2** | ≥ 2/3 primitive khác loại **đủ kết luận** injection | [7] §3.2 | FP từ benign debug tool |
+| **M3** | API cùng equivalence class thay thế được | [7] Table 1 | FN khi API chưa liệt kê |
+| **M4** | Memory overlap là proxy cho *same buffer* | Starink [15]; [7] §3.3 | FP/FN edge case |
+| **M5** | Frida hook **trung thực** về argument/thứ tự | Frida [8]; cần benchmark | Drop event → sai 2-of-3 |
 | **M6** | Sysmon kernel callbacks không bị user-mode sửa | Driver ring 0; chỉ O3 phá | Mất lớp kernel nếu O3 |
 
 M1–M3 là cơ sở 2-of-3; M4 là *bridging assumption* (overlap address+size). **M5 cần justification:** Chương 6 đề xuất protocol Frida fidelity (ETW/SilkETW ≥ 1000 lệnh gọi synthetic); claim Frida gắn *conditional on M5*. **D1 đã sửa:** EXECUTE thiếu `address` được phục hồi bằng `lpStartAddress`/`Rip` từ CONTEXT.
@@ -152,7 +152,7 @@ M1–M3 là cơ sở 2-of-3; M4 là *bridging assumption* (overlap address+size)
 
 | Né tránh | Năng lực C | Out-of-scope O | Module Noirlycan | Mức độ mitigation | Hạn chế còn lại |
 |----------|-----------|----------------|------------------|-------------------|-----------------|
-| E1 | C1,C2,C4 | — | `api_manifest.py`, `correlation.py` | Cao | API mới chưa trong manifest |
+| E1 | C1,C2,C4 | — | `detection/api_classes.py`, `detection/correlator.py` | Cao | API mới chưa trong manifest |
 | E2 | C2,C3 | — | 2-of-3, `technique_classifier.py` | Cao | Mockingjay edge (RWX) |
 | E3 | C3,C6 | — | Sysmon E1/E11, `file_watch.py`, triage | TB-cao | Inject không qua file-drop |
 | E4 | (via O1/O2) | O1,O2 | Sysmon E8/E10 | TB | Mất address/size |
@@ -161,7 +161,7 @@ M1–M3 là cơ sở 2-of-3; M4 là *bridging assumption* (overlap address+size)
 
 ## 3.8. Ma trận tin cậy lớp telemetry (Telemetry Layer Trust Matrix)
 
-Trả lời phản biện *"Frida bị bypass — phương pháp còn ý nghĩa gì?"*: **graceful degradation** — detection chuyển từ semantic primitive sang coarse cross-process signal, không về zero — đóng góp định tính so với [4] (QEMU một lớp).
+Trả lời phản biện *"Frida bị bypass — phương pháp còn ý nghĩa gì?"*: **graceful degradation** — khi hook user-mode bị né, Sysmon (kernel callback) vẫn cung cấp primitive EXECUTE từ EID 8 và bằng chứng handle + call stack từ EID 10; detection giảm về số primitive quan sát được nhưng không về zero, và việc kernel thấy remote thread mà Frida không thấy được gắn cờ *hook bypass*. Đây là đóng góp định tính so với [7], vốn dùng một lớp instrumentation (BluePill/Pin).
 
 **Bảng 3.9.** Telemetry Layer Trust Matrix
 
@@ -188,7 +188,7 @@ Trả lời phản biện *"Frida bị bypass — phương pháp còn ý nghĩa 
 | **T2** | Late attach miss primitive đầu | E6 | Cao | `spawn` mode | Auto-attach chỉ file-drop |
 | **T3** | EXECUTE thiếu address | E2 edge | TB | **Đã fix D1:** `lpStartAddress`/Rip | Test regression |
 | **T4** | Frida agent bị detect | E6/O5 | TB | — | Out-of-scope |
-| **T5** | Anti-evasion sandbox | E5/O7 | Cao | `evasion.py` signal only | Future module như [4] |
+| **T5** | Anti-evasion sandbox | E5/O7 | Cao | `evasion.py` signal only | Future module như [7] |
 | **T6** | Read API lẫn write count | — | TB | **Đã fix D2:** tách `remote_read` | — |
 | **T7** | Temporal ordering lỏng | — | Thấp | **Đã fix D3:** reject đảo bậc A/W/E | — |
 | **T8** | Collision `(actor,target)` benign | — | Thấp | Window 300s + PID pair | Đo FP Benign-Baseline (Ch.6) |
@@ -229,9 +229,9 @@ Phân tách claim có evidence và claim **cấm** nếu chưa có Chương 6.
 
 | ID | Claim | Evidence |
 |----|-------|----------|
-| **C-IMPL** | Lõi 2-of-3 + congruence + temporal của [4] đã hiện thực trên Frida+Sysmon Windows 10/11 | `correlation.py`, `api_manifest.py`, `test_correlation.py` |
+| **C-IMPL** | Lõi 2-of-3 + congruence + temporal của [7] đã hiện thực trên Frida+Sysmon Windows 10/11 | `detection/correlator.py`, `detection/api_classes.py`, `test_correlation.py` |
 | **C-AUDIT** | Ba deviation D1/D2/D3 đã phát hiện và sửa có test regression | `docs/audit-and-threat-model.md` |
-| **C-EXT** | Pipeline file provenance → lineage → finding cung cấp ngữ cảnh [4] không có | `file_watch.py`, `correlation.py` |
+| **C-EXT** | Pipeline file provenance → lineage → finding cung cấp ngữ cảnh [7] không có | `file_watch.py`, `detection/correlator.py` |
 | **C-CASE** | Section-mapping (*neurevt*) phát hiện đúng pattern primitive trên PoC | `test_detects_section_mapping_write_execute_chain` |
 | **C-ARCH** | Sysmon ∪ Frida document graceful degradation dưới E4 | Bảng 3.9, mục 3.8 |
 | **C-TAX** | Taxonomy mở rộng (36 kỹ thuật enum) | `technique_classifier.py` — không kèm precision số |
@@ -240,13 +240,13 @@ Phân tách claim có evidence và claim **cấm** nếu chưa có Chương 6.
 
 | Claim cấm | Lý do |
 |-----------|-------|
-| "Precision/recall ngang/hơn [4]" | Không dataset 56k; không baseline Cuckoo |
+| "Precision/recall ngang/hơn [7]" | Không dataset 56k; không baseline Cuckoo |
 | "Phát hiện kỹ thuật X với Y%" | Classifier chưa eval ground truth |
-| "Tái lập prevalence 16,5 % / miss 21,2 %" | Số liệu thuộc [4] |
+| "Tái lập prevalence 16,5 % / tỷ lệ bỏ sót 21,2 % của công cụ công khai" | Số liệu thuộc [7] |
 | "Chống E5 toàn diện" | O7 — không anti-evasion |
 | "Production-ready EDR thay thương mại" | Lab prototype; M5 chưa đủ |
 | "Frida đủ tin cậy mọi điều kiện" | O1/O5; cần M5 |
-| "Phương pháp mới thay [4]" | Sai — lõi là [4]; luận văn replication + extension |
+| "Phương pháp mới thay [7]" | Sai — lõi là [7]; luận văn replication + extension |
 
 Bảng claim cấm là checklist self-guard chống *claim creep*.
 
@@ -264,7 +264,7 @@ Bảng claim cấm là checklist self-guard chống *claim creep*.
 
 | Mục tiêu (Chương Mở đầu) | Threat model |
 |--------------------------|--------------|
-| RO1 — Hiện thực [4] | M1–M4; C-IMPL; T3/T6/T7 fixes |
+| RO1 — Hiện thực [7] | M1–M4; C-IMPL; T3/T6/T7 fixes |
 | RO2 — Telemetry kép E4 | Bảng 3.9; T1; O1/O2 degradation |
 | RO3 — Provenance E3 | Sysmon E11/E1; C-EXT |
 | RO4 — Đánh giá biến thể | C-CASE; E1/E2; **không** claim prevalence |
@@ -277,7 +277,7 @@ Mapping bảo đảm truy nguyên hai chiều giữa RO và threat model.
 ### 3.13.1. Internal validity
 
 - Ground truth PoC do tác giả gắn nhãn — bias có thể có.
-- Số mẫu nhỏ so với [4] — không generalize prevalence.
+- Số mẫu nhỏ so với [7] — không generalize prevalence.
 - Frida overhead có thể thay đổi timing — ảnh hưởng race condition hiếm (không đo đầy đủ).
 
 Bias kiềm chế bằng công khai mã PoC và config Sysmon để tái lập.
@@ -286,7 +286,7 @@ Bias kiềm chế bằng công khai mã PoC và config Sysmon để tái lập.
 
 - Chỉ Windows 10/11 client — không Windows Server, không Linux.
 - Lab VM ≠ enterprise endpoint có EDR đa agent.
-- Mẫu 2017–2023 trong [4] — kỹ thuật 2024+ (một số) chỉ có rule chưa evaluate.
+- Mẫu 2017–2023 trong [7] — kỹ thuật 2024+ (một số) chỉ có rule chưa evaluate.
 
 Windows 10/11 client là *deliberate scoping*: server và Linux (ptrace, LD_PRELOAD) ngoài T1055 Windows.
 
@@ -299,4 +299,4 @@ PoolParty và biến thể 2024 làm primitive A/W/E có thể không phân gi�
 
 ## 3.14. Tóm tắt chương
 
-Chương 3 đã xây dựng threat model formal: telemetry kép Sysmon + Frida; A1–A3; C1–C7; O1–O7; E1–E6 và M1–M6; ma trận tin cậy giải thích graceful degradation dưới E4; T1–T9; ranh giới claim phân tách replication [4], extension, claim cấm. Threat model làm khung cho Chương 5 và 6 — thí nghiệm phải map C-IMPL/C-EXT/C-CASE, không vượt §3.11.
+Chương 3 đã xây dựng threat model formal: telemetry kép Sysmon + Frida; A1–A3; C1–C7; O1–O7; E1–E6 và M1–M6; ma trận tin cậy giải thích graceful degradation dưới E4; T1–T9; ranh giới claim phân tách replication [7], extension, claim cấm. Threat model làm khung cho Chương 5 và 6 — thí nghiệm phải map C-IMPL/C-EXT/C-CASE, không vượt §3.11.
